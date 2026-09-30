@@ -5,6 +5,8 @@ import { LANGS, type Lang } from '@/lib/site';
 import type { NewsCard } from '@/lib/news';
 import type { IconKey } from '@/components/icons';
 import { cachePublicRead, limitPrerenderPaths } from '@/lib/public-content-cache';
+import { extractToolNames } from '@/lib/tools-mentioned';
+import { topicSlugs } from '@/lib/topic-normalize';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -61,20 +63,6 @@ async function loadCategories(lang: Lang): Promise<CategoryListItem[]> {
 }
 
 export const getCategories = cachePublicRead('categories', loadCategories);
-
-function toToolNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const names: string[] = [];
-  for (const entry of value) {
-    if (entry && typeof entry === 'object' && 'name' in entry) {
-      const name = (entry as { name: unknown }).name;
-      if (typeof name === 'string' && name.trim()) names.push(name.trim());
-    } else if (typeof entry === 'string' && entry.trim()) {
-      names.push(entry.trim());
-    }
-  }
-  return names;
-}
 
 function wordCount(text: string): number {
   const trimmed = text.trim();
@@ -196,6 +184,7 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
   const items: HomeItem[] = staged.slice(0, limit).map((r) => {
     const summary = pick(lang, r.summaryEn, r.summaryUk);
     const why = pick(lang, r.whyEn, r.whyUk);
+    const tools = extractToolNames(r.tools);
     return {
       id: r.id,
       rank: r.rank,
@@ -208,7 +197,8 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
       why: why || summary,
       date: r.date,
       hasVideo: Boolean(r.youtubeUrl),
-      tools: toToolNames(r.tools),
+      tools,
+      topics: topicSlugs(tools),
       sourceName: sources.get(r.articleId) ?? null,
       readMinutes: Math.max(2, Math.round((wordCount(summary) + wordCount(why)) / 45)),
       imageUrl: r.imageUrl?.startsWith('http') ? r.imageUrl : null,

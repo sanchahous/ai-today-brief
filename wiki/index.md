@@ -172,7 +172,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що |
 |---|---|
 | ✅ [decisions/2026-08-02-knowledge-base-restructure](decisions/2026-08-02-knowledge-base-restructure.md) | Перехід на `raw/` · `wiki/` · `artifacts/` + покроковий план міграції (кроки 1–8 виконано) |
-| ✅ [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md) | Архітектура News discovery, семантика сортування (Newest, Oldest, Relevance), URL-state зі збереженням ISR-кешу /news, доступна пагінація |
+| ✅ [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md) | Архітектура News discovery, семантика сортування (Newest, Oldest, Relevance), URL-state зі збереженням ISR-кешу /news, доступна пагінація, фасет Topics (нормалізація, аліаси, правило D8, AH-4.1) |
 | ✅ [decisions/2026-09-29-design-tokens-2-0-migration](decisions/2026-09-29-design-tokens-2-0-migration.md) | Міграція production-токенів на After Hours 2.0.0 перед епіком: що змінено, винятки (OG/PDF/duotone, категорії), наслідки |
 | ✅ [decisions/2026-09-29-after-hours-rollout-and-foundations](decisions/2026-09-29-after-hours-rollout-and-foundations.md) | Рішення D1–D13 епіку редизайну: розкатка foundations-first, тема, шрифти, брейкпоінти 960 px, без нових URL, новий знак скрізь, фасет «Теми», каталог, a11y, візуальні регресії, без usability-сесій, рух лише за системним налаштуванням |
 

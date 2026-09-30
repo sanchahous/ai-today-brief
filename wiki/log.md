@@ -5360,3 +5360,29 @@ now, handoff та index. (source: локальні прогони 2026-09-30; PR
 після локального gate і CI. Наступна задача — AH-1.4, після неї AH-1.2.
 (source: `artifacts/_local/ah-1.7-conflict-ratchet.log`;
 `scripts/raw-design-values.baseline.json`; `src/app/manifest.ts`)
+
+## 2026-09-30 — AH-4.1: Topics / Tool у discovery (паралельно з AH-1.4)
+
+Реалізовано AH-4.1 окремою гілкою `feat/ah-4.1-topics-taxonomy`, паралельно з AH-1.4
+(яку веде інша сесія; файли не перетинаються). Нове: `src/lib/topic-normalize.ts`
+(slug = літери й цифри без розділювачів, тож «Claude Code» / «claude-code» / «ClaudeCode» —
+одне значення; мапа лише безсумнівних аліасів), `HomeItem.topics`, `topics=` у
+`parseNewsUrlParams` / `serializeNewsUrlParams`, `applyNewsFilters` (OR всередині фасету,
+AND між фасетами), `countCategories`, `buildTopicFacet` (правило D8: ≥ 2 матеріали, обрана
+тема завжди видима, до 12 значень, без даних — порожній список). Три копії `toToolNames`
+(`home.ts`, `news.ts`, `categories.ts`) замінено наявним `extractToolNames`. У `news-feed`
+додано лише застосування `topics` з URL і чіп зі зняттям (i18n EN/UK); пікер фасету в
+sidebar лишено для AH-4.3. ADR news discovery доповнено §2.3, епік (§5.3, B7, G06, картка),
+now, handoff та index оновлено. G06/B7 позначено «частково»: lib і URL закрито, UI — AH-4.3.
+Live-перевірка prod-БД (read-only SQL): 905 опублікованих айтемів, 821 з `tools_mentioned`,
+2866 згадок, 1256 унікальних ключів після нормалізації — довгий хвіст, тому поріг D8 істотний.
+(source: `src/lib/topic-normalize.ts`; `src/lib/news-filters.ts`; SQL `brief_items` × `briefs`
+2026-09-30; [ADR §2.3](decisions/2026-09-26-news-discovery-and-pagination-architecture.md))
+
+## 2026-09-30 — AH-4.1: відкрито PR #380
+
+Відкрито [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380).
+`npm run pr:check` пройшов (2082 unit-тести, typecheck, lint, e2e:check, wiki:check,
+migrations:check, build:ci); pre-push `e2e:affected` — 60 passed / 7 skipped.
+У епіку, now і handoff додано посилання на PR. Пікер фасету лишається за AH-4.3.
+(source: `gh pr view 380`; локальні прогони 2026-09-30)

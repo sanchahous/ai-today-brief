@@ -6,6 +6,8 @@ import { getConceptNameIndex } from '@/lib/concepts';
 import type { HomeItem, TrendingTopic } from '@/lib/home';
 import type { IconKey } from '@/components/icons';
 import { cachePublicRead } from '@/lib/public-content-cache';
+import { extractToolNames } from '@/lib/tools-mentioned';
+import { topicSlugs } from '@/lib/topic-normalize';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -21,20 +23,6 @@ export interface NewsCard {
   summary: string;
   date: string;
   imageUrl: string | null;
-}
-
-function toToolNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const names: string[] = [];
-  for (const entry of value) {
-    if (entry && typeof entry === 'object' && 'name' in entry) {
-      const name = (entry as { name: unknown }).name;
-      if (typeof name === 'string' && name.trim()) names.push(name.trim());
-    } else if (typeof entry === 'string' && entry.trim()) {
-      names.push(entry.trim());
-    }
-  }
-  return names;
 }
 
 function wordCount(text: string): number {
@@ -108,6 +96,7 @@ function mapRowToItem(
   const summary = pick(lang, row.summaryEn, row.summaryUk);
   const why = pick(lang, row.whyEn, row.whyUk);
   const cat = row.categorySlug ? catBySlug.get(row.categorySlug) : undefined;
+  const tools = extractToolNames(row.tools);
   return {
     id: row.id,
     rank: row.rank,
@@ -120,7 +109,8 @@ function mapRowToItem(
     why: why || summary,
     date: row.date,
     hasVideo: Boolean(row.youtubeUrl),
-    tools: toToolNames(row.tools),
+    tools,
+    topics: topicSlugs(tools),
     sourceName: row.sourceName,
     readMinutes: Math.max(2, Math.round((wordCount(summary) + wordCount(why)) / 45)),
     imageUrl: row.imageUrl?.startsWith('http') ? row.imageUrl : null,
@@ -288,6 +278,7 @@ function mapSearchRow(
     date: r.brief_date,
     hasVideo: false,
     tools: [],
+    topics: [],
     sourceName: r.source_name ?? null,
     readMinutes: Math.max(2, Math.round(wordCount(summary) / 45)),
     imageUrl: null, // search RPC payload carries no image

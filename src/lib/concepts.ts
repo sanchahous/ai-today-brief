@@ -5,6 +5,7 @@ import type { HomeItem } from '@/lib/home';
 import { getSupabase } from '@/lib/supabase';
 import { LANGS, type Lang } from '@/lib/site';
 import { extractToolNames } from '@/lib/tools-mentioned';
+import { topicSlugs } from '@/lib/topic-normalize';
 import type { IconKey } from '@/components/icons';
 import { limitPrerenderPaths } from '@/lib/public-content-cache';
 
@@ -186,6 +187,7 @@ async function getConceptItemsViaJunction(
     const cat = catSlug ? catBySlug.get(catSlug) : undefined;
     const title = pick(lang, r.title_en as string | null, r.title_uk as string | null);
     const summary = pick(lang, r.summary_en as string | null, r.summary_uk as string | null);
+    const tools = extractToolNames(r.tools_mentioned);
 
     return {
       id: r.id as string,
@@ -199,7 +201,8 @@ async function getConceptItemsViaJunction(
       why: pick(lang, r.why_en as string | null, r.why_uk as string | null),
       date: r.brief_date as string,
       hasVideo: (r.has_video as boolean) ?? false,
-      tools: extractToolNames(r.tools_mentioned),
+      tools,
+      topics: topicSlugs(tools),
       sourceName: (r.source_name as string) ?? null,
       readMinutes: Math.max(2, Math.round(wordCount(summary) / 45)),
       imageUrl: null, // RPC payload carries no image; category placeholder renders
