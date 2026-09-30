@@ -1,7 +1,7 @@
 # Analytics — довідник (підтримувати актуальним!)
 
 Summary: Довідник GA4 / GSC: єдина активна property 540206735; два зайві акаунти в кошику, а Google tag досі містить три destinations. Admin-чекліст відкритий.
-Sources: повідомлення власника 2026-09-30; HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
+Sources: повідомлення й скриншоти власника 2026-09-30 (селектор property і деталі GSC link); HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
 Last updated: 2026-09-30
 
 > Оновлено: **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events,
@@ -71,8 +71,10 @@ Vercel більше не читається — можна видалити з e
 - [x] **Канонічна property:** власник залишив `540206735`; два зайві акаунти переміщено
   в кошик. Звірка двох додаткових measurement ID з потоками більше не є умовою G0.
   (source: повідомлення власника 2026-09-30; HYPD live check 2026-09-30)
-- [ ] **GSC ↔ GA4 link** для канонічної `540206735` (Admin → Product links); історична
-  перевірка 12.06 не підтверджує стан 29.09.
+- [x] **GSC ↔ GA4 link** для канонічної `540206735`: скриншот власника показує
+  доменний ресурс `aitodaybrief.com`, потік «The daily AI news» / `15002930155`
+  і дату зв'язування 2026-09-23; окремий скриншот підтверджує контекст акаунта
+  `396774992` / property `540206735`. (source: два скриншоти власника 2026-09-30)
 - [ ] **Key event `newsletter_subscribe`** у `540206735` і семантика підтвердження.
 - [ ] **Data retention** `540206735` = 14 місяців (історично 14; поточний стан не перевірено).
 - [ ] **Tag Assistant:** перевірити `G-5R89X6Q5D4`, `page_view`, фактичну доставку й consent;

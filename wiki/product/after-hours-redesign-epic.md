@@ -548,10 +548,13 @@ Speed Insights або CrUX для home, news, article, daily, weekly. Оформ
 містить GA4-числа й історичний розбір трьох destinations. 2026-09-30 власник перемістив
 два зайві акаунти в кошик; активною лишилась `540206735`. Запитані переходи без відповідних подій
 позначено невимірюваними, а не підмінено співвідношенням page views. Field CWV mobile/desktop
-не отримано; Admin-чек-лист [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property)
-відкритий. Повторний запит PageSpeed API повернув 429, CrUX API — 403 для доступного ключа,
+не підтверджено: власник надав шість PageSpeed-посилань для home/news/article,
+але вміст звітів не прочитано через перевірку дозволів браузера. GSC link
+підтверджено скриншотами; key event, retention і Tag Assistant у
+[open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property) відкриті.
+Попередній запит PageSpeed API повернув 429, CrUX API — 403 для доступного ключа,
 браузерний доступ до GA4 Admin не пройшов перевірку дозволів. G0 лишається закритим.
-(source: повідомлення власника 2026-09-30; HYPD live check 2026-09-30;
+(source: повідомлення, скриншоти й PageSpeed-посилання власника 2026-09-30; HYPD live check 2026-09-30;
 [baseline](../analytics/2026-09-29-redesign-baseline.md#актуальний-стан-після-рішення-власника-2026-09-30))
 
 **AC:**

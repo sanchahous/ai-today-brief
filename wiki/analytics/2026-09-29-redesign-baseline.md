@@ -1,6 +1,6 @@
 # After Hours — продуктовий baseline перед редизайном
 
-Summary: AH-0.6 фіксує історичний GA4 baseline за 28 повних днів; зараз активна лише property 540206735, два зайві акаунти в кошику; Admin-чекліст і field CWV відкриті.
+Summary: AH-0.6 фіксує історичний GA4 baseline за 28 повних днів; активна property 540206735, GSC link підтверджено; отримано шість PageSpeed-посилань, але field CWV і решта Admin-чекліста відкриті.
 Sources: повідомлення власника 2026-09-30; HYPD `list_account_summaries` 2026-09-30; GA4 Data API через HYPD (read-only запити 2026-09-29); live HTML `https://aitodaybrief.com/en` і Google tag `https://www.googletagmanager.com/gtag/js?id=G-5R89X6Q5D4` (2026-09-29 і 2026-09-30); [аудит налаштування GA4](../audits/2026-06-12-analytics-gsc.md); `artifacts/_local/before/manifest.json` (AH-0.3); [CrUX API](https://developer.chrome.com/docs/crux/api); `src/components/analytics/home-click-trackers.tsx`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`, `src/lib/web-vitals.ts`.
 Last updated: 2026-09-30
 
@@ -25,9 +25,15 @@ HTTP GET Google tag 2026-09-30)
 
 ## Межі вимірювання
 
+**GSC link підтверджено 2026-09-30:** скриншот власника показує доменний ресурс
+`aitodaybrief.com`, потік «The daily AI news» / `15002930155` і дату зв'язування
+2026-09-23. Другий скриншот показує акаунт `396774992` / property `540206735`.
+Скриншоти головної GA4 не містять статусу key event, retention чи Tag Assistant.
+(source: скриншоти власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
+
 Період: **2026-09-01…2026-09-28 включно**, часовий пояс усіх трьох property — `Europe/Kiev`; дата зняття — **2026-09-29**. Для продуктових таблиць нижче застосовано `hostName = aitodaybrief.com` і property **`540206735`**, якщо явно не зазначено інше. `screenPageViews` рахує перегляди, `activeUsers` — користувачів, `sessions` — сеанси; числа з різних property не додаються. (source: GA4 Data API `properties/540206735:runReport`, dimensions `hostName`, `eventName` / `pagePath`, metrics `sessions`, `activeUsers`, `eventCount`, `screenPageViews`, дата запиту 2026-09-29)
 
-**Статус усіх GA4-чисел у цій сторінці: `(needs verification)`.** Канонічну property власник визначив як `540206735`, але її GSC link, key event, retention і фактичну доставку через Tag Assistant ще треба звірити. Зв'язок двох додаткових ID із потоками більше не є умовою G0. Цей baseline придатний для порівняння за тією самою property й сегментом, але історичні звіти трьох property не слід підсумовувати. (source: повідомлення власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
+**Статус усіх GA4-чисел у цій сторінці: `(needs verification)`.** Канонічну property власник визначив як `540206735`, її GSC link підтверджено скриншотом; key event, retention і фактичну доставку через Tag Assistant ще треба звірити. Зв'язок двох додаткових ID із потоками більше не є умовою G0. Цей baseline придатний для порівняння за тією самою property й сегментом, але історичні звіти трьох property не слід підсумовувати. (source: повідомлення й скриншоти власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
 
 ## Чому три property отримували трафік у період baseline
 
@@ -103,6 +109,26 @@ live Google tag, запити 2026-09-29)
 
 ## Повторна технічна звірка 2026-09-30
 
+### PageSpeed-звіти, надані власником
+
+Власник надав mobile і desktop посилання для трьох цілей нижче. Вміст звітів
+не вдалося прочитати: вебінструмент повернув помилку доступу, а Browser Use
+зупинила перевірка збережених дозволів. Тому LCP/INP/CLS, дата заміру, вікно даних
+і рівень агрегації URL/origin **ще не перевірені**; наявність посилання не закриває
+field CWV AC. Цілі в таблиці визначено за адресами наданих звітів, фінальний URL
+після redirect ще треба звірити. Daily і weekly у цьому наборі відсутні; картка
+AH-0.6 наразі вимагає п'ять типів сторінок. (source: посилання й повідомлення
+власника 2026-09-30; web / browser access checks 2026-09-30;
+[картка AH-0.6](../product/after-hours-redesign-epic.md#ah-06-продуктовий-і-cwv-baseline))
+
+| Ціль за адресою звіту | Mobile | Desktop |
+|---|---|---|
+| Home: `https://aitodaybrief.com/` | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com/d6pdbnzd3m?form_factor=mobile) | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com/d6pdbnzd3m?form_factor=desktop) |
+| News: `/en/news` | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news/36ivm3stfy?form_factor=mobile) | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news/36ivm3stfy?form_factor=desktop) |
+| Article: `/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco` | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news-agents-and-mcp-automate-agent-email-verification-with-open-source-moemail-model-context-protoco/mflb8h6fye?form_factor=mobile) | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news-agents-and-mcp-automate-agent-email-verification-with-open-source-moemail-model-context-protoco/mflb8h6fye?form_factor=desktop) |
+
+### Попередні технічні перевірки цього дня
+
 - `origin/main` оновлено до `a3d2db5`; PR #373–#376 залишаються відкритими, mergeable, з успішними CI-перевірками. Локальний manifest AH-0.3 містить 232 знімки й має SHA-256 `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`; звіт AH-0.5 містить 812 сценаріїв. Це підтверджує наявність visual і QA baseline, але відкриті PR ще не є змерженими задачами. (source: `git fetch origin main`, `gh pr view 373`…`376`, `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
 - Production Google tag знову відповів HTTP 200 і містить `GT-KVJZSX7K` та всі три `G-*` ID. Це повторно підтверджує конфігурацію destinations, **але не замінює Tag Assistant** і не встановлює пару додатковий measurement ID ↔ GA4 stream. (source: HTTP GET Google tag 2026-09-30)
 - До рішення власника HYPD Admin metadata підтверджували доступ до `540206735`, `540437869`, `540467725`; після переміщення двох акаунтів у кошик повторний `list_account_summaries` показав лише `540206735`. Read-only інструменти не повертають GSC link, key events чи retention. Доступ до GA4 Admin через браузер зупинила помилка перевірки збережених дозволів. Пункти Admin-чекліста нижче залишаються неперевіреними. (source: HYPD `list_account_summaries` / `get_property_details`, browser access check і повідомлення власника 2026-09-30)
@@ -110,7 +136,7 @@ live Google tag, запити 2026-09-29)
 
 ### Дані, потрібні для завершення AH-0.6
 
-1. У GA4 Admin **property `540206735`** зафіксувати GSC link, статус `newsletter_subscribe` як key event та event-data retention. У Tag Assistant для production перевірити `G-5R89X6Q5D4`, `page_view`, доставку й consent; відзначити дві залишкові destinations. Не потрібно відкривати акаунти в кошику або звіряти їхні measurement ID для G0. Долю залишкових destinations власник може вирішити окремо після перевірки; до того tag не змінювати. (source: повідомлення власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
+1. У GA4 Admin **property `540206735`** зафіксувати статус `newsletter_subscribe` як key event та event-data retention. GSC link уже підтверджено. У Tag Assistant для production перевірити `G-5R89X6Q5D4`, `page_view`, доставку й consent; відзначити дві залишкові destinations. Не потрібно відкривати акаунти в кошику або звіряти їхні measurement ID для G0. Долю залишкових destinations власник може вирішити окремо після перевірки; до того tag не змінювати. (source: повідомлення й скриншоти власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
 2. Отримати CrUX URL-level `PHONE` і `DESKTOP` LCP/INP/CLS для репрезентативних URL нижче або еквівалентні mobile/desktop field-дані Vercel Speed Insights. Записати дату, вікно даних, URL, пристрій і p75; якщо для URL немає достатньо даних, позначити це окремо й не видавати origin-level метрику за метрику типу сторінки. (source: [CrUX API](https://developer.chrome.com/docs/crux/api); URL — AH-0.3 `artifacts/_local/before/manifest.json`)
 
 | Тип | URL для польової перевірки |
@@ -123,7 +149,7 @@ live Google tag, запити 2026-09-29)
 
 ## Що лишається до G0
 
-1. Пройти [чекліст канонічної property](ga4-gsc.md): GSC link, `newsletter_subscribe` як key event, retention 14 місяців і Tag Assistant. До цього всі GA4-метрики тут `(needs verification)`. Рішення про канонічний акаунт уже ухвалене власником; очищення залишкових destinations — окремий наступний крок після перевірки, не новий підпис для G0. (source: повідомлення власника 2026-09-30; [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property))
+1. Завершити [чекліст канонічної property](ga4-gsc.md): `newsletter_subscribe` як key event, retention 14 місяців і Tag Assistant; GSC link уже підтверджено. До цього всі GA4-метрики тут `(needs verification)`. Рішення про канонічний акаунт уже ухвалене власником; очищення залишкових destinations — окремий наступний крок після перевірки, не новий підпис для G0. (source: повідомлення й скриншоти власника 2026-09-30; [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property))
 2. Отримати mobile/desktop field CWV з Vercel Speed Insights або CrUX і вписати їх у таблицю з датою й URL. До цього AH-0.6 часткова, **G0 закритий**. (source: [епік After Hours](../product/after-hours-redesign-epic.md))
 
 ## Related pages

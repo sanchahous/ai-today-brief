@@ -27,14 +27,16 @@ HYPD `list_account_summaries` показує лише `396774992` / `540206735`.
 доставку; для baseline обрано **540206735**, а сума трьох звітів не є аудиторією сайту.
 (source: [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
-**Лишається відкритим для G0:** поточні GSC link, `newsletter_subscribe` key event,
-retention 14 міс у `540206735` і Tag Assistant (доставка й consent). Додаткові
+**GSC link підтверджено 2026-09-30:** скриншоти власника показують зв'язок домену
+`aitodaybrief.com` з потоком `15002930155` і контекст property `540206735`.
+**Лишається відкритим для G0:** `newsletter_subscribe` key event, retention 14 міс
+у `540206735` і Tag Assistant (доставка й consent). Додаткові
 `G-0TEJ3H5V85` і `G-T7X6D6TL84` досі є в завантаженому Google tag; їх очищення
 можна вирішити окремо після перевірки. Причина історичної різниці Singapore/direct
 між property не доведена. Доки Admin і Tag Assistant не звірено, GA4 baseline має
 `(needs verification)`. **Пункт закривається**, коли виконано актуальний чекліст у
 [ga4-gsc](analytics/ga4-gsc.md); рішення про канонічний акаунт повторно не потрібне.
-(source: повідомлення власника 2026-09-30; HTTP GET Google tag 2026-09-30;
+(source: повідомлення й скриншоти власника 2026-09-30; HTTP GET Google tag 2026-09-30;
 [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 ## 2. Реальні місячні витрати проєкту невідомі

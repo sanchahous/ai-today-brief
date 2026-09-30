@@ -88,9 +88,9 @@ Last updated: 2026-09-30
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
-| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Єдина активна property 540206735, два зайві акаунти в кошику; tag ще містить три destinations, Admin і Tag Assistant відкриті | повідомлення власника + HYPD і live tag check 2026-09-30 |
+| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Єдина активна property 540206735, два зайві акаунти в кошику; GSC link підтверджено, key event / retention / Tag Assistant відкриті | повідомлення й скриншоти власника + HYPD і live tag check 2026-09-30 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
-| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: історичні 28-денні GA4-воронки, одна активна property після рішення власника, прогалина field CWV і докази до G0 (PR #376) | GA4 Data API + повідомлення власника + HYPD / HTTP checks 2026-09-29…30 |
+| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: GA4-воронки, підтверджений GSC link, шість наданих PageSpeed-посилань із неперевіреними field CWV і залишок до G0 (PR #376) | GA4 Data API + повідомлення, скриншоти й посилання власника + HYPD / browser checks 2026-09-29…30 |
 
 ## Marketing
 

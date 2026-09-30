@@ -17,6 +17,14 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
+- **AH-0.6, нові докази від власника 2026-09-30:** GSC link домену `aitodaybrief.com`
+  з потоком `15002930155` / property `540206735` підтверджено скриншотами.
+  Отримано шість PageSpeed-посилань mobile/desktop для home, news і article;
+  вміст звітів заблокувала перевірка дозволів браузера, числові field CWV не
+  підтверджено. До G0 лишаються key event, retention, Tag Assistant, field CWV
+  і завершення PR #373–#376. (source: скриншоти й посилання власника 2026-09-30;
+  [baseline](analytics/2026-09-29-redesign-baseline.md#pagespeed-звіти-надані-власником))
+
 - **After Hours фаза 0, повторна звірка 2026-09-30:** `origin/main` — `a3d2db5`, локальна гілка
   AH-0.6 чиста; PR [#373](https://github.com/sanchahous/ai-today-brief/pull/373)–[#376](https://github.com/sanchahous/ai-today-brief/pull/376)
   відкриті, mergeable, з успішними CI-перевірками. AH-0.3 має локальний baseline 232 PNG;

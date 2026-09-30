@@ -20,12 +20,15 @@ Last updated: 2026-09-30
   `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
 - AH-0.6 лишається частковою: власник перемістив два зайві GA4-акаунти `396975517` і
   `397017915` у кошик; активні `396774992` / `540206735` підтверджено HYPD.
+  GSC link із потоком `15002930155` підтверджено скриншотами власника; key event,
+  retention і Tag Assistant ще відкриті. Шість наданих PageSpeed-посилань для
+  home/news/article додано в baseline, але field-значення з них не прочитано.
   Live Google tag досі містить три destination ID; Admin / Tag Assistant заблокувала
   перевірка дозволів браузера, PageSpeed API повернув 429, CrUX API — 403 для
   доступного локального ключа. Точний перелік потрібних перевірок і URL є в
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
   **Наступний крок:** отримати Admin-докази й mobile/desktop field CWV; лише після цього
-  підготувати G0 для підпису власника. (source: повідомлення власника, HTTP, browser access і HYPD checks 2026-09-30;
+  підготувати G0 для підпису власника. (source: повідомлення, скриншоти й PageSpeed-посилання власника, HTTP, browser access і HYPD checks 2026-09-30;
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
 
 - Production `b3f1b3a`: епік (PR [#370](https://github.com/sanchahous/ai-today-brief/pull/370)) і
