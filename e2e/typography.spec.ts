@@ -19,6 +19,7 @@ test.describe('AH-1.5 typography', () => {
           if (request.resourceType() === 'font') fonts.push(request.url());
         });
         await page.goto(url);
+        await expect(page.locator('main h1')).toBeVisible({ timeout: 30_000 });
         await expect(page.locator('main h1')).toHaveCount(1);
         await page.evaluate(() => document.fonts.ready);
         expect(fonts.length).toBeGreaterThan(0);
@@ -45,6 +46,16 @@ test.describe('AH-1.5 typography', () => {
     } finally {
       await context.close();
     }
+  });
+
+  test('Ukrainian tracking wins over legacy heading utilities', async ({ page }) => {
+    await page.goto('/uk/digests');
+    await expect(page.locator('main h1')).toBeVisible({ timeout: 30_000 });
+    const metrics = await page.locator('main h1').evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { fontSize: Number.parseFloat(style.fontSize), tracking: Number.parseFloat(style.letterSpacing) };
+    });
+    expect(metrics.tracking).toBeCloseTo(metrics.fontSize * -0.012, 3);
   });
 
   test('eyebrow, registry, reading and italic use the agreed tokens', async ({ page }) => {

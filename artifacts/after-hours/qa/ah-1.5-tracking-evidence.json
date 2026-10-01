@@ -1,0 +1,81 @@
+{
+  "baselineMain": "2dea14c",
+  "evidence": [
+    {
+      "file": "artifacts/_local/ah-1-5-tracking-before/manifest.json",
+      "sha256": "3b44354689907b14894628406eea4ff7581a22d80b852f10cfc7740a1f9f883f"
+    },
+    {
+      "file": "artifacts/_local/ah-1-5-tracking-after/manifest.json",
+      "sha256": "a0afb9b34452dd63e0fa46db63e060bf1e9701e1602f7dae285b63d12bcafff4"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-audit-before.json",
+      "sha256": "8d4f138ee5deee7f6e6e07fe14156320999c69b9af8cf5df34c277d8aa845da8",
+      "summary": {
+        "scenarios": 28,
+        "overflow": 0,
+        "smallText": 0,
+        "h1Problems": 0,
+        "smallTargets": 620,
+        "axe": 0,
+        "consoleErrors": 0
+      },
+      "seoDiff": {
+        "errors": [],
+        "warnings": []
+      },
+      "trackingFailures": 0,
+      "ukDesktopH1": {
+        "tag": "H1",
+        "family": "Georgia, \"Times New Roman\", serif",
+        "size": 72,
+        "tracking": -1.8
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-audit-after.json",
+      "sha256": "f091e851c13e69b3157f392d957c13f8bbb43ce2e48f25a855038a22f2b87962",
+      "summary": {
+        "scenarios": 28,
+        "overflow": 0,
+        "smallText": 0,
+        "h1Problems": 0,
+        "smallTargets": 614,
+        "axe": 0,
+        "consoleErrors": 0
+      },
+      "seoDiff": {
+        "errors": [],
+        "warnings": []
+      },
+      "trackingFailures": 0,
+      "ukDesktopH1": {
+        "tag": "H1",
+        "family": "Georgia, \"Times New Roman\", serif",
+        "size": 72,
+        "tracking": -0.864
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-typography-cold.log",
+      "sha256": "365be1224fe62b9e2eda04a840c9e2a14d5c3ff1bfd07c0964df1e42bbcbab86"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-typography.log",
+      "sha256": "82052f1eff3551b37588a3eaecead9f2e2c59590a62d81772361d9932d5d94fc"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-pr-check.log",
+      "sha256": "ff5f6e9f3d15d5f4e4b5b746b2b6592b3b3fb484dbfb4a66dc8918e714ce7b60"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-pr-check-docs.log",
+      "sha256": "f34bf94a27bce7ce0356ad2df6107a1174c63a4eed05dda535d466f82e013d45"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-push.log",
+      "sha256": "3113f1d49461d73385658da71849d149a232b98de89e582d14fbb7d87a6669df"
+    }
+  ]
+}

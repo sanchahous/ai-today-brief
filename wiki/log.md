@@ -5518,3 +5518,27 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-09-30 — AH-1.5: draft PR #385
 
 Створено [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385) з гілки `feat/ah-1.5-typography`; merge не виконувався. Pre-push — 339 Chromium passed / 5 skipped, EXIT=0, після revalidate власного production server :3000. Перший Vercel deployment успішний; Preview URL додано у validation. Номер PR внесено окремим docs-комітом у картку/§5.3, now, handoff, index і validation. Підпис UK, прийняття локального CLS та рішення щодо legacy QA запитані у власника й ще очікуються. (source: PR #385; `artifacts/_local/ah-1.5-push.log`; PR checks / Vercel comment; повідомлення цієї сесії 2026-09-30)
+
+## 2026-09-30 — AH-1.5: tracking D4 поверх legacy utilities
+
+Виявлено `tracking-tight` на digests H1, який перекривав base layer tracking. Мовне unlayered правило UK h1/h2/h3 забезпечує −0.012em / −0.008em; регресійний `/uk/digests` E2E додано. Typography suite тепер 81 passed у Chromium/Firefox/WebKit. У validation прямо зазначено, що full-page таблиця попередньої ревізії діагностична; now/index оновлено. Підпис власника ще очікується. (source: `src/app/globals.css`; `src/app/[lang]/digests/page.tsx`; `e2e/typography.spec.ts`; `artifacts/_local/ah-1.5-typography-final.log`)
+
+Фінальна після tracking-правила матриця: 580 сценаріїв, 0 small text / overflow, ті самі 20 H1-порушень лише на EN/UK 404; скрипт повертає EXIT=1 через відкритий H1 AC, цей результат не приховується. Галерею повторно знято; cold-font CLS максимум 0.00003085415059156378 у 8 сценаріях. (source: `artifacts/_local/ah-1.5-matrix-final-tracking.log`; `ah-1.5-type-matrix-after.json`; `ah-1.5-font-cls.json`; after manifest)
+
+## 2026-10-01 — AH-1.5: фінальний локальний gate
+
+Перед push фінального D4 tracking guard `npm run pr:check` пройшов з EXIT=0. Evidence receipt оновлено за фінальними 81 typography E2E, 580 font-floor сценаріями, CLS і після-manifest; перші два push мали по 339 passed / 5 skipped. Source dates 2026-09-30 у попередніх записах — UTC дати знімків/логів; поточне редагування wiki — 2026-10-01 Europe/Kyiv. Підпис і рішення власника не отримані. (source: `artifacts/_local/ah-1.5-pr-check-final.log`; `ah-1.5-typography-final.log`; `ah-1.5-push.log`; `ah-1.5-push-docs.log`; поточна сесія)
+
+Третя спроба push зупинена хуком на theme toggle readiness (EN light 1440, 5 s); окремий повтор — 1 passed без зміни коду. Збережено failed-attempt log, validation/index оновлено. Повтор повного gate і хука обов'язковий; обхід хука не застосовується. (source: `artifacts/_local/ah-1.5-push-attempt3-failed.log`; `ah-1.5-theme-recheck.log`)
+
+## 2026-10-01 — AH-1.5: власник змерджив #385, локальний залишок
+
+Перевірено merge [#385](https://github.com/sanchahous/ai-today-brief/pull/385): main `2dea14c`, PR head `f5c0adc`, CI зелений. Два пізніші коміти `508f87c` і `411e2f0` не потрапили в merge; код не пушиться в main або в закритий PR. Локальний tracking guard і докази збережено у гілці та follow-up patch; другий PR потребує окремого рішення через правило одна задача/один PR. У validation/now/epic/handoff/index розрізнено merged revision (78 typography E2E) і local follow-up (81). Окремий підпис власника не припускається з merge. На власних тестових портах активних серверів не виявлено. (source: повідомлення власника; gh pr view/checks 385; git diff origin/main; Get-NetTCPConnection 2026-10-01)
+
+## 2026-10-01 — AH-1.5 follow-up: власник дозволив новий PR
+
+За командою «в новий ПР» створено `feat/ah-1.5-tracking-follow-up` від main `2dea14c`; перенесено локальний D4 tracking guard і докази. Digests QA до/після: по 28 сценаріїв, 0 overflow / small text / H1 / axe / console, small targets 620 → 614 лишаються legacy; SEO двох URL 0 errors / warnings. 81 typography E2E пройшли після явного очікування видимого H1; початковий H1 readiness timeout збережено в логах. По 8 PNG з реальних даних у локальній галереї; новий PR потребує окремого підпису. Оновлено validation, картку/§5.3, now, handoff, index; номер PR буде внесено після створення. (source: повідомлення власника; `e2e/typography.spec.ts`; `artifacts/_local/ah-1.5-tracking-audit-{before,after}.json`; `ah-1.5-tracking-typography.log`; before/after manifests)
+
+## 2026-10-01 — AH-1.5 follow-up: draft PR #386
+
+Створено [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386) від main `2dea14c`. `pr:check` EXIT=0; pre-push 340 Chromium passed / 5 skipped після authenticated revalidate власного server :3000. Номер внесено окремим docs-комітом у validation, epic §5.3/картку, now, handoff і index; локальний галерейний підпис запитано. Merge не виконувався. Дозвіл на окремий PR — команда власника «в новий ПР»; відкриті legacy QA AC не закриваються. (source: PR #386; `artifacts/_local/ah-1.5-tracking-pr-check.log`; `ah-1.5-tracking-push.log`; повідомлення власника 2026-10-01)
