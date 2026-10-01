@@ -213,7 +213,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | B8 | Статичний «Recent highlights» на `/news` | ✅ закрито hotfix-ом 2026-09-29 | до hotfix-у рендерився захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії; блок і ключі `news.summaryTitle` / `news.weekSummary` прибрано в EN і UK в одному PR з епіком | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
 | B9 | Хардкод-статистика на головній | відкрито | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
 | B10 | Нескінченні анімації | відкрито | 11 правил `infinite` у `globals.css` (орби 13–17 с, `pulse`, сцена 404, shimmer); Tension v3 забороняє нескінченні цикли, крім loading-shimmer | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
-| B11 | Бренд-знак | відкрито | production — «bloom» (`MARK_COLOR #47E4D3`); концепт — вкладені A-лінії + celadon-крапка | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
+| B11 | Бренд-знак | частково (AH-3.1): сайт — After Hours mark; рендери OG/PDF/соц — AH-3.7, платформи — AH-3.8 | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
 | B12 | Контракт теми | відкрито | Day-токени вже приймають `.theme-light` і `html[data-theme='day']`, але pre-paint скрипт виставляє лише клас `.theme-light` + `localStorage.theme`; атрибута `data-theme` немає | `src/app/layout.tsx`, `src/components/theme-toggle.tsx`, `e2e/theme.spec.ts`, `src/app/globals.css` |
 | B13 | Брейкпоінти | частково (AH-1.6): токени `--breakpoint-*` і контракт 959 / 960 у `viewports.ts` є; перемикання header — AH-3.3, discovery — AH-4.3 | header і news-layout досі перемикаються на Tailwind `lg` (64rem); за D5 обидва мають перемикатися на 60rem ≈ 960 px | `e2e/helpers/viewports.ts`; `src/app/globals.css`; `tokens.json` `breakpoints` |
 | B14 | Шрифти | ◐ (D3, D4 прийнято) | Шкала в rem і мінімум 12 px — з #369; шрифти досі `@fontsource-variable` через `globals.css`, UK-заголовки — Inter 700; за D3/D4 — `next/font/local` і Georgia для UK display | `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
@@ -356,7 +356,7 @@ flowchart TD
 | AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.6 | ◐ Навігація: Pagination (консолідація), Tabs, Breadcrumbs у [#392](https://github.com/sanchahous/ai-today-brief/pull/392); legacy `pagination.tsx` видалено, `post-feed.tsx` мігровано, `LinkTabs` додано, `Breadcrumbs` рестайлено, G2 очікує підпису | M | агент | AH-2.2 | B6, G11 |
-| AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
+| AH-3.1 | ◐ Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` у [#393](https://github.com/sanchahous/ai-today-brief/pull/393) | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
@@ -1087,11 +1087,13 @@ watcher `brand-chrome` → `wiki/now.md`
 `site.ts` лишаються лише доти, доки ними користуються рендери AH-3.7, потім видаляються.
 
 **AC:**
-- [ ] `npm run icons:generate` відтворює `icon.svg`, `favicon.ico`, `apple-icon.png`; знак
+- [x] `npm run icons:generate` відтворює `icon.svg`, `favicon.ico`, `apple-icon.png`; знак
   читабельний на 16 / 32 / 180 / 512 px (знімки в PR).
-- [ ] `logo.png` 512×512; URL `Organization.logo` незмінний (SEO-diff 0).
-- [ ] На сайті не лишилось старого знака «bloom» (grep за його геометрією й `MARK_COLOR` поза рендерами AH-3.7).
-- [ ] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
+- [x] `logo.png` 512×512; URL `Organization.logo` незмінний (SEO-diff 0).
+- [x] На сайті не лишилось старого знака «bloom» (grep за його геометрією й `MARK_COLOR` поза рендерами AH-3.7).
+- [x] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
+
+**Стан 2026-10-01:** реалізовано в [PR #393](https://github.com/sanchahous/ai-today-brief/pull/393) на гілці `feat/ah-3.1-brand-mark`. `src/lib/brand-mark.ts` — пластина + вкладені A-лінії + celadon-крапка; `BrandMark` у header/footer на токенах (`globals.css`); `BrandBloom` видалено; favicon/apple-icon/logo.png згенеровано через `icons:generate`; аватар редактора в byline і author — `bg-accent-fill`, не `MARK_COLOR`. Окремий візуальний підпис очікується. AH-3.7/AH-3.8 — паралельно за D7.
 
 ### AH-3.2 · SearchDialog (Ctrl/Cmd+K)
 

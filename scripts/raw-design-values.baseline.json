@@ -152,12 +152,6 @@
       "count": 1
     },
     {
-      "path": "src/components/icons.tsx",
-      "kind": "color",
-      "value": "#8df3e6",
-      "count": 1
-    },
-    {
       "path": "src/components/not-found-content.tsx",
       "kind": "color",
       "value": "rgba(240,192,64,0.18)",

@@ -1,21 +1,27 @@
-import { MARK_COLOR, MARK_COLOR_DEEP, MARK_COLOR_CORE } from './site';
+import { SEMANTIC_TOKENS } from '@/lib/design-system/tokens';
 
 /**
- * Full brand mark ("bloom") — single source for the favicon, apple-touch-icon
- * and schema.org publisher logo. 64×64 viewBox, transparent background.
+ * After Hours brand mark — plate + nested A strokes + celadon signal dot.
+ * Single source for favicon, apple-touch-icon and schema.org publisher logo.
  *
- * This is the canonical copy; `src/app/icon.svg`, `src/app/favicon.ico` and
- * `src/app/apple-icon.png` are generated from it. After editing, regenerate
- * with `npm run icons:generate`.
+ * Static raster colors use the Night semantic palette so icons stay legible
+ * without a theme context. Interactive surfaces use the `.brand-mark` CSS
+ * classes in globals.css (token-driven, Day/Night aware).
+ *
+ * Generated artifacts: `src/app/icon.svg`, `favicon.ico`, `apple-icon.png`.
+ * Regenerate after edits: `npm run icons:generate`.
  */
+export const BRAND_MARK_PLATE = SEMANTIC_TOKENS.night.bg;
+export const BRAND_MARK_STROKE = SEMANTIC_TOKENS.night.accent;
+export const BRAND_MARK_DOT = SEMANTIC_TOKENS.night.signal;
+
+/** 64×64 viewBox; includes the plate (favicon has no separate wordmark). */
 export const BRAND_MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-<defs><linearGradient id="atbPetal" x1="6%" y1="6%" x2="94%" y2="94%">
-<stop offset="0%" stop-color="#8DF3E6"/><stop offset="50%" stop-color="${MARK_COLOR}"/><stop offset="100%" stop-color="${MARK_COLOR_DEEP}"/>
-</linearGradient></defs>
-<rect x="4" y="16" width="8" height="8" rx="2.2" fill="${MARK_COLOR}" opacity="0.3"/>
-<rect x="11" y="8" width="10" height="10" rx="2.6" fill="${MARK_COLOR}" opacity="0.55"/>
-<rect x="20" y="1" width="27" height="27" rx="7.5" fill="url(#atbPetal)"/>
-<rect x="37" y="18" width="27" height="27" rx="7.5" fill="url(#atbPetal)"/>
-<rect x="20" y="35" width="27" height="27" rx="7.5" fill="url(#atbPetal)"/>
-<rect x="24.5" y="24.5" width="15" height="15" rx="4.2" fill="${MARK_COLOR_CORE}"/>
+<rect width="64" height="64" rx="6" fill="${BRAND_MARK_PLATE}"/>
+<g fill="none" stroke="${BRAND_MARK_STROKE}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 49 31 13l20 36"/>
+<path d="M18 49l13-25 14 25"/>
+<path d="M25 40h15"/>
+</g>
+<circle cx="49" cy="15" r="4" fill="${BRAND_MARK_DOT}"/>
 </svg>`;

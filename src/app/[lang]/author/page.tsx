@@ -7,7 +7,6 @@ import {
   EDITOR_PROFILE,
   EDITOR_ROLE,
   isLang,
-  MARK_COLOR,
   SITE_NAME,
   SITE_URL,
   type Lang,
@@ -98,8 +97,7 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
       <div className="flex items-center gap-4">
         <span
           aria-hidden
-          className="text-on-accent grid h-16 w-16 place-items-center rounded-full text-xl font-bold"
-          style={{ background: MARK_COLOR }}
+          className="bg-accent-fill text-on-accent grid h-16 w-16 place-items-center rounded-full text-xl font-bold"
         >
           OK
         </span>
