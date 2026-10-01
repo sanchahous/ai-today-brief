@@ -8,7 +8,7 @@ Last updated: 2026-10-01
 
 ---
 
-> **Статус 2026-09-30:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
+> **Історичний статус 2026-09-30:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
 > статус G01–G20 звірено з кодом (AH-0.1 ✅).
 > AH-0.3–AH-0.5 завершено через змержені PR #373–#375; [AH-0.6 baseline](../analytics/2026-09-29-redesign-baseline.md)
 > завершено через змержений PR #376 (`origin/main` @ `69bcd1c`); активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
@@ -45,6 +45,8 @@ Last updated: 2026-10-01
 > рядок «Стан після #369» із залишком роботи. Готовність до епіку, яку зафіксувала та сесія, —
 > [after-hours-epic-readiness](after-hours-epic-readiness.md); декомпозицію й порядок робіт задає цей
 > епік. (source: `git show 3f47256 --stat`; grep `src/` після rebase 2026-09-29)
+
+> **Актуально 2026-10-01:** main `c477b09`; #386 змерджено й явно підтверджено власником. AH-2.2 реалізовано й очікує власного review; наступна AH-2.3. G1 та відкриті AH-1.5 UK/CLS/legacy AC збережено. (source: повідомлення власника; [AH-2.2 validation](after-hours-ah-2-2-validation.md))
 
 ## 0. Як користуватися епіком
 
@@ -346,11 +348,11 @@ flowchart TD
 | AH-1.2 | ✅ Контраст-гейт 2.0: 222 пари, 0 провалів, мінімум категорій 6,41 / 5,22; реалізовано в [PR #384](https://github.com/sanchahous/ai-today-brief/pull/384), без видимих змін | — | — | AH-1.4 ✅ | G09 (UI-пари) |
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | ✅ Кольори й гліфи категорій: змерджено в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), `5af8d56` ([докази](after-hours-ah-1-4-validation.md)) | — | — | — | B5 |
-| AH-1.5 | ◐ Типографіка — [merged PR #385](https://github.com/sanchahous/ai-today-brief/pull/385): local fonts, Georgia UK, шкала, eyebrow; [follow-up tracking #386](https://github.com/sanchahous/ai-today-brief/pull/386), очікує підпису ([докази](after-hours-ah-1-5-validation.md)) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
+| AH-1.5 | ◐ Типографіка — [merged PR #385](https://github.com/sanchahous/ai-today-brief/pull/385): local fonts, Georgia UK, шкала, eyebrow; [follow-up tracking #386](https://github.com/sanchahous/ai-today-brief/pull/386), merged і підтверджено власником; UK/CLS/H1/legacy AC відкриті ([докази](after-hours-ah-1-5-validation.md)) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: змерджено в [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) (`55b78dc`, підпис власника отримано 2026-09-30); `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
 | AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
-| AH-2.2 | Дії й вибір | M | агент | AH-1.4, AH-1.6 | G11 |
+| AH-2.2 | ◐ Дії й вибір реалізовано у [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387); каталог/споживачі/QA готові, окремий visual review та full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ◐ Поля форм (#369: Combobox) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї (#369: Popover, Dialog, DropdownMenu, Tooltip, Accordion) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
@@ -766,14 +768,12 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 
 ### AH-1.5 · Типографіка: шрифти, шкала, мінімум 12 px
 
-> **Оновлення 2026-10-01:** власник змерджив [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`. У merge 78 typography E2E; пізніший tracking guard і 81-test suite лишилися локально, окремий підпис не припускається. Докази, відкриті AC й залишок — [AH-1.5 validation](after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). (source: повідомлення власника 2026-10-01; gh pr view/checks 385; git diff origin/main)
-
-> **Follow-up:** tracking guard перенесено в [draft PR #386](https://github.com/sanchahous/ai-today-brief/pull/386) за командою власника «в новий ПР». 81 typography E2E й focused Digests QA пройшли; окремий візуальний підпис очікується. (source: PR #386; `artifacts/after-hours/qa/ah-1.5-tracking-evidence.json`; повідомлення власника 2026-10-01)
+> **Оновлення 2026-10-01:** #385 і follow-up #386 змерджено, main `c477b09`; власник явно підтвердив #386. Tracking guard і 81-test suite інтегровані. UK Home/Article/Weekly, Preview CLS, H1/legacy QA та G1 відкриті. (source: повідомлення власника 2026-10-01; [AH-1.5 validation](after-hours-ah-1-5-validation.md#поточний-стан-386-підтверджено))
 
 **Тип:** код · **Розмір:** M (залишок) · **Виконавець:** агент (+ підпис власника щодо UK) ·
 **Залежить від:** D3 ✅, D4 ✅, AH-1.1 ✅ · **Закриває:** B14; частина G09 (B3 закрито #369)
 
-> **Стан після #369:** шкала в rem (`2xs`…`5xl`) і мінімум 12 px уже в `main`: 74 класи замінено на
+> **Історичний стан після #369 (решту реалізовано через #385/#386):** шкала в rem (`2xs`…`5xl`) і мінімум 12 px уже в `main`: 74 класи замінено на
 > `text-2xs`, а `tokens:check` валить будь-який розмір < 12 px у `src/` — пункт 4 нижче виконано.
 > Лишаються шрифти через `next/font/local` (D3), Georgia для українських display-заголовків (D4),
 > `--leading-*`, `--tracking-*`, `--measure` і правила eyebrow. Шрифти досі підключає
@@ -940,10 +940,12 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 без повторного сабміту. Класи — template strings без `clsx` / `tailwind-merge`.
 
 **AC:**
-- [ ] Усі варіанти й стани в каталозі; axe 0; Enter/Space активують; `aria-pressed` оголошується.
-- [ ] Hover-ефекти лише під `(hover: hover) and (pointer: fine)`; у reduced motion — лише колір.
-- [ ] Наявні споживачі (news-feed, news-sidebar, header, search) переведені без регресій (знімки).
-- [ ] Unit-тести на композицію класів; покриття нового logic-коду ≥ 80%.
+- [x] Усі варіанти й стани в каталозі; scoped axe 0; Enter/Space активують; aria-pressed оголошується.
+- [x] Hover лише під fine pointer + hover; у reduced motion переходи тільки кольору, spinner статичний.
+- [x] News/header/search споживачі мігровані; знімки й браузерні перевірки готові. Повний legacy DoD і підпис окремо відкриті.
+- [x] Unit-тести композиції класів пройшли; новий logic helper — 100% lines / branches / functions. (source: `coverage/lcov.info`; [AH-2.2 validation](after-hours-ah-2-2-validation.md))
+
+**Стан 2026-10-01:** [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387), фінальні 252 cross-browser E2E passed / 21 skipped; pre-push 381 passed / 5 skipped; SEO 58 URL без diff, по 140 public QA до/після з тим самим legacy axe 86. До окремого visual review й закриття DoD задача ◐. Реалізація та межі — [AH-2.2 validation](after-hours-ah-2-2-validation.md). (source: validation; `e2e/actions-selection.spec.ts`)
 
 ### AH-2.3 · Поля: Field, Input, SearchInput, Textarea, Select, Checkbox, Radio, SegmentedControl, Switch
 

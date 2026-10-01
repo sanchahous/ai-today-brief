@@ -19,7 +19,7 @@ import {
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Byline } from '@/components/byline';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
-import { CategoryBadge } from '@/components/home/category-badge';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { CategoryBanner } from '@/components/category-banner';
 import { StoryBody } from '@/components/story-body';
 import { ItemShareBar } from '@/components/item-share-bar';

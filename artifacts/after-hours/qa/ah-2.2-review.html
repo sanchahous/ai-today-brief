@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AH-2.2 — візуальний review</title>
+<style>
+body{margin:24px;background:#171918;color:#f0e9dc;font:16px/1.5 system-ui}h1{font-family:Georgia,serif}select{font:inherit;padding:8px;background:#282d29;color:inherit}article{border-top:1px solid #737a73;margin-top:24px} .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}figure{margin:0}img{width:100%;height:auto;border:1px solid #737a73}figcaption{margin:8px 0} @media(max-width:700px){.pair{grid-template-columns:1fr}}
+</style>
+<h1>AH-2.2 — дії й вибір</h1>
+<p>Реальні дані, локальний next dev. «До»: main c477b09. 40 пар знімків EN/UK, Night/Day, 390/1440. Каталог показує демонстраційні стани примітивів.</p>
+<p>Окремий підпис власника цього PR очікується. Full-page legacy QA та G1 лишаються відкритими; докази — у wiki/product/after-hours-ah-2-2-validation.md.</p>
+<label for="mode">Розмір: </label><select id="mode"><option value="all">Усі</option><option value="mobile">390</option><option value="desktop">1440</option></select>
+<div id="shots"></div>
+<script>
+const root=document.querySelector('#shots');
+const add=(title,size,sources)=>{const article=document.createElement('article');article.dataset.size=size;const heading=document.createElement('h2');heading.textContent=title;article.append(heading);const pair=document.createElement('div');pair.className='pair';for(const [label,src] of sources){const figure=document.createElement('figure');const caption=document.createElement('figcaption');caption.textContent=label;const img=document.createElement('img');img.alt=`${title} — ${label}`;img.src=src;img.loading='lazy';figure.append(caption,img);pair.append(figure)}article.append(pair);root.append(article)};
+for(const route of ['home','news','filters','category','article'])for(const lang of ['en','uk'])for(const theme of ['night','day'])for(const size of ['desktop','mobile']){const name=`${route}-${lang}-${theme}-${size}.png`;add(`${route} · ${lang} · ${theme} · ${size}`,size,[['До',`../../_local/ah-2-2-before/${name}`],['Після',`../../_local/ah-2-2-after/${name}`]])}
+for(const lang of ['en','uk'])for(const theme of ['night','day'])for(const size of ['desktop','mobile'])add(`Каталог · ${lang} · ${theme} · ${size}`,size,[['Стан після',`../../_local/ah-2-2-catalog/catalog-${lang}-${theme}-${size}.png`]]);
+document.querySelector('#mode').addEventListener('change',event=>{for(const shot of root.children)shot.hidden=event.target.value!=='all'&&event.target.value!==shot.dataset.size});
+</script></html>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { MoonIcon, SunIcon } from '@/components/icons';
+import { IconButton } from '@/components/ui/icon-button';
 import { setUserProperties, trackEvent } from '@/lib/analytics-client';
 import { applyTheme, readTheme, THEME_CHANGE_EVENT, type Theme } from '@/lib/theme';
 
@@ -35,15 +36,14 @@ export function ThemeToggle({ dayLabel, nightLabel }: { dayLabel: string; nightL
   }
 
   return (
-    <button
+    <IconButton
       type="button"
       data-testid="theme-toggle"
       onClick={toggle}
       aria-label={theme === 'dark' ? dayLabel : nightLabel}
       disabled={!ready}
-      className="text-muted hover:text-text inline-flex h-[var(--touch-target-min)] w-[var(--touch-target-min)] shrink-0 touch-manipulation items-center justify-center border-0 bg-transparent transition-colors duration-200 disabled:opacity-50"
     >
       {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
-    </button>
+    </IconButton>
   );
 }

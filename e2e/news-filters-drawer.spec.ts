@@ -80,7 +80,7 @@ test.describe('News filters drawer', () => {
     await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
 
     await openFiltersDrawer(page);
-    await page.getByRole('button', { name: /^close$/i }).click();
+    await dialog.getByRole('button', { name: /^close filters$/i }).click();
     await expect(dialog).toBeHidden();
 
     await openFiltersDrawer(page);

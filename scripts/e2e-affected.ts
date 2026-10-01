@@ -64,6 +64,7 @@ const BROAD: RegExp[] = [
 // than a data-testid, so the derived testid index can't see them. `--check` tells you when a
 // spec becomes unreachable and needs an entry here.
 const OVERRIDES: Array<{ match: RegExp; specs: string[] }> = [
+  { match: /^src\/(?:components\/ui\/(?:button|icon-button|pill|chip|tag|badge|category-badge|actions\.module)|lib\/ui\/action-styles|app\/ds-catalog\/)/, specs: ['e2e/actions-selection.spec.ts'] },
   { match: /^src\/(?:app|components)\//, specs: [A11Y_MATRIX] },
   { match: /^src\/components\/site-header(-chrome)?\.tsx$/, specs: [HEADER] },
   { match: /^src\/components\/header-search-field\.tsx$/, specs: [HEADER] },

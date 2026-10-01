@@ -11,6 +11,9 @@ import type { NewsCategoryFilter } from '@/lib/news';
 import type { Lang } from '@/lib/site';
 import { CategoryGlyph, CloseIcon } from '@/components/icons';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
+import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { Pill } from '@/components/ui/pill';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 
 export type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
@@ -159,34 +162,30 @@ function SidebarControls({
           {dates.map((d) => {
             const active = filters.date === d;
             return (
-              <button
+              <Pill
                 key={d}
                 type="button"
                 onClick={() => onDate(d)}
-                aria-pressed={active}
-                className={`min-h-[44px] rounded-lg border px-2 py-2 text-[0.8rem] font-medium transition cursor-pointer select-none ${
-                  active
-                    ? 'border-accent bg-accent text-on-accent font-semibold shadow-sm'
-                    : 'border-border text-text hover:border-accent'
-                }`}
+                pressed={active}
+                className="w-full !px-2"
               >
                 {dateLabel(d)}
-              </button>
+              </Pill>
             );
           })}
         </div>
       </FilterGroup>
 
       {hasActive && (
-        <button
+        <Button variant="outline"
           type="button"
           onClick={onReset}
-          className={`rounded-pill border-border text-text hover:border-accent flex min-h-[44px] w-full items-center justify-center border px-4 py-2.5 text-sm font-semibold transition cursor-pointer ${
+          className={`w-full !rounded-pill ${
             compact ? 'min-[380px]:self-start' : 'mb-6'
           }`}
         >
           {t.filterReset}
-        </button>
+        </Button>
       )}
 
       {trending.length > 0 && (
@@ -267,23 +266,22 @@ export function NewsSidebar({
         >
           <div className="mb-5 flex items-center justify-between">
             <h2 className="m-0 text-lg font-semibold">{t.filters}</h2>
-            <button
+            <IconButton
               type="button"
               onClick={() => setDrawerOpen(false)}
-              aria-label="Close"
-              className="text-muted hover:text-text inline-flex min-h-[44px] min-w-[44px] items-center justify-center border-0 bg-transparent p-1 cursor-pointer"
+              aria-label={controls.lang === 'uk' ? 'Закрити фільтри' : 'Close filters'}
             >
               <CloseIcon />
-            </button>
+            </IconButton>
           </div>
           <SidebarControls {...controls} compact showSort={false} />
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => setDrawerOpen(false)}
-            className="rounded-pill bg-accent text-on-accent sticky bottom-0 mt-5 flex min-h-[44px] w-full items-center justify-center px-4 py-2.5 text-sm font-semibold shadow-pop transition hover:brightness-105 cursor-pointer"
+            className="sticky bottom-0 mt-5 w-full !rounded-pill shadow-pop"
           >
             {t.filtersDone}{countLabel}
-          </button>
+          </Button>
         </OverlayDrawer>
       </div>
     </>

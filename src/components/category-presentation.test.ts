@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { CategoryGlyph } from './icons';
-import { CategoryBadge } from './home/category-badge';
+import { CategoryBadge } from './ui/category-badge';
 import { CategoryThumb } from './category-thumb';
 import { CategoryBanner } from './category-banner';
 import { FilterChip } from './ui/chip';

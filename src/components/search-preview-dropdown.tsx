@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { CategoryBadge } from '@/components/home/category-badge';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { SearchPreviewSkeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { useSearchPreview, type SearchPreviewItem } from '@/hooks/use-search-preview';
 import { trackEvent, trackSearch } from '@/lib/analytics-client';
 import { getStrings } from '@/lib/i18n';
@@ -147,22 +148,22 @@ export function SearchPreviewDropdown({
         ))
       )}
       {total > PREVIEW_LIMIT ? (
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={seeAll}
-          className="text-accent bg-surface hover:bg-surface-2 mt-1 w-full rounded-lg border-0 px-4 py-3 text-left text-sm font-semibold md:text-[0.95rem]"
+          className="mt-1 w-full !justify-start text-left text-accent"
         >
           {t.searchSeeAll.replace('{n}', String(total))} →
-        </button>
+        </Button>
       ) : null}
       {!loading && rows.length > 0 && total <= PREVIEW_LIMIT && total > 0 ? (
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={seeAll}
-          className="text-muted hover:text-text mt-1 w-full rounded-lg border-0 bg-transparent px-4 py-2.5 text-left text-sm md:text-[0.95rem]"
+          className="mt-1 w-full !justify-start text-left"
         >
           {t.searchOpenArchive} →
-        </button>
+        </Button>
       ) : null}
     </div>
   );

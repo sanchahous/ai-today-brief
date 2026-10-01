@@ -11,4 +11,8 @@ export async function gotoNewsPage(page: Page, lang: 'uk' | 'en' = 'uk') {
   await expect(page.getByRole('heading', { level: 1, name: /news|новини/i })).toBeVisible({
     timeout: 30_000,
   });
+  // A visible streamed H1 can precede the filter handlers attaching.
+  await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
+    timeout: 30_000,
+  });
 }

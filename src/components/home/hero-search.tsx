@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, SearchIcon } from '@/components/icons';
 import { SearchPreviewDropdown } from '@/components/search-preview-dropdown';
+import { Button } from '@/components/ui/button';
 import { useElementVisibility } from '@/hooks/use-element-visibility';
 import { openSearch, setHeroVisible } from '@/lib/mobile-search-store';
 import { trackSearch } from '@/lib/analytics-client';
@@ -107,17 +108,17 @@ export function HeroSearch({
             }}
           />
         </div>
-        <button
+        <Button variant="primary"
           type="submit"
-          className="rounded-pill bg-accent inline-flex shrink-0 items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent"
+          className="!rounded-pill"
+          rightIcon={<ArrowRight size={16} />}
         >
           {button}
-          <ArrowRight size={16} />
-        </button>
+        </Button>
       </form>
 
       {/* Mobile: full-width trigger that opens the fullscreen search modal. */}
-      <button
+      <Button variant="outline"
         ref={mobileTriggerRef}
         type="button"
         onClick={(e) => {
@@ -126,25 +127,23 @@ export function HeroSearch({
         }}
         aria-haspopup="dialog"
         aria-label={placeholder}
-        className="bg-surface border-border text-faint relative flex w-full touch-manipulation items-center rounded-pill border py-3 pr-4 pl-11 text-base lg:hidden"
+        className="w-full !justify-start !rounded-pill text-faint lg:hidden"
+        leftIcon={<SearchIcon />}
       >
-        <span className="text-muted pointer-events-none absolute top-1/2 left-4 flex -translate-y-1/2">
-          <SearchIcon />
-        </span>
         <span className="truncate">{placeholder}</span>
-      </button>
+      </Button>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="text-faint text-sm">{popularLabel}</span>
         {POPULAR[lang].map((q) => (
-          <button
+          <Button variant="outline" size="sm"
             key={q}
             type="button"
             onClick={() => go(q, 'popular')}
-            className="border-border bg-surface text-muted rounded-pill hover:border-accent hover:text-text border px-3 py-1 text-sm transition-colors"
+            className="!rounded-pill"
           >
             {q}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

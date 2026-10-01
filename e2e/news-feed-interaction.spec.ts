@@ -48,6 +48,9 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
     await expect(page.getByRole('heading', { level: 1, name: /news/i })).toBeVisible({
       timeout: 30_000,
     });
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
+      timeout: 30_000,
+    });
 
     // Check that date "Month" button has pressed state
     const sidebar = page.getByTestId('news-sidebar');
