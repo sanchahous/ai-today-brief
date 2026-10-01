@@ -2,13 +2,13 @@
   animation: overlay-panel-enter var(--duration-fast) var(--ease-standard) both;
 }
 
+/* Opacity stays at 1. Fading the panel drops text contrast below 4.5:1 for the
+   duration of the entrance, and the catalog axe scan catches it. */
 @keyframes overlay-panel-enter {
   from {
-    opacity: 0;
     transform: translateY(4px);
   }
   to {
-    opacity: 1;
     transform: none;
   }
 }

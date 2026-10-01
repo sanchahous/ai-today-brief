@@ -14,7 +14,7 @@ Last updated: 2026-10-01
 
 ## Реалізація
 
-`Dialog` лишається оболонкою над `OverlayDrawer`. Нові варіанти: `center`, `left`, `right`, `full` (`full` мапиться на наявний `fullscreen`). Ліва панель — дзеркало правої: `w-[min(380px,92vw)]`. Поява панелі — opacity і зсув 4px за `--duration-fast` (160ms, менше за 240ms). У `prefers-reduced-motion` глобальне правило зводить animation-duration до 0.001ms. (source: `dialog.tsx`; `overlay.module.css`; `src/app/globals.css`)
+`Dialog` лишається оболонкою над `OverlayDrawer`. Нові варіанти: `center`, `left`, `right`, `full` (`full` мапиться на наявний `fullscreen`). Ліва панель — дзеркало правої: `w-[min(380px,92vw)]`. Поява панелі — зсув 4px за `--duration-fast` (160ms). Прозорість панелі не анімується: під час fade текст на 160 мс падає нижче 4.5:1, і axe відкритого діалогу в каталозі це ловить. У `prefers-reduced-motion` глобальне правило зводить animation-duration до 0.001ms. (source: `dialog.tsx`; `overlay.module.css`; `src/app/globals.css`; `e2e/ui-components.spec.ts`)
 
 Єдина модальна механіка фокуса й scroll lock — `OverlayDrawer` плюс `useFocusTrap` і `body-scroll-lock`. Header, мобільний пошук і drawer фільтрів уже викликають цей самий компонент; це сумісний варіант, не друга пастка. `DisclosureNav` немодальний: `useDismissable`, без `role="menu"` і без `aria-haspopup` (`true` оголошується як menu). Закриття Escape, бекдропом і кнопкою повертає фокус на тригер. Клік по бекдропу викликає `preventDefault` на mousedown, щоб фокус не лишався на документі. (source: `overlay-drawer.tsx`; `disclosure-nav.tsx`; `src/hooks/use-focus-trap.ts`)
 
