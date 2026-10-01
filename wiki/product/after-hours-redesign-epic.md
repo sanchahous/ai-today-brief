@@ -354,7 +354,7 @@ flowchart TD
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
-| AH-2.4 | ◐ Оверлеї: sheet left/right/full у Dialog, disclosure-меню; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
+| AH-2.4 | ◐ Оверлеї в [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390): sheet left/right/full, disclosure-меню; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
 | AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
@@ -1004,7 +1004,7 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 - [x] Жодних довільних `z-[…]` в оверлеях (ratchet AH-1.7): оболонка на `--z-modal`.
 - [x] `OverlayDrawer` лишається єдиною модальною механікою фокуса; header, пошук і drawer фільтрів уже на ньому. Disclosure не додає другої пастки.
 
-**Стан 2026-10-01:** реалізовано на `feat/ah-2.4-overlays` від `7f523e6`. Номер PR вноситься після створення. Міграції header, filters drawer, search і share не виконані. Окремий візуальний підпис очікується. (source: [AH-2.4 validation](after-hours-ah-2-4-validation.md); `e2e/overlays.spec.ts`)
+**Стан 2026-10-01:** [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) на `feat/ah-2.4-overlays` від `7f523e6`. Міграції header, filters drawer, search і share не виконані. Окремий візуальний підпис очікується. (source: [AH-2.4 validation](after-hours-ah-2-4-validation.md); `e2e/overlays.spec.ts`; PR #390)
 
 ### AH-2.5 · Зворотний зв'язок: Notice, Toast, Skeleton, Spinner, EmptyState, ErrorState, StaleNotice
 

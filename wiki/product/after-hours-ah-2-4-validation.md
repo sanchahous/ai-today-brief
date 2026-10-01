@@ -8,7 +8,7 @@ Last updated: 2026-10-01
 
 ## Стан
 
-Реалізовано на гілці `feat/ah-2.4-overlays` від `origin/main` `7f523e6` (merge #389). Номер PR вноситься після створення. Popover, DropdownMenu, Tooltip, Accordion і `use-dismissable` не дубльовано. (source: `git log origin/main -1`; картка AH-2.4)
+Реалізовано в [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) на гілці `feat/ah-2.4-overlays` від `origin/main` `7f523e6` (merge #389). Popover, DropdownMenu, Tooltip, Accordion і `use-dismissable` не дубльовано. (source: PR #390; `git log origin/main -1`; картка AH-2.4)
 
 #388 підписано власником і змерджено в `e75c438` о 09:45 UTC. Це не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC AH-1.5 і G1. (source: повідомлення власника 2026-10-01; `gh pr view 388`)
 

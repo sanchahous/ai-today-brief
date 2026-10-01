@@ -19,7 +19,7 @@ Last updated: 2026-10-01
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
-- **AH-2.4 у роботі на `feat/ah-2.4-overlays` від `7f523e6`.** Sheet left/right/full, disclosure з посиланнями, шар `--z-modal`. Номер PR вноситься після створення. Окремий підпис очікується. Наступна після інтеграції — AH-2.5. (source: [AH-2.4 validation](product/after-hours-ah-2-4-validation.md))
+- **AH-2.4 відкрито в [#390](https://github.com/sanchahous/ai-today-brief/pull/390)** на `feat/ah-2.4-overlays` від `7f523e6`. Sheet left/right/full, disclosure з посиланнями, шар `--z-modal`. Окремий підпис очікується. Наступна після інтеграції — AH-2.5. (source: [AH-2.4 validation](product/after-hours-ah-2-4-validation.md); PR #390)
 
 - **#389 змерджено в `7f523e6` о 10:19 UTC.** Push: Playwright [run 36848455712](https://github.com/sanchahous/ai-today-brief/actions/runs/36848455712), deps integrity, migration drift і Vercel — success. Sonar на самому push не запускався; на PR #389 Sonar був success. Weekly generation worker падав як `workflow_dispatch`, це не CI merge. (source: `gh run list --commit 7f523e6` 2026-10-01; `gh pr view 389`)
 

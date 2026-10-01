@@ -12,7 +12,7 @@ Last updated: 2026-10-01
 
 ## 1. Стан на 2026-10-01
 
-- **Поточна задача — AH-2.4:** гілка `feat/ah-2.4-overlays` від `origin/main` `7f523e6`. Sheet left/right/full, disclosure-меню, `--z-modal`. Номер PR вноситься після створення. Окремий візуальний підпис очікується. Міграції header, search, filters і share — не ця задача. **Наступна після інтеграції — AH-2.5.** (source: [AH-2.4 validation](after-hours-ah-2-4-validation.md))
+- **Поточна задача — AH-2.4:** [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) на `feat/ah-2.4-overlays` від `origin/main` `7f523e6`. Sheet left/right/full, disclosure-меню, `--z-modal`. Окремий візуальний підпис очікується. Міграції header, search, filters і share — не ця задача. **Наступна після інтеграції — AH-2.5.** (source: [AH-2.4 validation](after-hours-ah-2-4-validation.md); PR #390)
 - **#388 підписано й змерджено в `e75c438` о 09:45 UTC.** #389 змерджено в `7f523e6` о 10:19 UTC. Push `7f523e6`: Playwright [run 36848455712](https://github.com/sanchahous/ai-today-brief/actions/runs/36848455712), deps integrity, migration drift і Vercel — success. Окремого Sonar workflow на цьому push немає; Sonar PR #389 був success до merge. Падіння Weekly generation worker — `workflow_dispatch`, не CI цього merge. Merge #388 не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC і G1. (source: `gh pr view 388`; `gh pr view 389`; `gh run list --commit 7f523e6` 2026-10-01; повідомлення власника)
 - **#387 змерджено в `c03a4dd`, CI включно з Playwright success.** Окремого текстового візуального підпису #387 не було. Merge не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy QA чи G1. (source: [PR #387](https://github.com/sanchahous/ai-today-brief/pull/387); [Playwright run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359); [main Playwright run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364))
 - **#386 змерджено й явно підтверджено власником:** «ПР закритий значить підтверджую 386». Main `c477b09`; CI, включно з [Playwright run 36826783157](https://github.com/sanchahous/ai-today-brief/actions/runs/36826783157), success. Tracking follow-up більше не є локальним залишком чи draft. UK Home/Article/Weekly із #385, прийняття локального CLS, H1/legacy QA та G1 лишаються відкритими. (source: [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); [AH-1.5 validation](after-hours-ah-1-5-validation.md); повідомлення власника)
@@ -210,7 +210,7 @@ QA-матриця працює в режимі report.
 2. Підтягни origin/main і перевір актуальний стан у §1 цього handoff та §5.3 епіку.
    На 2026-10-01 main 7f523e6. #388 підписано і змерджено в e75c438. #389 змерджено в 7f523e6.
    Push Playwright, deps, migration drift і Vercel success. Візуального підпису #387 немає.
-   AH-2.4 реалізовано на feat/ah-2.4-overlays і очікує власного review.
+   AH-2.4 реалізовано в PR #390 на feat/ah-2.4-overlays і очікує власного review.
    Не дублюй її; після інтеграції наступна задача AH-2.5.
    UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
    Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,
