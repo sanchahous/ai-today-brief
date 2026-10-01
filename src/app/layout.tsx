@@ -5,6 +5,7 @@ import { analyticsConfigured } from '@/lib/analytics-config';
 import { CONSENT_MODE_DEFAULTS_SCRIPT } from '@/lib/consent-mode-snippet';
 import { SITE_NAME, SITE_URL, SITE_TAGLINE, DEFAULT_LANG } from '@/lib/site';
 import { THEME_COLORS } from '@/lib/theme';
+import { cyrillicFont, displayFont, displayItalicFont, sansFont } from './fonts';
 
 /** Parser-blocking: apply the complete theme before body pixels or hydration. */
 const CHROME_INIT_SCRIPT = `(function(){var t;try{t=localStorage.getItem('theme');}catch(e){/* Use system preference when storage is blocked. */}var light=t==='light'||(t!=='dark'&&t!=='light'&&window.matchMedia('(prefers-color-scheme: light)').matches);var root=document.documentElement;var name=light?'day':'night';root.classList.toggle('theme-light',light);root.dataset.theme=name;root.style.colorScheme=light?'light':'dark';document.querySelectorAll('meta[data-theme-color]').forEach(function(meta){meta.setAttribute('media',meta.getAttribute('data-theme-color')===name?'all':'not all');});var m=location.pathname.match(/^\\/(en|uk)(\\/|$)/);if(m)root.lang=m[1];})();`;
@@ -33,7 +34,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang={DEFAULT_LANG} data-theme="night" suppressHydrationWarning className="h-full">
+    <html
+      lang={DEFAULT_LANG}
+      data-theme="night"
+      suppressHydrationWarning
+      className={`h-full ${displayFont.variable} ${displayItalicFont.variable} ${sansFont.variable} ${cyrillicFont.variable}`}
+    >
       <head>
         {/* Select by the actual theme, including saved preferences that override the OS. */}
         <meta

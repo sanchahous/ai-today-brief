@@ -5498,3 +5498,23 @@ stale `unstable_cache` синхронно під час ISR). Фікс: envelope
 рядок у [now](now.md), оновлено [index](index.md). Build/runtime-логи Vercel недоступні (Hobby).
 (source: live check production + prod Supabase 2026-09-30; GitHub deployments API;
 `src/lib/public-content-build-memo.ts`)
+
+## 2026-09-30 — AH-1.5: локальні шрифти й українська типографіка
+
+Реалізовано D3/D4 в `feat/ah-1.5-typography` від `origin/main` @ `2ba2b27`: `next/font/local`, Fraunces regular/italic, Inter Latin/Cyrillic, Georgia для UK display, fluid-шкала, leading/tracking/measure, eyebrow і reading-copy. Український cmap та OFL перевірено; typography E2E — 78 passed у трьох engines. CSS і tokens.ts під drift-гейтом; §7.2 registry оновлено. (source: `src/app/fonts.ts`; `e2e/typography.spec.ts`; `artifacts/after-hours/qa/ah-1.5-font-assets.json`)
+
+Font-floor matrix чистого main та гілки: по 580 сценаріїв, 0 sub-floor fonts / overflow, однакові 20 H1-порушень на 404. Локальний cold-font CLS на Home/Article нижче 0.01; підпис UK, прийняття локального CLS замість недоступного Preview і завершення legacy QA ще очікуються. Production #383 перевірено read-only: RSS / news-sitemap / news updated показують 29.09. Оновлено `design-system-tokens.md`, картку й §5.3 епіку, `now.md`, handoff, index; додано [AH-1.5 validation](product/after-hours-ah-1-5-validation.md) та галерею. Наявна мок-БД іншої сесії використовується лише read-only, її код і дані не змінюються. (source: локальні QA receipts 2026-09-30; HTTP check; повідомлення власника 2026-09-30)
+
+## 2026-09-30 — AH-1.5: фінальна локальна QA-звірка
+
+Повторний typography E2E після перенесення runtime-fonts у `src/app/_fonts/` — 78 passed; copy/cmap/OFL audit зелений. `.vercelignore` виключає `artifacts/`, тому runtime-копії з ліцензіями byte-identical і перевіряються скриптом. Після-знімки оновлено з реальних даних; 8 cold-font CLS сценаріїв нижче 0.01, збережено CDP traces. Мок-БД іншої сесії не редаговано; 64 stress-сценарії пройшли. (source: `artifacts/_local/ah-1.5-typography-final.log`; `ah-1.5-font-cls.json`; `ah-1.5-mock-type-matrix.json`; `artifacts/after-hours/qa/check-ah-1.5-fonts.mjs`)
+
+Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / small text / missing alt та 1266 axe; інші лічильники відрізняються, нуль регресій повного QA не заявлено. У validation записано обидві таблиці й межі, index оновлено. DoD QA та візуальний підпис лишаються відкритими. (source: `artifacts/_local/ah-1.5-full-qa-before.json`; `ah-1.5-full-qa.json`; `wiki/product/after-hours-ah-1-5-validation.md`)
+
+## 2026-09-30 — AH-1.5: pre-PR gate
+
+`npm run pr:check` завершився з EXIT=0; збережено tracked evidence receipt з SHA-256 локальних manifests, QA JSON і логів. Font-floor AC позначено виконаним за 580/812 сценаріями; решта відкритих AC не закривається автоматично. Повторний wiki:check пройшов після внесення доказів; index і validation оновлено. (source: `artifacts/_local/ah-1.5-pr-check.log`; `artifacts/after-hours/qa/ah-1.5-evidence.json`; `wiki/product/after-hours-redesign-epic.md`)
+
+## 2026-09-30 — AH-1.5: draft PR #385
+
+Створено [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385) з гілки `feat/ah-1.5-typography`; merge не виконувався. Pre-push — 339 Chromium passed / 5 skipped, EXIT=0, після revalidate власного production server :3000. Перший Vercel deployment успішний; Preview URL додано у validation. Номер PR внесено окремим docs-комітом у картку/§5.3, now, handoff, index і validation. Підпис UK, прийняття локального CLS та рішення щодо legacy QA запитані у власника й ще очікуються. (source: PR #385; `artifacts/_local/ah-1.5-push.log`; PR checks / Vercel comment; повідомлення цієї сесії 2026-09-30)

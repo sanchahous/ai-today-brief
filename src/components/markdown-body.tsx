@@ -41,7 +41,7 @@ export function MarkdownBody({ markdown }: { markdown: string }) {
   const blocks = parseMarkdown(markdown);
 
   return (
-    <div>
+    <div className="reading-copy">
       {blocks.map((block, i) => {
         if (block.kind === 'heading') {
           return block.level === 3 ? (
@@ -58,7 +58,7 @@ export function MarkdownBody({ markdown }: { markdown: string }) {
           return (
             <ul key={i} className="mb-3.5 list-disc space-y-1.5 pl-5">
               {block.items.map((item, j) => (
-                <li key={j} className="text-[0.96rem] leading-[1.7]">
+                <li key={j}>
                   <Inlines inlines={item} />
                 </li>
               ))}
@@ -77,7 +77,7 @@ export function MarkdownBody({ markdown }: { markdown: string }) {
           );
         }
         return (
-          <p key={i} className="mb-3.5 text-[0.96rem] leading-[1.75] last:mb-0">
+          <p key={i} className="mb-3.5 last:mb-0">
             <Inlines inlines={block.inlines} />
           </p>
         );

@@ -1,0 +1,102 @@
+{
+  "evidence": [
+    {
+      "file": "artifacts/_local/ah-1-5-before/manifest.json",
+      "sha256": "fcc9318a4096a884177dcac4627f00fa62adfe1406fa6efde698847a345389f4"
+    },
+    {
+      "file": "artifacts/_local/ah-1-5-after/manifest.json",
+      "sha256": "098bf0215d4880208071a34502cdffe4de882ec0f183cd49731f05942bae4495"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-type-matrix-before.json",
+      "sha256": "646821b9f776b85f308001fd58689e722e35451b6a3a7fac08c456a571cf6d4e",
+      "summary": {
+        "scenarios": 580,
+        "smallText": 0,
+        "h1Violations": 20,
+        "overflowScenarios": 0
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-type-matrix-after.json",
+      "sha256": "ca9084e88117dae3d465033e4dff8a8d6781c6c2e55e09471f15e5fdbfe01453",
+      "summary": {
+        "scenarios": 580,
+        "smallText": 0,
+        "h1Violations": 20,
+        "overflowScenarios": 0
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-mock-type-matrix.json",
+      "sha256": "d5f8c95b4938b55c1d685d24fbf0e9efd829df89c70d8771c578195539cc4e16",
+      "summary": {
+        "scenarios": 64,
+        "failures": 0
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-full-qa-before.json",
+      "sha256": "f09d94966c62214e8ccdc2b4ff347572fc60e48a22fe38c39d97f38833f7c867",
+      "summary": {
+        "scenarios": 812,
+        "overflow": 0,
+        "smallText": 0,
+        "smallTargets": 11429,
+        "axe": 1266,
+        "consoleErrors": 195,
+        "h1Problems": 89,
+        "headingSkips": 276,
+        "imagesMissingAlt": 0,
+        "clipped": 1178,
+        "clippedAtZoom": 376
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-full-qa.json",
+      "sha256": "8ba5737fa4e812069dcbcbe76e1c9e4d5271d55d78902e486a35afd4316d875a",
+      "summary": {
+        "scenarios": 812,
+        "overflow": 0,
+        "smallText": 0,
+        "smallTargets": 11455,
+        "axe": 1266,
+        "consoleErrors": 201,
+        "h1Problems": 83,
+        "headingSkips": 281,
+        "imagesMissingAlt": 0,
+        "clipped": 1197,
+        "clippedAtZoom": 360
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-font-cls.json",
+      "sha256": "27ff4dbf5d06d1b1d74d974a48b526f147a68a07d69c559f71f3e3227b152c68",
+      "summary": {
+        "scenarios": 8,
+        "maxCls": 0.00002830139076431756
+      }
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-typography-final.log",
+      "sha256": "a13fb511f89aee4a609b4eb8a4c8a8fc5a5e69d6df9d82e3b526992a22824c3d"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-pr-check.log",
+      "sha256": "4a75a36ade8be0e19b14197623d01d39aee9d7e8fa120f364d9b43c15dbab8a7"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-push.log",
+      "sha256": "9c902daa3fba58d34379d1d6d66e17275b88a5b7fd4e66019be8f21406a8bf4b"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-seo-main-compare.log",
+      "sha256": "be2710872448d1baa7f8a2b4a19ef956b9f4391460eeb53ac10dc736cf9cfd09"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-production-freshness.json",
+      "sha256": "b147ddd120a21900398070908bbcd3a03ecce4e0d69693098d65ea9816c9351f"
+    }
+  ]
+}

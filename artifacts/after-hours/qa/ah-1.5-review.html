@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="uk">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AH-1.5 — типографіка: візуальний підпис</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #171918; color: #f0e9dc; }
+  body { margin: 0; padding: 24px; }
+  h1 { font-size: 24px; }
+  p { max-width: 900px; line-height: 1.6; }
+  nav { display: flex; gap: 16px; flex-wrap: wrap; }
+  label { display: grid; gap: 8px; }
+  select { min-height: 44px; font: inherit; padding: 8px; background: #1f2321; color: inherit; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
+  figure { margin: 0; min-width: 0; }
+  figcaption { padding: 12px 0; }
+  img { display: block; width: 100%; }
+  .mobile img { max-width: 390px; }
+  a { color: #b5d8cc; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+</style>
+<h1>AH-1.5 — локальні шрифти, шкала, Georgia для українських заголовків</h1>
+<p>До і після знято з локального next dev на тих самих реальних даних з .env.local. Fraunces для EN; Georgia для UK, включно з латинськими назвами продуктів у заголовку. Inter Latin + Cyrillic для тексту. Fluid-шкала, короткі eyebrow — uppercase, довгі реєстри — sentence case; читання 18 px / 1.78.</p>
+<p>Потрібен окремий підпис щодо українських Home, Article і Weekly у Night/Day та на 390/1440 px. PNG і SHA-256 manifests: artifacts/_local/ah-1-5-before та ah-1-5-after. Vercel Preview потребує авторизації.</p>
+<nav aria-label="Варіанти знімків">
+  <label>Сторінка<select id="route"><option value="home">Home</option><option value="news">News</option><option value="article">Article</option><option value="weekly">Weekly</option></select></label>
+  <label>Мова<select id="lang"><option value="uk">Українська</option><option value="en">English</option></select></label>
+  <label>Тема<select id="theme"><option value="night">Night</option><option value="day">Day</option></select></label>
+  <label>Ширина<select id="size"><option value="desktop">1440 px</option><option value="mobile">390 px</option></select></label>
+</nav>
+<div class="pair" id="pages">
+  <figure><figcaption>До · <a id="before-link" target="_blank">оригінал PNG</a></figcaption><img id="before" alt="До AH-1.5"></figure>
+  <figure><figcaption>Після · <a id="after-link" target="_blank">оригінал PNG</a></figcaption><img id="after" alt="Після AH-1.5"></figure>
+</div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  function show() {
+    const [route, lang, theme, size] = ['route', 'lang', 'theme', 'size'].map((id) => $(id).value);
+    $('pages').classList.toggle('mobile', size === 'mobile');
+    for (const label of ['before', 'after']) {
+      const src = `../../_local/ah-1-5-${label}/${route}-${lang}-${theme}-${size}.png`;
+      $(label).src = src;
+      $(`${label}-link`).href = src;
+    }
+  }
+  for (const id of ['route', 'lang', 'theme', 'size']) $(id).addEventListener('change', show);
+  show();
+</script>
+</html>

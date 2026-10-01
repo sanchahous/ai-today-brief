@@ -25,9 +25,10 @@ const TRIGGER =
   'bg-surface border-border text-text min-h-[44px] rounded-lg border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const headingId = `h-${encodeURIComponent(title)}`;
   return (
-    <section aria-labelledby={`h-${title}`} className="border-border border-t py-8">
-      <h2 id={`h-${title}`} className="mb-4 font-serif text-xl">
+    <section aria-labelledby={headingId} className="border-border border-t py-8">
+      <h2 id={headingId} className="mb-4 font-serif text-xl">
         {title}
       </h2>
       {children}
@@ -60,6 +61,16 @@ export function CatalogClient() {
       <main className="mx-auto w-full max-w-3xl px-4 py-10">
         <h1 className="font-serif text-3xl">Design system catalog</h1>
         <p className="text-muted mt-2 text-sm">Tokens v2.0.0 · internal, not indexed.</p>
+
+        <Section title="Typography / Типографіка">
+          <p className="eyebrow text-accent">In focus / У фокусі</p>
+          <p className="eyebrow eyebrow-registry text-muted">Source registry and verification / Реєстр джерел і перевірки</p>
+          <p className="font-serif text-4xl">A clearer <em>signal</em></p>
+          <div lang="uk">
+            <p className="font-serif text-4xl">Чіткіший <em>сигнал</em> з Claude Code — Ґ, Є, І, Ї</p>
+          </div>
+          <p className="reading-copy mt-4">Reading at 18 px / 1.78. Читання: українська кирилиця та Latin product names.</p>
+        </Section>
 
         <Section title="Popover">
           <Popover

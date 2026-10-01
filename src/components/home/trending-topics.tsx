@@ -22,7 +22,7 @@ export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingT
   return (
     <section aria-labelledby="trending-title" className="mx-auto w-full max-w-[1160px] px-6 py-12">
       <Reveal>
-        <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+        <p className="text-accent eyebrow">
           {t.trendingEyebrow}
         </p>
         <h2 id="trending-title" className="mt-2 text-2xl sm:text-3xl">{t.trendingTitle}</h2>

@@ -165,10 +165,11 @@ export const PRIMITIVES = {
   },
   typography: {
     fonts: {
-      sans: "'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      serif: "'Fraunces Variable', Georgia, serif",
-      ukDisplayFallback: 'Georgia, serif',
-      mono: "'Consolas', 'Courier New', monospace",
+      sans: 'var(--font-ah-cyrillic), var(--font-ah-sans), system-ui, sans-serif',
+      serif: 'var(--font-ah-display)',
+      italic: 'var(--font-ah-display-italic)',
+      ukDisplayFallback: "Georgia, 'Times New Roman', serif",
+      mono: "ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, 'Liberation Mono', monospace",
     },
     weights: {
       regular: 400,
@@ -186,6 +187,15 @@ export const PRIMITIVES = {
       reading: 1.78,
       prose: 1.85,
     },
+    tracking: {
+      display: '-0.032em',
+      heading: '-0.02em',
+      meta: '0.08em',
+      eyebrow: '0.13em',
+      ukDisplay: '-0.012em',
+      ukHeading: '-0.008em',
+    },
+    measure: '68ch',
     /** rem-based: respects the reader's browser font size. 12px is the absolute floor. */
     scale: {
       '2xs': '0.75rem', // 12 · mono meta, eyebrows
@@ -432,6 +442,19 @@ export function remToPx(rem: string): number {
  * `tokens:check` fails when the CSS drifts from these values.
  */
 export const CSS_VARS_STATIC: Readonly<Record<string, string>> = {
+  '--font-display': PRIMITIVES.typography.fonts.serif,
+  '--font-display-italic': PRIMITIVES.typography.fonts.italic,
+  '--font-sans': PRIMITIVES.typography.fonts.sans,
+  '--font-mono': PRIMITIVES.typography.fonts.mono,
+  '--leading-tight': String(PRIMITIVES.typography.lineHeights.tight),
+  '--leading-heading': String(PRIMITIVES.typography.lineHeights.heading),
+  '--leading-body': String(PRIMITIVES.typography.lineHeights.body),
+  '--leading-reading': String(PRIMITIVES.typography.lineHeights.reading),
+  '--tracking-display': PRIMITIVES.typography.tracking.display,
+  '--tracking-heading': PRIMITIVES.typography.tracking.heading,
+  '--tracking-meta': PRIMITIVES.typography.tracking.meta,
+  '--tracking-eyebrow': PRIMITIVES.typography.tracking.eyebrow,
+  '--measure': PRIMITIVES.typography.measure,
   ...Object.fromEntries(
     Object.entries(PRIMITIVES.spacing)
       .filter(([step]) => step !== '0')
@@ -463,6 +486,21 @@ export const CSS_VARS_STATIC: Readonly<Record<string, string>> = {
   '--ease-release': PRIMITIVES.motion.easing.release,
   '--focus-width': `${PRIMITIVES.focus.width}px`,
   '--focus-offset': `${PRIMITIVES.focus.offset}px`,
+};
+
+/** Fluid type sizes registered for the existing Tailwind text utilities. */
+export const CSS_THEME_TYPOGRAPHY: Readonly<Record<string, string>> = {
+  ...Object.fromEntries(Object.entries(PRIMITIVES.typography.scale).map(([size, value]) => [`--text-${size}`, value])),
+  '--text-base': 'var(--text-md)',
+  '--text-2xs--line-height': String(PRIMITIVES.typography.lineHeights.normal),
+  '--font-serif': 'var(--font-display)',
+};
+
+export const CSS_VARS_UK_TYPOGRAPHY: Readonly<Record<string, string>> = {
+  '--font-display': PRIMITIVES.typography.fonts.ukDisplayFallback,
+  '--font-display-italic': PRIMITIVES.typography.fonts.ukDisplayFallback,
+  '--tracking-display': PRIMITIVES.typography.tracking.ukDisplay,
+  '--tracking-heading': PRIMITIVES.typography.tracking.ukHeading,
 };
 
 function themedVars(theme: 'night' | 'day'): Record<string, string> {

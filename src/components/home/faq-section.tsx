@@ -27,7 +27,7 @@ export function FaqSection({ lang }: { lang: Lang }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       <Reveal>
-        <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{t.faqEyebrow}</p>
+        <p className="text-accent eyebrow">{t.faqEyebrow}</p>
         <h2 id="faq-title" className="mt-2 text-2xl sm:text-3xl">
           {t.faqTitle}
         </h2>

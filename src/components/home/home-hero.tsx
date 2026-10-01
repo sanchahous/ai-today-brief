@@ -52,7 +52,7 @@ export function HomeHero({
       </div>
 
       <div className="relative mx-auto w-full max-w-[1160px] px-6 pt-[4.5rem] pb-14">
-        <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{t.heroEyebrow}</p>
+        <p className="text-accent eyebrow">{t.heroEyebrow}</p>
         <h1 id="hero-title" className="mt-4 max-w-3xl text-4xl leading-[1.08] sm:text-5xl">
           {t.heroTitle}
         </h1>

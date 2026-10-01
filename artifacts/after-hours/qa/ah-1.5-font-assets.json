@@ -1,0 +1,65 @@
+{
+  "alphabet": "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯабвгґдеєжзиіїйклмнопрстуфхцчшщьюя",
+  "assets": [
+    {
+      "name": "display",
+      "bytes": 36620,
+      "sha256": "7f9d191d999336d3b9790afa72e1358e50a13b06d4f289341e92a311967a80f9",
+      "family": "Fraunces",
+      "axes": {
+        "wght": {
+          "name": "Weight",
+          "min": 100,
+          "default": 900,
+          "max": 900
+        }
+      },
+      "missingUk": "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯабвгґдеєжзиіїйклмнопрстуфхцчшщьюя"
+    },
+    {
+      "name": "display-italic",
+      "bytes": 45656,
+      "sha256": "bceec2ef4d549efbc8df0194a8d5280b6a64c3e399244dffccd9ea1bd9ad6db7",
+      "family": "Fraunces",
+      "axes": {
+        "wght": {
+          "name": "Weight",
+          "min": 100,
+          "default": 900,
+          "max": 900
+        }
+      },
+      "missingUk": "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯабвгґдеєжзиіїйклмнопрстуфхцчшщьюя"
+    },
+    {
+      "name": "sans",
+      "bytes": 48256,
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+      "family": "Inter",
+      "axes": {
+        "wght": {
+          "name": "Weight",
+          "min": 100,
+          "default": 400,
+          "max": 900
+        }
+      },
+      "missingUk": "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯабвгґдеєжзиіїйклмнопрстуфхцчшщьюя"
+    },
+    {
+      "name": "sans-uk",
+      "bytes": 18748,
+      "sha256": "71d5ee93cc1e9f1d520a3a8b66456de18c7879d8df09d57fcd2eaff75fef0075",
+      "family": "Inter",
+      "axes": {
+        "wght": {
+          "name": "Weight",
+          "min": 100,
+          "default": 400,
+          "max": 900
+        }
+      },
+      "missingUk": ""
+    }
+  ]
+}
