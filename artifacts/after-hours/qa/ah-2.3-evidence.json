@@ -1,0 +1,21 @@
+{
+  "task": "AH-2.3",
+  "branch": "feat/ah-2.3-fields",
+  "base": "c03a4dd98380c7e0d635f37cbe5eb362ac0c9f4d",
+  "catalog": {
+    "file": "artifacts/_local/ah-2-3-catalog/manifest.json",
+    "sha256": "04fcd0805dac7827e5e04cfdac03778263bc4e394f0b3c06b008240915305e74",
+    "screenshots": 8,
+    "server": "http://localhost:3107",
+    "note": "Local next dev with .env.local. PNG files stay in gitignored artifacts/_local."
+  },
+  "checks": {
+    "playwrightDev": "Chromium fields.spec 30 passed; Firefox and WebKit keyboard, focus-invalid and 390 axe passed against localhost:3107",
+    "prCheck": "EXIT=0, artifacts/_local/ah-2.3-pr-check.log"
+  },
+  "open": [
+    "separate visual sign-off",
+    "full-page legacy DoD and G1",
+    "UK Home/Article/Weekly, Preview CLS, H1/legacy AC from AH-1.5"
+  ]
+}

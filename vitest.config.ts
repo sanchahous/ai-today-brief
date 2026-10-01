@@ -26,6 +26,7 @@ const LOGIC_INCLUDE = [
   'src/lib/tools-mentioned.ts',
   'src/lib/topic-normalize.ts',
   'src/lib/ui/action-styles.ts',
+  'src/lib/ui/field-a11y.ts',
   'src/lib/public-content-tag.ts',
   'src/lib/public-content-cache.ts',
   'src/lib/public-content-build-memo.ts',

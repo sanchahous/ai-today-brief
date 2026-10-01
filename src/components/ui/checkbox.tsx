@@ -2,89 +2,86 @@
 
 import {
   forwardRef,
-  useId,
-  type InputHTMLAttributes,
-  type ReactNode,
   type CSSProperties,
+  type InputHTMLAttributes,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
 } from 'react';
 import { CheckIcon } from '@/components/icons';
+import { describedBy } from '@/lib/ui/field-a11y';
+import type { Lang } from '@/lib/site';
+import { Field, FieldError, FieldHint, useFieldIds } from './field';
+import styles from './fields.module.css';
 
-export interface CheckboxProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: ReactNode;
   description?: string;
+  hint?: string;
+  error?: string;
+  glyph?: ReactNode;
+  /** Sets `--cat-color` for the category glyph. */
+  glyphColor?: string;
+  count?: number;
+  lang?: Lang;
   tintColor?: string;
   badge?: ReactNode;
+  readOnly?: boolean;
 }
 
-export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
-  function Checkbox(
-    {
-      label,
-      description,
-      tintColor,
-      badge,
-      id,
-      checked,
-      disabled,
-      className = '',
-      onChange,
-      ...props
-    },
-    ref,
-  ) {
-    const generatedId = useId();
-    const checkboxId = id ?? generatedId;
+function stopReadonlyToggle(
+  event: KeyboardEvent<HTMLInputElement> | MouseEvent<HTMLInputElement>,
+  readOnly: boolean,
+) {
+  if (readOnly && ('key' in event ? event.key === ' ' : true)) event.preventDefault();
+}
 
-    return (
-      <label
-        htmlFor={checkboxId}
-        className={`group relative flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2.5 py-1.5 transition select-none hover:bg-surface-2 ${
-          disabled ? 'cursor-not-allowed opacity-50' : ''
-        } ${className}`}
-      >
-        <span className="relative flex size-5 shrink-0 items-center justify-center">
-          <input
-            ref={ref}
-            id={checkboxId}
-            type="checkbox"
-            checked={checked}
-            disabled={disabled}
-            onChange={onChange}
-            className="peer sr-only"
-            {...props}
-          />
-          <span
-            aria-hidden="true"
-            className="border-border bg-surface peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-focus flex size-5 items-center justify-center rounded border transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-(--focus-offset)"
-            style={
-              tintColor && checked
-                ? ({
-                    backgroundColor: tintColor,
-                    borderColor: tintColor,
-                  } as CSSProperties)
-                : undefined
-            }
-          >
-            {checked && (
-              <span className="text-on-accent inline-flex">
-                <CheckIcon size={14} strokeWidth={2.5} />
-              </span>
-            )}
-          </span>
+function ChoiceMark({ round, tint }: { round?: boolean; tint?: string }) {
+  // Inline colour is the optional category tint; the default fill stays on tokens.
+  const style = tint ? { backgroundColor: tint, borderColor: tint } as CSSProperties : undefined;
+  return (
+    <span aria-hidden="true" className={`${styles.mark} ${round ? styles.markRound : ''}`} style={style}>
+      {round ? <span className={styles.dot} /> : <CheckIcon size={14} strokeWidth={2.5} className={styles.tick} />}
+    </span>
+  );
+}
+
+export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox({
+  label, description, hint, error, glyph, glyphColor, count, lang = 'en', tintColor, badge, readOnly = false,
+  id, className = '', checked, disabled, onClick, onKeyDown, 'aria-describedby': describedExtra, ...props
+}, ref) {
+  const ids = useFieldIds(id);
+  const described = describedBy([hint ? ids.hintId : null, error ? ids.errorId : null, describedExtra]);
+  // CSS custom properties are not enumerated by React's CSSProperties type.
+  const rowStyle = glyphColor ? { '--cat-color': glyphColor } as CSSProperties : undefined;
+  return (
+    <Field className="w-full">
+      <label htmlFor={ids.controlId} className={`${styles.choice} ${className}`} style={rowStyle}>
+        <input
+          {...props}
+          ref={ref}
+          id={ids.controlId}
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-readonly={readOnly || undefined}
+          aria-describedby={described}
+          className="sr-only"
+          onClick={(event) => { stopReadonlyToggle(event, readOnly); onClick?.(event); }}
+          onKeyDown={(event) => { stopReadonlyToggle(event, readOnly); onKeyDown?.(event); }}
+        />
+        <ChoiceMark tint={checked ? tintColor : undefined} />
+        {glyph ? <span aria-hidden="true" className={styles.glyph}>{glyph}</span> : null}
+        <span className={styles.choiceCopy}>
+          <span className={styles.choiceLabel}>{label}</span>
+          {description ? <span className={styles.hint}>{description}</span> : null}
         </span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-text text-sm font-medium leading-snug">
-            {label}
-          </span>
-          {description && (
-            <span className="text-muted text-xs leading-normal">
-              {description}
-            </span>
-          )}
-        </span>
-        {badge && <span className="ml-auto shrink-0">{badge}</span>}
+        {typeof count === 'number' ? <span className={styles.count}>{new Intl.NumberFormat(lang).format(count)}</span> : null}
+        {badge ? <span className="shrink-0">{badge}</span> : null}
       </label>
-    );
-  },
-);
+      <FieldHint id={ids.hintId}>{hint}</FieldHint>
+      <FieldError id={ids.errorId}>{error}</FieldError>
+    </Field>
+  );
+});
