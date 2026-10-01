@@ -75,6 +75,7 @@ export function NewsFeed({
   }));
   const [page, setPage] = useState(initialPage);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [ready, setReady] = useState(false);
   const filtersTriggerRef = useRef<HTMLButtonElement>(null);
   const noResultsTracked = useRef('');
   const isHydrated = useRef(false);
@@ -97,6 +98,7 @@ export function NewsFeed({
       setPage(parsed.page);
     }
     isHydrated.current = true;
+    setReady(true);
   }, []);
 
   // Browser Back/Forward navigation listener
@@ -261,7 +263,7 @@ export function NewsFeed({
     (filters.q.trim() ? 1 : 0);
 
   return (
-    <div className="news-layout">
+    <div className="news-layout" data-testid="news-feed" data-hydrated={ready}>
       <NewsSidebar
         lang={lang}
         filters={filters}
@@ -297,20 +299,22 @@ export function NewsFeed({
                 aria-label={t.sortLabel}
               />
             </div>
-            <button
+            <ActionButton variant="outline"
               ref={filtersTriggerRef}
               type="button"
+              disabled={!ready}
+              aria-expanded={drawerOpen}
               onClick={() => setDrawerOpen(true)}
-              className="mobile-only rounded-pill border-border text-text hover:border-accent inline-flex min-h-[44px] items-center gap-1.5 border px-3.5 py-2 text-sm font-medium transition cursor-pointer select-none"
+              className="mobile-only !rounded-pill"
+              leftIcon={<SlidersIcon size={16} />}
             >
-              <SlidersIcon size={16} />
               {t.filters}
               {activeCount > 0 && (
                 <span className="bg-accent text-on-accent size-5 rounded-full text-xs flex items-center justify-center font-bold">
                   {activeCount}
                 </span>
               )}
-            </button>
+            </ActionButton>
           </div>
         </div>
 

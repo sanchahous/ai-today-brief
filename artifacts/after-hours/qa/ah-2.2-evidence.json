@@ -8,7 +8,7 @@
     },
     {
       "file": "artifacts/_local/ah-2-2-after/manifest.json",
-      "sha256": "fff553157b46d07b8fad1359ab0db1b332995101345722c235eb4dd13dbd110e",
+      "sha256": "46cb82c1d84b41165e5e007eed068f36d93283503077a5758decfe334aaec007",
       "screenshots": 40
     },
     {
@@ -17,13 +17,13 @@
     },
     {
       "file": "artifacts/_local/ah-2.2-public-qa.json",
-      "sha256": "98db55543e09dba476ffbf7ec442fa0fcf2a0661439cf93c6f823045927d123a",
+      "sha256": "247461372bc85aa6cca66ea6703d1fe524e61c6a19d5eaf8777e6ae07d530061",
       "summary": {
         "scenarios": 140,
         "overflow": 0,
         "smallText": 0,
         "h1Problems": 0,
-        "smallTargets": 5383,
+        "smallTargets": 5359,
         "migratedSmallTargets": 0,
         "axe": 86,
         "consoleErrors": 0,
@@ -63,11 +63,11 @@
     },
     {
       "file": "artifacts/_local/ah-2.2-pr-check.log",
-      "sha256": "a6a65b8a1ea35507350531a79ad6a834989f09cad16d7b7a7faa9da0ae3165b1"
+      "sha256": "49c700423033d09bef5fdf8381460d04c41a79264ff4c12e36e93cf78fef93f4"
     },
     {
       "file": "artifacts/_local/ah-2-2-catalog/manifest.json",
-      "sha256": "48fd93839f807664a38725def00e5aa6e4900b4f6559e01e15827d6924891548",
+      "sha256": "6e12ab6bebea5325f4634cff6932a8790f171933dfdb6dedbc394a3dc0005121",
       "screenshots": 8
     },
     {
@@ -85,6 +85,26 @@
     {
       "file": "artifacts/_local/ah-2.2-seo-after.log",
       "sha256": "e829d100c836023a0a6451f03c4d3d70b506be9b40c9bb6a95f33a313c6328f8"
+    },
+    {
+      "file": "artifacts/_local/ah-2.2-push-attempt1-failed.log",
+      "sha256": "6da3dc89a11e3858cdbac72a99633346d19806f01690c8e12a4a713ab0b9ae31"
+    },
+    {
+      "file": "artifacts/_local/ah-2.2-components-recheck.log",
+      "sha256": "f240499f3e8353a3daae1fe1d90f86d7c575932bfcd09fb52a82cd843d2750cf"
+    },
+    {
+      "file": "artifacts/_local/ah-2.2-components-recheck-before-readiness.log",
+      "sha256": "6a2be1bb48218d8cdcf9fdd5c29226569ca135cd9bafc6e364e6496f97348076"
+    },
+    {
+      "file": "artifacts/_local/ah-2.2-components-recheck-url-readiness.log",
+      "sha256": "55960a6be8c2f86bf71a2c9d0c574c93cb36ec56b56f30814bdcc37ca3074a93"
+    },
+    {
+      "file": "artifacts/_local/ah-2.2-seo-recheck-cold.log",
+      "sha256": "04532653e37f79f616429ca760396a56c305320799f7f36db8663a6c914a1be8"
     }
   ]
 }

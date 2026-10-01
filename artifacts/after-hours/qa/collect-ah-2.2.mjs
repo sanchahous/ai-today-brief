@@ -11,6 +11,9 @@ const paths = [
   'artifacts/_local/ah-2.2-push-docs.log', 'artifacts/_local/ah-2-2-catalog/manifest.json',
   'artifacts/_local/ah-2.2-main-pr386.json', 'coverage/lcov.info',
   'artifacts/_local/ah-2.2-seo-before.json', 'artifacts/_local/ah-2.2-seo-after.log',
+  'artifacts/_local/ah-2.2-push-attempt1-failed.log', 'artifacts/_local/ah-2.2-components-recheck.log',
+  'artifacts/_local/ah-2.2-components-recheck-before-readiness.log',
+  'artifacts/_local/ah-2.2-components-recheck-url-readiness.log', 'artifacts/_local/ah-2.2-seo-recheck-cold.log',
 ];
 const evidence = [];
 for (const file of paths) {

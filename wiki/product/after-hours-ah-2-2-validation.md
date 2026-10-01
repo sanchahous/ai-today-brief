@@ -12,7 +12,7 @@ Last updated: 2026-10-01
 
 ## Реалізація
 
-Button і IconButton мають primary / outline / ghost і сумісний secondary, розміри 36 / 44 / 52. Coarse pointer отримує ціль мінімум 44×44 навіть на широкому touchscreen. `pending` примусово вмикає native disabled та `aria-busy`; default type — button, refs збережені. ActionButton лишається сумісним alias. Hover діє лише для fine pointer з hover; фокус — токени 2 px / offset 3 px, переходи тільки кольору; spinner нерухомий у reduced motion. (source: `button.tsx`; `icon-button.tsx`; `actions.module.css`; `src/lib/ui/action-styles.ts`)
+Button і IconButton мають primary / outline / ghost і сумісний secondary, базові розміри 36 / 44 / 52. Coarse pointer і layout нижче 60rem отримують ціль мінімум 44×44, зокрема широкий touchscreen. `pending` примусово вмикає native disabled та `aria-busy`; default type — button, refs збережені. ActionButton лишається сумісним alias. Hover діє лише для fine pointer з hover; фокус — токени 2 px / offset 3 px, переходи тільки кольору; spinner нерухомий у reduced motion. (source: `button.tsx`; `icon-button.tsx`; `actions.module.css`; `src/lib/ui/action-styles.ts`)
 
 Pill — native toggle із `aria-pressed`; Chip має незалежні select/remove кнопки без вкладених buttons, локалізоване «Прибрати фільтр: …» і `Intl.NumberFormat(lang)` для count. Tag — native посилання через Next Link. Badge має шість двомовних статусів із текстом і символом; демонструється в каталозі без додавання непідтверджених статусів до production-контенту. CategoryBadge перенесено з `home/` у `ui/`, підтримує default / plain / dot, дев'ять token colours, невідому категорію й null. (source: `pill.tsx`; `chip.tsx`; `tag.tsx`; `badge.tsx`; `category-badge.tsx`; `src/components/category-presentation.test.ts`)
 
@@ -32,7 +32,7 @@ Home / News / active filters / Category / Article, EN/UK, Night/Day, 320/360/390
 | Лічильник | main c477b09 | AH-2.2 |
 |---|---:|---:|
 | Overflow / small text / H1 / console | 0 / 0 / 0 / 0 | 0 / 0 / 0 / 0 |
-| Small targets | 5527 | 5383 |
+| Small targets | 5527 | 5359 |
 | Migrated controls <44 на coarse | 0 | 0 |
 | Axe | 86 | 86 |
 | Clipped | 752 | 752 |
@@ -40,6 +40,8 @@ Home / News / active filters / Category / Article, EN/UK, Night/Day, 320/360/390
 Сирі лічильники не доводять причинність різниці. Axe та clipping лишаються legacy; scoped каталог і мігровані controls проходять, але DoD §0.1.5 для всіх public templates не виконано. G1, власницьке прийняття винятків і візуальний підпис нового PR не припускаються з цих прогонів. (source: ті самі reports; [епік DoD](after-hours-redesign-epic.md#01-definition-of-done--для-кожного-pr-епіку))
 
 ## Візуальний review
+
+Перший pre-push зупинився: 292 passed / 9 failed / 5 skipped. Шість catalog gating failures виявили sm targets 36 px на вузькому layout; minimum 44 тепер застосовано й нижче 60rem. Close-button test оновлено до локалізованого «Close filters». Drawer/URL timeouts повторилися: видимий SSR H1 передував приєднанню handlers. News-feed тепер має явний `data-hydrated`, filters trigger disabled до готовності, `gotoNewsPage` чекає цього стану перед взаємодією. Обхід хука не застосовано; обидва failed logs збережено. (source: `artifacts/_local/ah-2.2-push-attempt1-failed.log`; `ah-2.2-components-recheck-before-readiness.log`; `src/components/ui/actions.module.css`; `src/components/news/news-feed.tsx`; `e2e/helpers/news-page.ts`; `e2e/news-filters-drawer.spec.ts`)
 
 [Локальна галерея](../../artifacts/after-hours/qa/ah-2.2-review.html): **40 пар** before/after із реальних `.env.local` даних і **8 знімків** EN/UK каталогу, Night/Day, 390/1440. Before — чистий `c477b09`; обидві сторони — власні local dev servers. Consent fixture застосовано до фактичного local origin. PNG у git-ignored `artifacts/_local/ah-2-2-{before,after,catalog}`, SHA-256 у manifests і [evidence receipt](../../artifacts/after-hours/qa/ah-2.2-evidence.json). Окремий візуальний підпис очікується; merge агент не виконує. (source: `capture-ah-2.2.mjs`; `capture-catalog-ah-2.2.mjs`; before/after/catalog manifests; епік §0.1.10)
 

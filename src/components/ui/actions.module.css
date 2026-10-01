@@ -45,8 +45,8 @@
 .badge[data-kind='partial'] { color: var(--warning); }
 .badge[data-kind='sponsored'] { color: var(--claret); }
 
-/* A touchscreen gets full targets even when its viewport is wide. */
-@media (pointer: coarse) {
+/* Keep mobile layouts generous; wide touchscreens get the same target floor. */
+@media (pointer: coarse), (max-width: 59.999rem) {
   .control { min-width: var(--touch-target-min); min-height: var(--touch-target-min); }
   .chip { min-height: var(--touch-target-min); }
 }
