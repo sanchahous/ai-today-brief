@@ -6,6 +6,13 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-01
 
+## 2026-10-01 — AH-3.2 follow-up: E2E + mobile menu tap targets, PR #394
+
+- **E2E:** `header-layout.spec.ts` і `category-colours.spec.ts` — SearchTrigger + SearchDialog замість inline `role="search"`; dialog locator EN/UK (`/search|пошук/i`).
+- **Chrome:** `site-header-chrome.tsx` — mobile menu categories `<summary>` і lang link `h-12` для ≥44px tap target (`mobile-menu.spec.ts`).
+- **Wiki:** `now.md` sync (watcher `brand-chrome`).
+(source: PR #394; commit orc T1-f1)
+
 ## 2026-10-01 — AH-3.2 SearchDialog (Ctrl/Cmd+K), PR #394
 
 - **Код:** один `SearchDialog` + `SearchTrigger` + `search-dialog-store` замінили `HeaderSearchField`,
