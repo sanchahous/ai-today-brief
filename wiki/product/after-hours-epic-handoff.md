@@ -12,7 +12,7 @@ Last updated: 2026-10-01
 
 ## 1. Стан на 2026-09-30
 
-- **Наступний крок:** власник змерджив [AH-1.5 / #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`, CI зелений. Tracking guard `508f87c` і діагностика `411e2f0` лишилися локально після блокування push; власник дозволив follow-up PR: `feat/ah-1.5-tracking-follow-up` від `2dea14c`, локальні 81 E2E та Digests QA пройшли; номер PR очікується. Підпис UK / локального CLS / legacy QA не припускається з merge. Після цих рішень — G1 та AH-2.2 або AH-2.5 за вибором власника. [Докази і залишок](after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). Попередні рядки нижче — історичний стан. (source: повідомлення власника; git / PR checks 2026-10-01)
+- **Наступний крок:** власник змерджив [AH-1.5 / #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`, CI зелений. Tracking guard `508f87c` і діагностика `411e2f0` лишилися локально після блокування push; власник дозволив follow-up PR: `feat/ah-1.5-tracking-follow-up` від `2dea14c`, локальні 81 E2E та Digests QA пройшли; [draft PR #386](https://github.com/sanchahous/ai-today-brief/pull/386), pre-push 340 passed / 5 skipped. Підпис UK / локального CLS / legacy QA не припускається з merge. Після цих рішень — G1 та AH-2.2 або AH-2.5 за вибором власника. [Докази і залишок](after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). Попередні рядки нижче — історичний стан. (source: повідомлення власника; git / PR checks 2026-10-01)
 
 - **G0 підписано власником; фаза 0 інтегрована:** #373–#376 змержено.
   AH-1.1 / AH-2.1 виконано через #369; AH-1.3 інтегровано через #378 (`6b3b446`).

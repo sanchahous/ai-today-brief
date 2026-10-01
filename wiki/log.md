@@ -5538,3 +5538,7 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-10-01 — AH-1.5 follow-up: власник дозволив новий PR
 
 За командою «в новий ПР» створено `feat/ah-1.5-tracking-follow-up` від main `2dea14c`; перенесено локальний D4 tracking guard і докази. Digests QA до/після: по 28 сценаріїв, 0 overflow / small text / H1 / axe / console, small targets 620 → 614 лишаються legacy; SEO двох URL 0 errors / warnings. 81 typography E2E пройшли після явного очікування видимого H1; початковий H1 readiness timeout збережено в логах. По 8 PNG з реальних даних у локальній галереї; новий PR потребує окремого підпису. Оновлено validation, картку/§5.3, now, handoff, index; номер PR буде внесено після створення. (source: повідомлення власника; `e2e/typography.spec.ts`; `artifacts/_local/ah-1.5-tracking-audit-{before,after}.json`; `ah-1.5-tracking-typography.log`; before/after manifests)
+
+## 2026-10-01 — AH-1.5 follow-up: draft PR #386
+
+Створено [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386) від main `2dea14c`. `pr:check` EXIT=0; pre-push 340 Chromium passed / 5 skipped після authenticated revalidate власного server :3000. Номер внесено окремим docs-комітом у validation, epic §5.3/картку, now, handoff і index; локальний галерейний підпис запитано. Merge не виконувався. Дозвіл на окремий PR — команда власника «в новий ПР»; відкриті legacy QA AC не закриваються. (source: PR #386; `artifacts/_local/ah-1.5-tracking-pr-check.log`; `ah-1.5-tracking-push.log`; повідомлення власника 2026-10-01)

@@ -68,6 +68,14 @@
     {
       "file": "artifacts/_local/ah-1.5-tracking-pr-check.log",
       "sha256": "ff5f6e9f3d15d5f4e4b5b746b2b6592b3b3fb484dbfb4a66dc8918e714ce7b60"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-pr-check-docs.log",
+      "sha256": "f34bf94a27bce7ce0356ad2df6107a1174c63a4eed05dda535d466f82e013d45"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-tracking-push.log",
+      "sha256": "3113f1d49461d73385658da71849d149a232b98de89e582d14fbb7d87a6669df"
     }
   ]
 }

@@ -8,6 +8,8 @@ const files = [
   'artifacts/_local/ah-1.5-tracking-typography-cold.log',
   'artifacts/_local/ah-1.5-tracking-typography.log',
   'artifacts/_local/ah-1.5-tracking-pr-check.log',
+  'artifacts/_local/ah-1.5-tracking-pr-check-docs.log',
+  'artifacts/_local/ah-1.5-tracking-push.log',
 ];
 const evidence = [];
 for (const file of files) {
