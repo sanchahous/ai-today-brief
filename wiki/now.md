@@ -19,7 +19,7 @@ Last updated: 2026-10-01
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
-- **AH-2.5 у роботі** на `feat/ah-2.5-feedback-states` від `56a9cf8`: Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Номер PR вноситься після створення. Окремий підпис очікується. Наступна після інтеграції — AH-2.6. (source: [AH-2.5 validation](product/after-hours-ah-2-5-validation.md))
+- **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`: Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис очікується. Наступна після інтеграції — AH-2.6. (source: [AH-2.5 validation](product/after-hours-ah-2-5-validation.md); PR #391)
 
 - **AH-2.4 змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390), `56a9cf8`, о 11:20 UTC.** Окремого підпису не було. Push Playwright, deps integrity, migration drift і Vercel — success. Sonar на push не запускався. Міграції споживачів лишаються. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01; [AH-2.4 validation](product/after-hours-ah-2-4-validation.md))
 

@@ -10,7 +10,7 @@ Last updated: 2026-10-01
 
 #390 змерджено в `56a9cf8` о 11:20 UTC. Окремого текстового підпису не було. Push цього коміту: Playwright [run 36854771692](https://github.com/sanchahous/ai-today-brief/actions/runs/36854771692), deps integrity, migration drift і Vercel — success. Sonar на самому push не запускався; Sonar PR #390 був success до merge. PR Playwright [run 36853557144](https://github.com/sanchahous/ai-today-brief/actions/runs/36853557144) після merge теж success. Падіння Weekly generation worker — `workflow_dispatch`, не CI цього merge. Merge не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC AH-1.5 і G1. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01)
 
-Номер PR цієї задачі вноситься після створення.
+Реалізовано в [PR #391](https://github.com/sanchahous/ai-today-brief/pull/391) на `feat/ah-2.5-feedback-states`. Окремий візуальний підпис очікується. Merge не виконувався.
 
 ## Реалізація
 

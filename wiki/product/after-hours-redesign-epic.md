@@ -355,7 +355,7 @@ flowchart TD
 | AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
-| AH-2.5 | ◐ Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі; Toast і Skeleton не дубльовано; підпис очікується ([докази](after-hours-ah-2-5-validation.md)) | S | агент | AH-1.6 | G13 (data-стани) |
+| AH-2.5 | ◐ Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у [#391](https://github.com/sanchahous/ai-today-brief/pull/391); Toast і Skeleton не дубльовано; підпис очікується ([докази](after-hours-ah-2-5-validation.md)) | S | агент | AH-1.6 | G13 (data-стани) |
 | AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
@@ -1031,7 +1031,7 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 - [x] Текст toast з'являється в `[role=status]` (E2E).
 - [x] Заміна skeleton-а контентом у `loading.tsx` не дає CLS > 0,05 (лабораторно).
 
-**Стан 2026-10-01:** реалізовано на `feat/ah-2.5-feedback-states` від `56a9cf8`. Номер PR вноситься після створення. Окремий візуальний підпис очікується. G13 поза цим ланцюгом лишається частковим для карток фаз 3–5. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md))
+**Стан 2026-10-01:** [PR #391](https://github.com/sanchahous/ai-today-brief/pull/391) на `feat/ah-2.5-feedback-states` від `56a9cf8`. Окремий візуальний підпис очікується. G13 поза цим ланцюгом лишається частковим для карток фаз 3–5. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391)
 
 ### AH-2.6 · Навігація: Pagination (консолідація), Tabs, Breadcrumbs
 
