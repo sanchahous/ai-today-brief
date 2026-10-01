@@ -17,7 +17,7 @@ Last updated: 2026-10-01
 
 ## Стан репозиторію
 
-- **AH-2.2 — реалізовано, окремий візуальний review очікується.** Button/IconButton/Pill/Chip/Tag/Badge/CategoryBadge, каталог EN/UK і міграція News/header/search. 181 E2E passed у трьох браузерах, SEO 58 URL без diff; по 140 public QA сценаріїв, legacy axe 86 на обох сторонах. Гілка `feat/ah-2.2-actions-selection` від main `c477b09`; далі AH-2.3. (source: [AH-2.2 validation](product/after-hours-ah-2-2-validation.md))
+- **AH-2.2 — реалізовано у [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387), окремий візуальний review очікується.** Button/IconButton/Pill/Chip/Tag/Badge/CategoryBadge, каталог EN/UK і міграція News/header/search. 252 E2E passed у трьох браузерах, pre-push 381 Chromium passed; SEO 58 URL без diff; по 140 public QA сценаріїв, legacy axe 86 на обох сторонах. Гілка `feat/ah-2.2-actions-selection` від main `c477b09`; CI нового PR ще виконується, далі AH-2.3. (source: [AH-2.2 validation](product/after-hours-ah-2-2-validation.md))
 
 - **AH-1.5 код інтегровано через #385 і #386; #386 явно підтверджено власником.** Main `c477b09`, CI #386 зелений. Tracking guard більше не є незмердженим залишком. Погодження #386 не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy QA або G1. (source: повідомлення власника 2026-10-01; [AH-1.5 validation](product/after-hours-ah-1-5-validation.md))
 

@@ -12,7 +12,7 @@ Last updated: 2026-10-01
 
 ## 1. Стан на 2026-10-01
 
-- **Поточна задача — AH-2.2:** реалізовано на `feat/ah-2.2-actions-selection` від `origin/main` @ `c477b09`; окремий візуальний підпис очікується. Каталог, три браузери, SEO, coarse targets і галерея — [AH-2.2 validation](after-hours-ah-2-2-validation.md). **Наступна задача — AH-2.3** після звірки інтеграції AH-2.2. Власник дозволив брати далі за порядком агента. (source: повідомлення власника 2026-10-01; validation)
+- **Поточна задача — AH-2.2:** реалізовано у [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387) на `feat/ah-2.2-actions-selection` від `origin/main` @ `c477b09`; окремий візуальний підпис очікується. 252 E2E у трьох браузерах, pre-push 381 Chromium passed, SEO/coarse targets/галерея — [AH-2.2 validation](after-hours-ah-2-2-validation.md). **Наступна задача — AH-2.3** після звірки інтеграції AH-2.2. Власник дозволив брати далі за порядком агента. (source: повідомлення власника 2026-10-01; validation)
 - **#386 змерджено й явно підтверджено власником:** «ПР закритий значить підтверджую 386». Main `c477b09`; CI, включно з [Playwright run 36826783157](https://github.com/sanchahous/ai-today-brief/actions/runs/36826783157), success. Tracking follow-up більше не є локальним залишком чи draft. UK Home/Article/Weekly із #385, прийняття локального CLS, H1/legacy QA та G1 лишаються відкритими. (source: [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); [AH-1.5 validation](after-hours-ah-1-5-validation.md); повідомлення власника)
 - **G0 і фаза 0 завершені:** #373–#376 інтегровані, GA4/Tag Assistant/CWV baseline вже прийняті. AH-1.1 / AH-2.1 — #369; AH-1.3 — #378; AH-1.7 — #377; AH-1.4 — #382; AH-1.2 — #384; AH-1.6 — #381, його окремий підпис отримано. Не дублювати й не просити G0 повторно. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач); [baseline](../analytics/2026-09-29-redesign-baseline.md))
 - **AH-4.1 — #380:** lib/URL/active Chip інтегровані, facet picker — AH-4.3. AH-5.16 знято D6; D1–D13 ухвалено. Частково виконані AH-2.3–2.6 мають картки із залишком. Кожен видимий PR потребує власного підпису. (source: [епік](after-hours-redesign-epic.md); повідомлення власника 2026-10-01)
@@ -207,7 +207,7 @@ QA-матриця працює в режимі report.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
 2. Підтягни origin/main і перевір актуальний стан AH-2.2 у §1 цього handoff та §5.3 епіку.
    На 2026-10-01 main c477b09, #386 змерджено й явно підтверджено власником.
-   AH-2.2 реалізовано на feat/ah-2.2-actions-selection і очікує окремого review.
+   AH-2.2 реалізовано у draft PR #387 на feat/ah-2.2-actions-selection і очікує окремого review.
    Не дублюй її; після інтеграції наступна задача AH-2.3. Власник дозволив порядок агента.
    UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
    Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,

@@ -66,6 +66,14 @@
       "sha256": "49c700423033d09bef5fdf8381460d04c41a79264ff4c12e36e93cf78fef93f4"
     },
     {
+      "file": "artifacts/_local/ah-2.2-pr-check-docs.log",
+      "sha256": "8d07fb0973854fe9c90997fbf07d781aadcee9789a4b51b45dac19bcc0124412"
+    },
+    {
+      "file": "artifacts/_local/ah-2.2-push.log",
+      "sha256": "790cb1f0116ce309e54d91787997ea980b27be2ebf3a414d61a0fafb95637a92"
+    },
+    {
       "file": "artifacts/_local/ah-2-2-catalog/manifest.json",
       "sha256": "6e12ab6bebea5325f4634cff6932a8790f171933dfdb6dedbc394a3dc0005121",
       "screenshots": 8
@@ -105,6 +113,10 @@
     {
       "file": "artifacts/_local/ah-2.2-seo-recheck-cold.log",
       "sha256": "04532653e37f79f616429ca760396a56c305320799f7f36db8663a6c914a1be8"
+    },
+    {
+      "file": "artifacts/_local/ah-2.2-pr387-status.json",
+      "sha256": "acf26859eada67ec98090c54d4bd98780d397de25ec1fc2090c75f0a8aa6faa5"
     }
   ]
 }

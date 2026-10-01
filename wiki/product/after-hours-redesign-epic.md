@@ -352,7 +352,7 @@ flowchart TD
 | AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: змерджено в [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) (`55b78dc`, підпис власника отримано 2026-09-30); `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
 | AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
-| AH-2.2 | ◐ Дії й вибір реалізовано; каталог/споживачі/QA готові, окремий visual review та full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
+| AH-2.2 | ◐ Дії й вибір реалізовано у [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387); каталог/споживачі/QA готові, окремий visual review та full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ◐ Поля форм (#369: Combobox) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї (#369: Popover, Dialog, DropdownMenu, Tooltip, Accordion) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
@@ -945,7 +945,7 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 - [x] News/header/search споживачі мігровані; знімки й браузерні перевірки готові. Повний legacy DoD і підпис окремо відкриті.
 - [x] Unit-тести композиції класів пройшли; новий logic helper — 100% lines / branches / functions. (source: `coverage/lcov.info`; [AH-2.2 validation](after-hours-ah-2-2-validation.md))
 
-**Стан 2026-10-01:** 181 cross-browser E2E passed / 14 skipped; SEO 58 URL без diff, по 140 public QA до/після з тим самим legacy axe 86. До окремого visual review й закриття DoD задача ◐. Реалізація та межі — [AH-2.2 validation](after-hours-ah-2-2-validation.md). (source: validation; `e2e/actions-selection.spec.ts`)
+**Стан 2026-10-01:** [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387), фінальні 252 cross-browser E2E passed / 21 skipped; pre-push 381 passed / 5 skipped; SEO 58 URL без diff, по 140 public QA до/після з тим самим legacy axe 86. До окремого visual review й закриття DoD задача ◐. Реалізація та межі — [AH-2.2 validation](after-hours-ah-2-2-validation.md). (source: validation; `e2e/actions-selection.spec.ts`)
 
 ### AH-2.3 · Поля: Field, Input, SearchInput, Textarea, Select, Checkbox, Radio, SegmentedControl, Switch
 
