@@ -82,7 +82,9 @@ test.describe('UI composite primitives', () => {
     const input = page.getByRole('combobox', { name: 'Tool' });
     await input.click();
     await input.fill('c');
-    await expect(page.getByRole('option')).toHaveCount(4); // Claude Code, Cursor, Codex + disabled MCP (contains "c")
+    const listId = await input.getAttribute('aria-controls');
+    // Native <select> options elsewhere on the catalog are also role=option.
+    await expect(page.locator(`[id="${listId}"]`).getByRole('option')).toHaveCount(4);
     await page.keyboard.press('ArrowDown');
     await expect(input).toHaveAttribute('aria-activedescendant', /-opt-1$/);
     await page.keyboard.press('Enter');
