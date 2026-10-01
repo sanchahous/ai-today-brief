@@ -3,9 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { VIEWPORTS } from './helpers/viewports';
 
 /**
- * Mobile search rework: full-width hero trigger, scroll-collapse to a header icon,
- * and a fullscreen modal with in-flow (never-clipped) results. Runs across the
- * chromium/firefox/webkit projects at mobile viewports.
+ * Unified SearchDialog: hero/header triggers, fullscreen sheet below 960px,
+ * in-flow results, scroll-lock, and focus return.
  */
 const PHONE = VIEWPORTS.phone390;
 
@@ -15,21 +14,18 @@ async function gotoHome(page: Page) {
   await expect(page.getByRole('main')).toBeVisible({ timeout: 30_000 });
 }
 
-const heroTrigger = (page: Page) => page.getByRole('button', { name: /search by tool/i });
-// Located by test-id (not role): when collapsed the icon is aria-hidden, leaving the
-// accessibility tree, so a role query could not find it to assert its state.
+const heroTrigger = (page: Page) => page.getByTestId('hero-search-trigger');
 const headerIcon = (page: Page) => page.getByTestId('header-search-icon');
 const dialog = (page: Page) => page.getByRole('dialog', { name: /^search$/i });
 
 test.describe('Mobile search', () => {
-  test('hero shows a full-width trigger (not the desktop field) at phone width', async ({ page }) => {
+  test('hero shows a full-width trigger at phone width', async ({ page }) => {
     await page.setViewportSize(PHONE);
     await gotoHome(page);
     const trigger = heroTrigger(page);
     await expect(trigger).toBeVisible();
     const box = await trigger.boundingBox();
     expect(box).not.toBeNull();
-    // Full-width: spans most of the viewport, not a clipped narrow field sharing a row.
     expect(box!.width).toBeGreaterThan(PHONE.width * 0.8);
   });
 
@@ -44,13 +40,13 @@ test.describe('Mobile search', () => {
     const d = dialog(page);
     await expect(d).toBeVisible();
     await expect(d).toHaveAttribute('aria-modal', 'true');
-    await expect(page.getByTestId('mobile-search-panel')).toBeVisible();
+    await expect(page.getByTestId('search-dialog-panel')).toBeVisible();
     await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
 
     const input = d.getByRole('searchbox');
     await expect(input).toBeFocused();
     const fontSize = await input.evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
-    expect(fontSize).toBeGreaterThanOrEqual(16); // iOS focus-zoom guard
+    expect(fontSize).toBeGreaterThanOrEqual(16);
 
     await page.keyboard.press('Escape');
     await expect(d).toBeHidden();
@@ -68,7 +64,7 @@ test.describe('Mobile search', () => {
     const list = d.getByRole('listbox', { name: /search results/i });
     await expect(list).toBeVisible({ timeout: 15_000 });
     const position = await list.evaluate((el) => getComputedStyle(el).position);
-    expect(position).not.toBe('absolute'); // 'modal' variant is in-flow, not anchored
+    expect(position).not.toBe('absolute');
     const box = await list.boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(-1);
     expect(box!.x + box!.width).toBeLessThanOrEqual(VIEWPORTS.phone320.width + 1);
@@ -112,16 +108,18 @@ test.describe('Mobile search', () => {
     await expect(dialog(page)).toBeVisible();
   });
 
-  test('desktop is unchanged: no mobile trigger or header search icon', async ({ page }) => {
+  test('desktop opens SearchDialog from header trigger and Ctrl+K', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.desktop1280);
     await gotoHome(page);
-    await expect(heroTrigger(page)).toBeHidden();
+    await expect(heroTrigger(page)).toBeVisible();
     await expect(headerIcon(page)).toBeHidden();
-    // The desktop header field still exists and opens its dropdown on focus.
-    const deskInput = page.locator('header').getByRole('searchbox').first();
-    await deskInput.fill('agent');
-    await expect(page.getByRole('listbox', { name: /search results/i }).first()).toBeVisible({
-      timeout: 15_000,
-    });
+
+    await page.getByTestId('search-trigger-compact').click();
+    await expect(dialog(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog(page)).toBeHidden();
+
+    await page.keyboard.press('Control+K');
+    await expect(dialog(page)).toBeVisible();
   });
 });

@@ -17,6 +17,8 @@ Last updated: 2026-10-01
 
 ## Стан репозиторію
 
+- **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav, error+retry) замінив `HeaderSearchField`, `MobileSearchModal` і `SearchPreviewDropdown`; header/hero/menu/404 ведуть у той самий сценарій. **Наступна після інтеграції — AH-3.3.** (source: PR #394; [епік §5.3 AH-3.2](product/after-hours-redesign-epic.md#ah-32--searchdialog-ctrlcmdk))
+
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
 - **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації (`src/components/pagination.tsx` видалено, `src/components/post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті без читання `searchParams` на сервері), `LinkTabs` з `aria-current="page"` у `src/components/ui/tabs.tsx`, рестайл `Breadcrumbs` за After Hours v3 spec (`breadcrumbJsonLd` без змін), секція `NavigationCatalog` у `/ds-catalog`, unit-тести та E2E тести. Наступна після інтеграції — AH-3.1. (source: PR #392; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))

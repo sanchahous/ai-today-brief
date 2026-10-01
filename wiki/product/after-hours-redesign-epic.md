@@ -357,7 +357,7 @@ flowchart TD
 | AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.6 | ◐ Навігація: Pagination (консолідація), Tabs, Breadcrumbs у [#392](https://github.com/sanchahous/ai-today-brief/pull/392); legacy `pagination.tsx` видалено, `post-feed.tsx` мігровано, `LinkTabs` додано, `Breadcrumbs` рестайлено, G2 очікує підпису | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
-| AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
+| AH-3.2 | ◐ SearchDialog (Ctrl/Cmd+K): [#394](https://github.com/sanchahous/ai-today-brief/pull/394) на `feat/ah-3.2-search-dialog` — один `SearchDialog`, trending idle, Ctrl/Cmd+K, aria-live, keyboard nav; G16 частково | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
@@ -1112,11 +1112,15 @@ watcher `brand-chrome` → `wiki/now.md`
 без запиту для порожнього query.
 
 **AC:**
-- [ ] `e2e/mobile-search.spec.ts` зелений + нова спека: Ctrl+K відкриває, Escape закриває з
-  поверненням фокусу, стрілки рухають фокус, Enter відкриває результат.
-- [ ] Порожній query — 0 запитів до `/api/search` (network-assertion).
-- [ ] На сайті одна пошукова поведінка: header-тригер, мобільна іконка й форма на головній ведуть
+- [x] `e2e/mobile-search.spec.ts` зелений + нова спека: Ctrl+K відкриває, Escape закриває з
+  поверненням фокусу, стрілки рухають фокус, Enter відкриває результат (`e2e/search-dialog-keyboard.spec.ts`).
+- [x] Порожній query — 0 запитів до `/api/search` (network-assertion).
+- [x] На сайті одна пошукова поведінка: header-тригер, мобільна іконка й форма на головній ведуть
   в один сценарій і маршрут.
+
+**Стан після #394 (2026-10-01):** `mobile-search-store`, `HeaderSearchField`, `SearchPreviewDropdown`,
+`MobileSearchModal` замінено на `search-dialog-store`, `SearchDialog`, `SearchTrigger`; trending idle з
+`getHomeData().trending`; API `/api/search` без змін. Preview: PR #394.
 
 ### AH-3.3 · EditorialHeader: desktop, compact sticky, меню категорій, мобільний sheet
 

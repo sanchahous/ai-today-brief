@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { HeaderSearchField } from '@/components/header-search-field';
+import { SearchTrigger } from '@/components/search/search-trigger';
 import { ArrowRight } from '@/components/icons';
 import { NotFoundIllustration } from '@/components/not-found-illustration';
 import { getStrings } from '@/lib/i18n';
@@ -44,7 +44,13 @@ export function NotFoundContent({ lang }: { lang: Lang }) {
           <p className="text-faint mb-2 text-xs font-semibold tracking-widest uppercase">
             {t.notFoundSearchHint}
           </p>
-          <HeaderSearchField lang={lang} placeholder={t.searchPlaceholder} className="max-w-none" />
+          <SearchTrigger
+            lang={lang}
+            source="header"
+            variant="field"
+            placeholder={t.searchPlaceholder}
+            className="max-w-none"
+          />
         </div>
 
         <nav

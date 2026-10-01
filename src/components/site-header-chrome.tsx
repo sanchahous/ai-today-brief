@@ -8,11 +8,11 @@ import { alternateLangHref } from '@/lib/preferred-lang';
 import { SITE_NAME, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { trackEvent } from '@/lib/analytics-client';
-import { HeaderSearchField } from '@/components/header-search-field';
+import { SearchDialog, SearchDialogShortcut } from '@/components/search/search-dialog';
+import { SearchTrigger } from '@/components/search/search-trigger';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { IconButton } from '@/components/ui/icon-button';
-import { MobileSearchModal } from '@/components/search/mobile-search-modal';
 import {
   BrandBloom,
   CategoryGlyph,
@@ -22,7 +22,8 @@ import {
   SearchIcon,
 } from '@/components/icons';
 import type { IconKey } from '@/components/icons';
-import { useMobileSearch } from '@/hooks/use-mobile-search';
+import type { TrendingTopic } from '@/lib/home';
+import { useSearchDialog } from '@/hooks/use-search-dialog';
 
 export type NavCategory = {
   slug: string;
@@ -31,10 +32,18 @@ export type NavCategory = {
   icon: IconKey;
 };
 
-export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories: NavCategory[] }) {
+export function SiteHeaderChrome({
+  lang,
+  categories,
+  trending,
+}: {
+  lang: Lang;
+  categories: NavCategory[];
+  trending: TrendingTopic[];
+}) {
   const t = getStrings(lang);
   const pathname = usePathname();
-  const { open: searchOpen, heroVisible, openSearch } = useMobileSearch();
+  const { open: searchOpen, heroVisible, openSearchDialog } = useSearchDialog();
   const [menuOpen, setMenuOpen] = useState(false);
   const [catsOpen, setCatsOpen] = useState(false);
   const catsRef = useRef<HTMLDivElement>(null);
@@ -98,12 +107,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
           </Link>
 
           <div className="mx-1 hidden min-w-[10rem] flex-1 basis-[10rem] md:flex lg:mx-2">
-            <HeaderSearchField
-              lang={lang}
-              placeholder={t.landing.searchPlaceholder}
-              className="max-w-[clamp(10rem,24vw,26rem)] min-w-[10rem] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
-              expandOnFocus
-            />
+            <SearchTrigger lang={lang} source="header" variant="compact" />
           </div>
 
           <nav
@@ -208,7 +212,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               data-testid="header-search-icon"
               onClick={(e) => {
                 e.stopPropagation();
-                openSearch('icon', e.currentTarget);
+                openSearchDialog('icon', e.currentTarget);
               }}
               aria-label={t.searchOpen}
               aria-haspopup="dialog"
@@ -268,10 +272,11 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             </div>
 
             <div className="my-4 md:hidden">
-              <HeaderSearchField
+              <SearchTrigger
                 lang={lang}
+                source="menu"
+                variant="field"
                 placeholder={t.landing.searchPlaceholder}
-                variant="mobile"
               />
             </div>
 
@@ -363,7 +368,8 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
           </nav>
         </OverlayDrawer>
 
-        <MobileSearchModal lang={lang} />
+        <SearchDialog lang={lang} trending={trending} />
+        <SearchDialogShortcut lang={lang} />
       </div>
     </header>
   );

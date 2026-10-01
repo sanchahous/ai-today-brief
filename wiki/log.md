@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-01
 
+## 2026-10-01 — AH-3.2 SearchDialog (Ctrl/Cmd+K), PR #394
+
+- **Код:** один `SearchDialog` + `SearchTrigger` + `search-dialog-store` замінили `HeaderSearchField`,
+  `MobileSearchModal`, `SearchPreviewDropdown`, `mobile-search-store`; trending idle з `getHomeData().trending`;
+  Ctrl/Cmd+K, aria-live лічильник, keyboard nav, error+retry; E2E `mobile-search.spec.ts` + `search-dialog-keyboard.spec.ts`.
+- **Wiki:** §5.3 і картка AH-3.2, `now.md`, `log.md`, handoff «Наступна задача → AH-3.3».
+(source: PR #394; [after-hours-redesign-epic § AH-3.2](product/after-hours-redesign-epic.md#ah-32--searchdialog-ctrlcmdk))
+
 ## 2026-09-28 — Виправлення візуальних артефактів контролів After Hours та підготовка PR
 
 - **Усунення спотворення радіокнопок і чекбоксів:** ізольовано селектори `input:not([type="checkbox"]):not([type="radio"])` у `artifacts/after-hours/style.css`, які раніше накладали `min-height: 46px` та `padding: 12px` на всі елементи вводу.

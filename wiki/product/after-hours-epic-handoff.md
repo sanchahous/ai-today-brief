@@ -12,7 +12,8 @@ Last updated: 2026-10-01
 
 ## 1. Стан на 2026-10-01
 
-- **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації (`src/components/pagination.tsx` видалено, `post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті), `LinkTabs` з `aria-current="page"` у `src/components/ui/tabs.tsx`, рестайл `Breadcrumbs` за специфікацією After Hours (`breadcrumbJsonLd` без змін), секція `NavigationCatalog` у `/ds-catalog`, E2E та unit-тести. **Наступна після інтеграції — AH-3.1.** (source: PR #392; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav). **Наступна після інтеграції — AH-3.3 (EditorialHeader).** (source: PR #394; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації (`src/components/pagination.tsx` видалено, `post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті), `LinkTabs` з `aria-current="page"` у `src/components/ui/tabs.tsx`, рестайл `Breadcrumbs` за специфікацією After Hours (`breadcrumbJsonLd` без змін), секція `NavigationCatalog` у `/ds-catalog`, E2E та unit-тести. (source: PR #392; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`. Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис очікується. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391)
 - **AH-2.4 змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390), `56a9cf8`, о 11:20 UTC.** Окремого текстового підпису не було. Push: Playwright [run 36854771692](https://github.com/sanchahous/ai-today-brief/actions/runs/36854771692), deps integrity, migration drift і Vercel — success. Sonar на push не запускався; Sonar PR був success до merge. PR Playwright [run 36853557144](https://github.com/sanchahous/ai-today-brief/actions/runs/36853557144) після merge success. Weekly generation worker падав як `workflow_dispatch`, це не CI merge. Міграції header, search, filters і share лишаються. Merge не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC і G1. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01)
 - **#388 підписано й змерджено в `e75c438` о 09:45 UTC.** #389 змерджено в `7f523e6` о 10:19 UTC. Push `7f523e6`: Playwright [run 36848455712](https://github.com/sanchahous/ai-today-brief/actions/runs/36848455712), deps integrity, migration drift і Vercel — success. Окремого Sonar workflow на цьому push немає; Sonar PR #389 був success до merge. Падіння Weekly generation worker — `workflow_dispatch`, не CI цього merge. Merge #388 не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC і G1. (source: `gh pr view 388`; `gh pr view 389`; `gh run list --commit 7f523e6` 2026-10-01; повідомлення власника)
@@ -210,9 +211,8 @@ QA-матриця працює в режимі report.
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
 2. Підтягни origin/main і перевір актуальний стан у §1 цього handoff та §5.3 епіку.
-   На 2026-10-01 AH-2.6 реалізовано в PR #392 на feat/ah-2.6-navigation.
-   AH-2.5 реалізовано в PR #391 на feat/ah-2.5-feedback-states і очікує власного review.
-   Після інтеграції наступна задача — AH-3.1 (Brand: Logo, Mark, Favicon, Touch Icons, D7/D8).
+   На 2026-10-01 AH-3.2 реалізовано в PR #394 на `feat/ah-3.2-search-dialog`.
+   Після інтеграції наступна задача — AH-3.3 (EditorialHeader).
    UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
    Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,
    Definition of Done §0.1, npm run pr:check перед push, PR у main.

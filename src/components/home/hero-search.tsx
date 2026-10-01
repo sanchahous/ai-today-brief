@@ -1,142 +1,77 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, SearchIcon } from '@/components/icons';
-import { SearchPreviewDropdown } from '@/components/search-preview-dropdown';
+import { useEffect, useRef } from 'react';
+import { ArrowRight } from '@/components/icons';
+import { SearchTrigger } from '@/components/search/search-trigger';
 import { Button } from '@/components/ui/button';
 import { useElementVisibility } from '@/hooks/use-element-visibility';
-import { openSearch, setHeroVisible } from '@/lib/mobile-search-store';
+import { useSearchDialog } from '@/hooks/use-search-dialog';
 import { trackSearch } from '@/lib/analytics-client';
+import { setHeroVisible } from '@/lib/search-dialog-store';
 import type { Lang } from '@/lib/site';
 
-/** Popular queries — language-neutral product names, lightly localized. */
-export const POPULAR: Record<Lang, string[]> = {
-  en: ['Claude Code', 'MCP', 'prompt caching', 'agents', 'RAG', 'Cursor'],
-  uk: ['Claude Code', 'MCP', 'prompt caching', 'агенти', 'RAG', 'Cursor'],
-};
-
 /**
- * Hero search with live preview dropdown; submit or "see all" opens /news/search?q=….
+ * Hero search entry: one trigger opens SearchDialog; popular chips navigate directly.
  */
 export function HeroSearch({
   lang,
   placeholder,
   button,
   popularLabel,
+  popularQueries,
 }: {
   lang: Lang;
   placeholder: string;
   button: string;
   popularLabel: string;
+  popularQueries: string[];
 }) {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const mobileTriggerRef = useRef<HTMLButtonElement>(null);
-  const heroVisible = useElementVisibility(mobileTriggerRef);
+  const heroTriggerRef = useRef<HTMLDivElement>(null);
+  const heroVisible = useElementVisibility(heroTriggerRef);
+  const { openSearchDialog } = useSearchDialog();
 
-  // Tell the header whether the hero search is on screen (drives the header search-icon
-  // morph). Restore the icon (heroVisible=false) when this page unmounts.
   useEffect(() => {
     setHeroVisible(heroVisible);
   }, [heroVisible]);
   useEffect(() => () => setHeroVisible(false), []);
 
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('mousedown', onDoc);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDoc);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, []);
-
-  function go(value: string, source: 'hero' | 'popular') {
+  function go(value: string, source: 'popular') {
     const trimmed = value.trim();
     trackSearch(trimmed, source, lang);
     router.push(trimmed ? `/${lang}/news/search?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
-    setQuery('');
-    setOpen(false);
-  }
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    go(query, 'hero');
   }
 
   return (
-    <div ref={rootRef}>
-      {/* Desktop: inline field with live dropdown (unchanged). */}
-      <form role="search" onSubmit={submit} className="hidden max-w-xl gap-2 lg:flex">
-        <div className="relative min-w-0 flex-1">
-          <label htmlFor="hero-search" className="sr-only">
-            {placeholder}
-          </label>
-          <span className="text-muted pointer-events-none absolute top-1/2 left-4 flex -translate-y-1/2">
-            <SearchIcon />
-          </span>
-          <input
-            id="hero-search"
-            type="search"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            placeholder={placeholder}
-            aria-label={placeholder}
-            autoComplete="off"
-            className="bg-surface border-border text-text rounded-pill focus-visible:border-accent w-full border py-3 pr-4 pl-11"
-          />
-          <SearchPreviewDropdown
+    <div>
+      <div ref={heroTriggerRef} className="flex max-w-xl flex-col gap-2 lg:flex-row lg:items-center">
+        <div className="min-w-0 flex-1">
+          <SearchTrigger
             lang={lang}
-            query={query}
-            open={open}
+            source="hero"
             variant="hero"
-            onNavigate={() => {
-              setQuery('');
-              setOpen(false);
-            }}
+            placeholder={placeholder}
+            testId="hero-search-trigger"
           />
         </div>
-        <Button variant="primary"
-          type="submit"
-          className="!rounded-pill"
+        <Button
+          variant="primary"
+          type="button"
+          className="hidden !rounded-pill lg:inline-flex"
           rightIcon={<ArrowRight size={16} />}
+          onClick={(e) => openSearchDialog('hero', e.currentTarget)}
         >
           {button}
         </Button>
-      </form>
-
-      {/* Mobile: full-width trigger that opens the fullscreen search modal. */}
-      <Button variant="outline"
-        ref={mobileTriggerRef}
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          openSearch('hero', e.currentTarget);
-        }}
-        aria-haspopup="dialog"
-        aria-label={placeholder}
-        className="w-full !justify-start !rounded-pill text-faint lg:hidden"
-        leftIcon={<SearchIcon />}
-      >
-        <span className="truncate">{placeholder}</span>
-      </Button>
+      </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="text-faint text-sm">{popularLabel}</span>
-        {POPULAR[lang].map((q) => (
-          <Button variant="outline" size="sm"
+        {popularQueries.map((q) => (
+          <Button
+            variant="outline"
+            size="sm"
             key={q}
             type="button"
             onClick={() => go(q, 'popular')}
