@@ -6,13 +6,16 @@ import { ArrowRight } from '@/components/icons';
 export interface AccessiblePaginationProps {
   page: number;
   pageCount: number;
-  onPageChange: (page: number) => void;
+  onPageChange?: (page: number) => void;
+  onChange?: (page: number) => void;
   getPageHref?: (page: number) => string;
   prevLabel?: string;
   nextLabel?: string;
   ariaLabel?: string;
   className?: string;
 }
+
+export type PaginationProps = AccessiblePaginationProps;
 
 export function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -30,6 +33,7 @@ export function AccessiblePagination({
   page,
   pageCount,
   onPageChange,
+  onChange,
   getPageHref = (p) => (p === 1 ? '?' : `?page=${p}`),
   prevLabel = 'Previous',
   nextLabel = 'Next',
@@ -38,6 +42,7 @@ export function AccessiblePagination({
 }: AccessiblePaginationProps) {
   if (pageCount <= 1) return null;
 
+  const triggerChange = onPageChange ?? onChange ?? (() => {});
   const pages = getPageNumbers(page, pageCount);
 
   function handleClick(e: MouseEvent<HTMLAnchorElement>, targetPage: number) {
@@ -46,7 +51,7 @@ export function AccessiblePagination({
     }
     e.preventDefault();
     if (targetPage !== page && targetPage >= 1 && targetPage <= pageCount) {
-      onPageChange(targetPage);
+      triggerChange(targetPage);
     }
   }
 
@@ -54,7 +59,7 @@ export function AccessiblePagination({
     <nav
       data-testid="pagination"
       aria-label={ariaLabel}
-      className={`border-border mt-8 flex flex-wrap items-center justify-center gap-1.5 border-t pt-6 ${className}`}
+      className={`border-border mt-8 flex flex-wrap items-center justify-center gap-2 border-t pt-6 ${className}`}
     >
       {/* Previous Button */}
       {page > 1 ? (
@@ -62,7 +67,8 @@ export function AccessiblePagination({
           href={getPageHref(page - 1)}
           onClick={(e) => handleClick(e, page - 1)}
           aria-label={prevLabel}
-          className="border-border text-muted hover:border-accent hover:text-accent flex min-h-[44px] items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition select-none"
+          rel="prev"
+          className="border-border text-muted hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none"
         >
           <ArrowRight size={14} className="rotate-180" />
           <span className="hidden sm:inline">{prevLabel}</span>
@@ -70,7 +76,7 @@ export function AccessiblePagination({
       ) : (
         <span
           aria-disabled="true"
-          className="border-border text-faint flex min-h-[44px] cursor-not-allowed items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium opacity-40 select-none"
+          className="border-border text-faint inline-flex min-h-[44px] min-w-[44px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium opacity-40 select-none"
         >
           <ArrowRight size={14} className="rotate-180" />
           <span className="hidden sm:inline">{prevLabel}</span>
@@ -83,7 +89,7 @@ export function AccessiblePagination({
           <span
             key={`el-${i}`}
             aria-hidden="true"
-            className="text-faint flex min-h-[44px] min-w-[32px] items-center justify-center px-1 text-sm select-none"
+            className="text-faint inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-1 font-mono text-sm select-none"
           >
             …
           </span>
@@ -93,9 +99,9 @@ export function AccessiblePagination({
             href={getPageHref(p)}
             onClick={(e) => handleClick(e, p)}
             aria-current={p === page ? 'page' : undefined}
-            className={`flex min-h-[44px] min-w-[40px] items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition select-none ${
+            className={`focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none ${
               p === page
-                ? 'border-accent bg-accent text-on-accent font-semibold shadow-sm'
+                ? 'border-text bg-text text-bg font-bold shadow-xs'
                 : 'border-border text-muted hover:border-accent hover:text-accent'
             }`}
           >
@@ -110,7 +116,8 @@ export function AccessiblePagination({
           href={getPageHref(page + 1)}
           onClick={(e) => handleClick(e, page + 1)}
           aria-label={nextLabel}
-          className="border-border text-muted hover:border-accent hover:text-accent flex min-h-[44px] items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition select-none"
+          rel="next"
+          className="border-border text-muted hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none"
         >
           <span className="hidden sm:inline">{nextLabel}</span>
           <ArrowRight size={14} />
@@ -118,7 +125,7 @@ export function AccessiblePagination({
       ) : (
         <span
           aria-disabled="true"
-          className="border-border text-faint flex min-h-[44px] cursor-not-allowed items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium opacity-40 select-none"
+          className="border-border text-faint inline-flex min-h-[44px] min-w-[44px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium opacity-40 select-none"
         >
           <span className="hidden sm:inline">{nextLabel}</span>
           <ArrowRight size={14} />
@@ -127,3 +134,5 @@ export function AccessiblePagination({
     </nav>
   );
 }
+
+export { AccessiblePagination as Pagination };
