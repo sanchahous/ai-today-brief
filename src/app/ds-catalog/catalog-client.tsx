@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, type ReactNode } from 'react';
 import { ActionCatalog } from './action-catalog';
+import { FeedbackCatalog } from './feedback-catalog';
 import { FieldCatalog } from './field-catalog';
 import { OverlayCatalog } from './overlay-catalog';
 import {
@@ -151,6 +152,8 @@ export function CatalogClient() {
         <Section title="Toast">
           <ToastDemo />
         </Section>
+
+        <FeedbackCatalog />
 
         <OverlayCatalog />
 

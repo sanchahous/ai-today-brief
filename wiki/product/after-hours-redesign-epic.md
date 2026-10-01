@@ -46,7 +46,7 @@ Last updated: 2026-10-01
 > [after-hours-epic-readiness](after-hours-epic-readiness.md); декомпозицію й порядок робіт задає цей
 > епік. (source: `git show 3f47256 --stat`; grep `src/` після rebase 2026-09-29)
 
-> **Актуально 2026-10-01:** main `c03a4dd` (merge #387). Playwright #387 і push на main — success. Окремого візуального підпису #387 не було. AH-2.3 — [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388), підпис відкритий. G1 та відкриті AH-1.5 UK/CLS/legacy AC збережено. (source: `gh pr view 387`; `gh run view` 36837592359 і 36837852364; PR #388)
+> **Актуально 2026-10-01:** main `56a9cf8` (merge #390). Push Playwright [run 36854771692](https://github.com/sanchahous/ai-today-brief/actions/runs/36854771692), deps integrity, migration drift і Vercel — success. Sonar на push не запускався; Sonar PR #390 був success до merge. Окремого підпису #390 не було. Поточна задача — AH-2.5. G1 та відкриті AH-1.5 UK/CLS/legacy AC збережено. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01)
 
 ## 0. Як користуватися епіком
 
@@ -354,8 +354,8 @@ flowchart TD
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
-| AH-2.4 | ◐ Оверлеї в [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390): sheet left/right/full, disclosure-меню; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
-| AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
+| AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
+| AH-2.5 | ◐ Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у [#391](https://github.com/sanchahous/ai-today-brief/pull/391); Toast і Skeleton не дубльовано; підпис очікується ([докази](after-hours-ah-2-5-validation.md)) | S | агент | AH-1.6 | G13 (data-стани) |
 | AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
@@ -1004,7 +1004,7 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 - [x] Жодних довільних `z-[…]` в оверлеях (ratchet AH-1.7): оболонка на `--z-modal`.
 - [x] `OverlayDrawer` лишається єдиною модальною механікою фокуса; header, пошук і drawer фільтрів уже на ньому. Disclosure не додає другої пастки.
 
-**Стан 2026-10-01:** [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) на `feat/ah-2.4-overlays` від `7f523e6`. Міграції header, filters drawer, search і share не виконані. Окремий візуальний підпис очікується. (source: [AH-2.4 validation](after-hours-ah-2-4-validation.md); `e2e/overlays.spec.ts`; PR #390)
+**Стан 2026-10-01:** [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) змерджено в `56a9cf8`. Міграції header, filters drawer, search і share не виконані. Окремого візуального підпису не було. (source: [AH-2.4 validation](after-hours-ah-2-4-validation.md); `gh pr view 390` 2026-10-01)
 
 ### AH-2.5 · Зворотний зв'язок: Notice, Toast, Skeleton, Spinner, EmptyState, ErrorState, StaleNotice
 
@@ -1026,10 +1026,12 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 матеріалів» — чесний обсяг, G05).
 
 **AC:**
-- [ ] У каталозі показано ланцюг `loading → partial/stale → ready → empty → recoverable error →
+- [x] У каталозі показано ланцюг `loading → partial/stale → ready → empty → recoverable error →
   terminal error` (gap-plan §5.3).
-- [ ] Текст toast з'являється в `[role=status]` (E2E).
-- [ ] Заміна skeleton-а контентом у `loading.tsx` не дає CLS > 0,05 (лабораторно).
+- [x] Текст toast з'являється в `[role=status]` (E2E).
+- [x] Заміна skeleton-а контентом у `loading.tsx` не дає CLS > 0,05 (лабораторно).
+
+**Стан 2026-10-01:** [PR #391](https://github.com/sanchahous/ai-today-brief/pull/391) на `feat/ah-2.5-feedback-states` від `56a9cf8`. Окремий візуальний підпис очікується. G13 поза цим ланцюгом лишається частковим для карток фаз 3–5. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391)
 
 ### AH-2.6 · Навігація: Pagination (консолідація), Tabs, Breadcrumbs
 

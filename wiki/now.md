@@ -19,7 +19,9 @@ Last updated: 2026-10-01
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
-- **AH-2.4 відкрито в [#390](https://github.com/sanchahous/ai-today-brief/pull/390)** на `feat/ah-2.4-overlays` від `7f523e6`. Sheet left/right/full, disclosure з посиланнями, шар `--z-modal`. Окремий підпис очікується. Наступна після інтеграції — AH-2.5. (source: [AH-2.4 validation](product/after-hours-ah-2-4-validation.md); PR #390)
+- **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`: Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис очікується. Наступна після інтеграції — AH-2.6. (source: [AH-2.5 validation](product/after-hours-ah-2-5-validation.md); PR #391)
+
+- **AH-2.4 змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390), `56a9cf8`, о 11:20 UTC.** Окремого підпису не було. Push Playwright, deps integrity, migration drift і Vercel — success. Sonar на push не запускався. Міграції споживачів лишаються. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01; [AH-2.4 validation](product/after-hours-ah-2-4-validation.md))
 
 - **#389 змерджено в `7f523e6` о 10:19 UTC.** Push: Playwright [run 36848455712](https://github.com/sanchahous/ai-today-brief/actions/runs/36848455712), deps integrity, migration drift і Vercel — success. Sonar на самому push не запускався; на PR #389 Sonar був success. Weekly generation worker падав як `workflow_dispatch`, це не CI merge. (source: `gh run list --commit 7f523e6` 2026-10-01; `gh pr view 389`)
 
@@ -41,7 +43,7 @@ Last updated: 2026-10-01
   радіус `md` 6→8px, тіні (`--shadow-1` / `--shadow-pop`), фокус (`--focus`, відступ 3px), кільце в
   полях розсилки й hero-search. Нові gate-и: `e2e/focus-visible.spec.ts`, docs-аудит токенів.
   AH-1.4 (кольори категорій) інтегровано через PR #382: `--cat-*` / `--art-*` внесено в реєстр §7.1.1
-  після злиття гілок. Поточна фаза 2 — AH-2.3; відкриті UK AC AH-1.5 збережено в її validation.
+  після злиття гілок. Поточна задача фази 2 — у блоці стану вище; відкриті UK AC AH-1.5 збережено в її validation.
   (source: `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `e2e/focus-visible.spec.ts`;
   повний Chromium-набір 192 passed / 0 failed 2026-09-30)
 

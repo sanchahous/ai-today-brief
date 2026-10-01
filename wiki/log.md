@@ -5576,3 +5576,11 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-10-01 — AH-2.4: PR #390
 
 Створено [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390). `pr:check` EXIT=0 перед другим push. Pre-push після фікса контрасту: 417 Chromium passed / 5 skipped. Номер внесено в validation, epic §5.3/картку, now, handoff і index. Окремий візуальний підпис очікується. Merge не виконувався. Production на момент PR: RSS 30 Sep 2026, sitemap publication 2026-10-01, `/en/news` Updated September 30, 2026 — той самий baseline, не старіший. (source: PR #390; `artifacts/_local/ah-2.4-pr-check-3.log`; pre-push 2026-10-01; live HTTP aitodaybrief.com 2026-10-01)
+
+## 2026-10-01 — #390 змерджено; AH-2.5: зворотний зв'язок і data-стани
+
+#390 змерджено в `56a9cf8` о 11:20 UTC. Окремого текстового підпису не було. Push: Playwright run 36854771692, deps integrity, migration drift і Vercel — success. Sonar на push не запускався; Sonar PR #390 був success до merge. PR Playwright run 36853557144 після merge success. Weekly generation worker падав як workflow_dispatch, не як CI merge. AH-2.5 додає Notice, Spinner, ErrorState і StaleNotice. Toast і Skeleton не дубльовано. Каталог показує ланцюг loading, partial/stale, ready, empty, recoverable, terminal. E2E 21 passed у трьох браузерах. Лабораторний CLS заміни skeleton: максимум 0,0178 на 1440 і 0 на 390. 12 PNG у локальній галереї. Номер PR вноситься після створення. Окремий підпис очікується. Production лишається на baseline 30 вересня / sitemap 1 жовтня, не старіший. (source: `gh pr view 390`; `gh run list --commit 56a9cf8`; [AH-2.5 validation](product/after-hours-ah-2-5-validation.md); live HTTP aitodaybrief.com 2026-10-01)
+
+## 2026-10-01 — AH-2.5: PR #391
+
+Створено [PR #391](https://github.com/sanchahous/ai-today-brief/pull/391). `pr:check` EXIT=0 перед першим push. Перший push зупинив хук, бо в оболонці лишився `E2E_BASE_URL` на вже зупинений dev-порт; другий push зупинився на одному typography-тесті статті, який окремо потім пройшов. Третій push: 424 Chromium passed / 5 skipped. Номер внесено в validation, epic §5.3/картку, now, handoff, index і evidence. Окремий візуальний підпис очікується. Merge не виконувався. (source: PR #391; `artifacts/_local/ah-2.5-pr-check.log`; pre-push 2026-10-01)
