@@ -4,6 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mock": "tsx scripts/mock-db/dev.ts",
+    "mockdb:export": "node --env-file-if-exists=.env.local --import tsx scripts/mock-db/export-snapshot.ts",
+    "mockdb:build": "tsx scripts/mock-db/build.ts",
+    "mockdb:serve": "tsx scripts/mock-db/server.ts",
+    "mockdb:clear-cache": "tsx scripts/mock-db/next-cache.ts",
+    "mockdb:test": "node --import tsx --test scripts/mock-db/engine.test.ts scripts/mock-db/rpc.test.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
