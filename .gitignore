@@ -54,6 +54,11 @@ next-env.d.ts
 # local-only pipeline ops/debug helpers (underscore-prefixed, not for CI)
 pipeline/scripts/_*
 
+# Local mock Supabase for redesign QA. The engine, the prod snapshot
+# (raw/_local/mock-db) and the built DB (artifacts/_local/mock-db) stay on disk.
+# See wiki/ops/local-mock-database.md.
+scripts/mock-db/
+
 # generated card-image samples / OG render checks (large binaries — regenerate locally)
 artifacts/card-samples/
 

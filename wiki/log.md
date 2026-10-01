@@ -5562,3 +5562,7 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-10-01 — AH-2.3: PR #388
 
 Створено [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388). `pr:check` EXIT=0 двічі; pre-push після виправлення лічильника options у Combobox — 105 Chromium passed / 5 skipped. Перший push зупинив хук: нативні `option` у Select потрапили в нескопований лічильник Combobox; тест звужено до listbox Combobox, failed log не обходився. Номер PR внесено в validation, epic, now, handoff, index. Окремий візуальний підпис очікується. Merge не виконувався. (source: PR #388; `artifacts/_local/ah-2.3-pr-check.log`; `ah-2.3-pr-check-2.log`; pre-push 2026-10-01)
+
+## 2026-10-01 — локальна mock-БД у цьому checkout
+
+Власник попросив прибрати mock-базу з окремого worktree. Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` (~8.6 МБ) і зібрана база `artifacts/_local/mock-db/` (~9.9 МБ) скопійовані в основний checkout. Дані вже були під `raw/_local/*` і `artifacts/_local/*`. Рушій додано в `.gitignore`. Команди `dev:mock` і `mockdb:*` додані в `package.json`. Worktree не видалявся. (source: повідомлення власника 2026-10-01; `.gitignore`; [local-mock-database](ops/local-mock-database.md))
