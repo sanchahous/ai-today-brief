@@ -1,6 +1,6 @@
 # AH-2.3: поля — реалізація й докази
 
-Summary: Field, Textarea, SegmentedControl і Switch, рестайл Input/Select/Checkbox/Radio та локалізація наявного SearchInput. Каталог показує двомовну матрицю станів; окремий візуальний підпис і full-page legacy DoD лишаються відкритими.
+Summary: Field, Textarea, SegmentedControl і Switch, рестайл Input/Select/Checkbox/Radio та локалізація наявного SearchInput. Власник підписав і змерджив PR #388 у e75c438. Full-page legacy DoD і G1 лишаються відкритими.
 Sources: `src/components/ui/`; `src/lib/ui/field-a11y.ts`; `src/app/ds-catalog/field-catalog.tsx`; `e2e/fields.spec.ts`; `artifacts/after-hours/qa/ah-2.3-evidence.json`; `artifacts/after-hours/qa/capture-catalog-ah-2.3.mjs`; GitHub checks PR #387 2026-10-01; live production HTTP 2026-10-01.
 Last updated: 2026-10-01
 
@@ -8,7 +8,7 @@ Last updated: 2026-10-01
 
 ## Стан
 
-Реалізовано в [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) на гілці `feat/ah-2.3-fields` від `origin/main` `c03a4dd` (merge AH-2.2 / #387). Combobox і SearchInput не дубльовано: SearchInput лишився в `input.tsx`, отримав `lang` для placeholder і назви кнопки очищення. (source: [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388); картка [AH-2.3](after-hours-redesign-epic.md#ah-23--поля-field-input-searchinput-textarea-select-checkbox-radio-segmentedcontrol-switch))
+Підписано власником і змерджено [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) у `e75c438` 2026-10-01 09:45 UTC. Гілка `feat/ah-2.3-fields` була від `origin/main` `c03a4dd`. Combobox і SearchInput не дубльовано: SearchInput лишився в `input.tsx`, отримав `lang` для placeholder і назви кнопки очищення. (source: повідомлення власника 2026-10-01; `gh pr view 388`; картка [AH-2.3](after-hours-redesign-epic.md#ah-23--поля-field-input-searchinput-textarea-select-checkbox-radio-segmentedcontrol-switch))
 
 #387 змерджено в `c03a4dd`. Playwright ревізії `9e65c3b` ([run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359)) і push на main ([run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364)) завершились success. Sonar, dependencies, migration drift і Vercel на PR були success ще до завершення Playwright. Це не візуальний підпис #387 і не закриває UK/CLS/H1/legacy AC чи G1. (source: `gh pr view 387`; `gh run view` 2026-10-01)
 
@@ -27,13 +27,13 @@ SegmentedControl і RadioGroup — `radiogroup` з нативними radio і �
 
 ## Візуальний review
 
-[Локальна галерея](../../artifacts/after-hours/qa/ah-2.3-review.html): 8 знімків каталогу. PNG у git-ignored `artifacts/_local/ah-2-3-catalog`, SHA-256 у manifest і [evidence receipt](../../artifacts/after-hours/qa/ah-2.3-evidence.json). Окремий підпис очікується. Публічний report на 140 сценаріїв для рестайлу Select на News у цій задачі не знімався; legacy axe/clipping і G1 не вважаються закритими. (source: `capture-catalog-ah-2.3.mjs`; manifest 2026-10-01)
+[Локальна галерея](../../artifacts/after-hours/qa/ah-2.3-review.html): 8 знімків каталогу. PNG у git-ignored `artifacts/_local/ah-2-3-catalog`, SHA-256 у manifest і [evidence receipt](../../artifacts/after-hours/qa/ah-2.3-evidence.json). Власник підписав цей PR разом із merge. Публічний report на 140 сценаріїв для рестайлу Select на News у цій задачі не знімався; legacy axe/clipping і G1 не вважаються закритими. (source: повідомлення власника 2026-10-01; `capture-catalog-ah-2.3.mjs`; manifest 2026-10-01)
 
 ## Production freshness
 
 Перевірка production 2026-10-01 після merge #387, до цього PR: RSS newest `Wed, 30 Sep 2026`; `news-sitemap.xml` publication_date `2026-10-01`; `/en/news` Updated September 30, 2026. Це той самий baseline, не старіший знімок. (source: live HTTP `https://aitodaybrief.com/rss.xml`, `news-sitemap.xml`, `/en/news` 2026-10-01)
 
-Наступна задача за нумерацією епіку — **AH-2.4** (оверлеї). AH-2.2 уже в main, тож залежність AH-2.4 від неї виконана. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+Наступна задача за нумерацією епіку — **AH-2.4** (оверлеї), її веде окремий PR. AH-2.2 уже в main, тож залежність AH-2.4 від неї виконана. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач); [AH-2.4 validation](after-hours-ah-2-4-validation.md))
 
 ## Related pages
 

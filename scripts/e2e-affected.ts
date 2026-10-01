@@ -66,6 +66,7 @@ const BROAD: RegExp[] = [
 const OVERRIDES: Array<{ match: RegExp; specs: string[] }> = [
   { match: /^src\/(?:components\/ui\/(?:button|icon-button|pill|chip|tag|badge|category-badge|actions\.module)|lib\/ui\/action-styles|app\/ds-catalog\/)/, specs: ['e2e/actions-selection.spec.ts'] },
   { match: /^src\/(?:components\/ui\/(?:field|input|textarea|select|checkbox|radio|segmented|switch|fields\.module)|lib\/ui\/field-a11y|app\/ds-catalog\/)/, specs: ['e2e/fields.spec.ts'] },
+  { match: /^src\/(?:components\/ui\/(?:dialog|overlay-drawer|disclosure-nav|overlay\.module)|app\/ds-catalog\/)/, specs: ['e2e/overlays.spec.ts'] },
   { match: /^src\/(?:app|components)\//, specs: [A11Y_MATRIX] },
   { match: /^src\/components\/site-header(-chrome)?\.tsx$/, specs: [HEADER] },
   { match: /^src\/components\/header-search-field\.tsx$/, specs: [HEADER] },

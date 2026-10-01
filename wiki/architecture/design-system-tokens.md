@@ -2,7 +2,7 @@
 
 Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v2.1.0 (міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
 Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29.
-Last updated: 2026-09-30
+Last updated: 2026-10-01
 
 **Статус:** прийнято. Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md).
 
@@ -322,8 +322,9 @@ AH-1.5 підключає локальні OFL subset-и через `next/font/l
 | `--z-sticky` | 30 | sticky header, панелі |
 | `--z-dropdown` | 60 | dropdown, popover, tooltip |
 | `--z-overlay` | 80 | підкладка модальних шарів |
-| `--z-dialog` | 90 | dialog, drawer |
-| `--z-toast` | 100 | toast |
+| `--z-dialog` | 90 | запасний шар діалогу під toast |
+| `--z-toast` | 100 | toast; банер згоди досі малює сирий `z-[100]` |
+| `--z-modal` | 120 | модальна оболонка `OverlayDrawer`: над toast і банером згоди |
 
 ### 7.8 Рух (Tension v3)
 

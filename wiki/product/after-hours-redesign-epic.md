@@ -353,8 +353,8 @@ flowchart TD
 | AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
-| AH-2.3 | ◐ Поля в [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388): Field, Textarea, SegmentedControl, Switch, рестайл Input/Select/Checkbox/Radio, локалізація SearchInput; підпис відкритий ([докази](after-hours-ah-2-3-validation.md)) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
-| AH-2.4 | ◐ Оверлеї (#369: Popover, Dialog, DropdownMenu, Tooltip, Accordion) | M | агент | AH-2.2, AH-1.6 | G16 |
+| AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
+| AH-2.4 | ◐ Оверлеї в [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390): sheet left/right/full, disclosure-меню; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
 | AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
@@ -975,7 +975,7 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 - [x] Клавіатура: стрілки в radiogroup / segmented, Space у checkbox / switch.
 - [x] Каталог показує default / focus / invalid / disabled / read-only для кожного поля.
 
-**Стан 2026-10-01:** [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) на `feat/ah-2.3-fields` від `c03a4dd`. AC картки закриті локальними E2E каталогу. Окремий візуальний підпис і full-page legacy DoD відкриті. (source: [AH-2.3 validation](after-hours-ah-2-3-validation.md); `e2e/fields.spec.ts`; PR #388)
+**Стан 2026-10-01:** підписано власником і змерджено [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) у `e75c438`. AC картки закриті. Full-page legacy DoD і G1 лишаються відкритими. (source: повідомлення власника 2026-10-01; `gh pr view 388`; [AH-2.3 validation](after-hours-ah-2-3-validation.md))
 
 ### AH-2.4 · Оверлеї: Dialog / Sheet, Drawer, Menu, Disclosure, Popover
 
@@ -999,11 +999,12 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 навігаційних меню з посиланнями — disclosure-патерн (не `role="menu"`).
 
 **AC:**
-- [ ] E2E на каталозі в chromium, firefox і webkit: Escape / бекдроп / кнопка закривають і повертають
+- [x] E2E на каталозі в chromium, firefox і webkit: Escape / бекдроп / кнопка закривають і повертають
   фокус; Tab не виходить із модального; фон не прокручується.
-- [ ] Жодних довільних `z-[…]` в оверлеях (ratchet AH-1.7).
-- [ ] `OverlayDrawer` або переведено на нову основу, або задокументовано як сумісний варіант — двох
-  різних механік фокуса немає.
+- [x] Жодних довільних `z-[…]` в оверлеях (ratchet AH-1.7): оболонка на `--z-modal`.
+- [x] `OverlayDrawer` лишається єдиною модальною механікою фокуса; header, пошук і drawer фільтрів уже на ньому. Disclosure не додає другої пастки.
+
+**Стан 2026-10-01:** [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) на `feat/ah-2.4-overlays` від `7f523e6`. Міграції header, filters drawer, search і share не виконані. Окремий візуальний підпис очікується. (source: [AH-2.4 validation](after-hours-ah-2-4-validation.md); `e2e/overlays.spec.ts`; PR #390)
 
 ### AH-2.5 · Зворотний зв'язок: Notice, Toast, Skeleton, Spinner, EmptyState, ErrorState, StaleNotice
 

@@ -82,7 +82,7 @@ function scanUtilities(line: string, add: AddFinding): void {
       kind,
       match[0],
       kind === 'z-index'
-        ? 'var(--z-dropdown), var(--z-overlay), var(--z-dialog) або var(--z-toast)'
+        ? 'var(--z-dropdown), var(--z-overlay), var(--z-dialog), var(--z-toast) або var(--z-modal)'
         : 'var(--shadow-card) або var(--shadow-pop)',
     );
   }

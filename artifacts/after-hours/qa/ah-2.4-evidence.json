@@ -1,0 +1,23 @@
+{
+  "task": "AH-2.4",
+  "pr": 390,
+  "branch": "feat/ah-2.4-overlays",
+  "base": "7f523e68e69112098fdce2c722707e5782357681",
+  "catalog": {
+    "file": "artifacts/_local/ah-2-4-catalog/manifest.json",
+    "sha256": "a45c383f77b8dad6a00eea533bad92dc8363af3c99a2f352237daf7671873f20",
+    "screenshots": 14,
+    "server": "http://localhost:3107",
+    "note": "Local next dev with .env.local. PNG files stay in gitignored artifacts/_local. Eight closed catalog shots and six open states."
+  },
+  "checks": {
+    "playwrightDev": "After the data-ready hydration gate: overlays.spec.ts 6 chromium + 12 firefox/webkit passed against localhost:3107",
+    "zIndex": "Overlay shell uses --z-modal 120; raw z-[120] removed from overlay-drawer.tsx"
+  },
+  "open": [
+    "separate visual sign-off",
+    "consumer migrations: header AH-3.3, search AH-3.2, filters drawer and share AH-4.3",
+    "full-page legacy DoD and G1",
+    "UK Home/Article/Weekly, Preview CLS, H1/legacy AC from AH-1.5"
+  ]
+}

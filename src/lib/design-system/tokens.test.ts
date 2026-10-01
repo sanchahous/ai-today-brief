@@ -230,7 +230,7 @@ describe('non-colour token sync (AH-1.6)', () => {
   it('keeps the scales ordered and on the agreed values', () => {
     const { radii, zIndex, motion, focus } = PRIMITIVES;
     expect([radii.xs, radii.sm, radii.md, radii.card, radii.pill]).toEqual(['3px', '4px', '8px', '14px', '9999px']);
-    const layers = [zIndex.base, zIndex.sticky, zIndex.dropdown, zIndex.overlay, zIndex.dialog, zIndex.toast];
+    const layers = [zIndex.base, zIndex.sticky, zIndex.dropdown, zIndex.overlay, zIndex.dialog, zIndex.toast, zIndex.modal];
     expect([...layers].sort((a, b) => a - b)).toEqual(layers);
     expect(new Set(layers).size).toBe(layers.length);
     expect(motion.duration).toEqual({ fast: 160, standard: 320, entrance: 640 });

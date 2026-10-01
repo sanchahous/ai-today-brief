@@ -201,6 +201,7 @@
   --z-overlay: 80;
   --z-dialog: 90;
   --z-toast: 100;
+  --z-modal: 120;
 
   /* Motion (Tension v3). `--ease-soft` is the prototype's ease-in-out, renamed so Tailwind's own stays. */
   --duration-fast: 160ms;

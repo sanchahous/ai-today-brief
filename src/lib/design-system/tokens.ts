@@ -235,6 +235,11 @@ export const PRIMITIVES = {
     overlay: 80,
     dialog: 90,
     toast: 100,
+    /**
+     * Modal shell. Sits above `--z-toast` because the consent banner still paints at 100
+     * (`cookie-consent.tsx`) and focused overlays must cover it.
+     */
+    modal: 120,
   },
   /**
    * D5, variant A: prototype values as named `--breakpoint-*` in rem, so layouts reflow when the
@@ -478,6 +483,7 @@ export const CSS_VARS_STATIC: Readonly<Record<string, string>> = {
   '--z-overlay': String(PRIMITIVES.zIndex.overlay),
   '--z-dialog': String(PRIMITIVES.zIndex.dialog),
   '--z-toast': String(PRIMITIVES.zIndex.toast),
+  '--z-modal': String(PRIMITIVES.zIndex.modal),
   '--duration-fast': `${PRIMITIVES.motion.duration.fast}ms`,
   '--duration-standard': `${PRIMITIVES.motion.duration.standard}ms`,
   '--duration-entrance': `${PRIMITIVES.motion.duration.entrance}ms`,
