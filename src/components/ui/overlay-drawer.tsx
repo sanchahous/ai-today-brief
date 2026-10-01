@@ -8,14 +8,17 @@ import {
   type BodyScrollLockSnapshot,
 } from '@/lib/body-scroll-lock';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
+import styles from './overlay.module.css';
 
-export type OverlayDrawerPlacement = 'center' | 'top' | 'right' | 'fullscreen';
+export type OverlayDrawerPlacement = 'center' | 'top' | 'left' | 'right' | 'fullscreen';
 
 export interface OverlayDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   labelledBy?: string;
+  describedBy?: string;
   ariaLabel?: string;
+  id?: string;
   triggerRef?: RefObject<HTMLElement | null>;
   initialFocusRef?: RefObject<HTMLElement | null>;
   placement?: OverlayDrawerPlacement;
@@ -26,18 +29,26 @@ export interface OverlayDrawerProps {
   children: ReactNode;
 }
 
+/**
+ * The only modal focus trap and body-scroll lock in the product.
+ * `Dialog` (centre, left, right, full) is a shell on top of this component.
+ * Header, news filters and mobile search still call it directly until AH-3.2, AH-3.3 and AH-4.3.
+ * Non-modal disclosures use `useDismissable` and do not trap focus.
+ */
+
 function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(' ');
 }
 
+const SIDE_PANEL =
+  'overlay-panel-viewport h-full w-[min(380px,92vw)] overflow-y-auto overscroll-y-contain';
+
 function placementClasses(placement: OverlayDrawerPlacement): { overlay: string; panel: string } {
   switch (placement) {
+    case 'left':
+      return { overlay: 'items-stretch justify-start', panel: SIDE_PANEL };
     case 'right':
-      return {
-        overlay: 'items-stretch justify-end',
-        panel:
-          'overlay-panel-viewport h-full w-[min(380px,92vw)] overflow-y-auto overscroll-y-contain',
-      };
+      return { overlay: 'items-stretch justify-end', panel: SIDE_PANEL };
     case 'top':
       return {
         overlay: 'items-start justify-center',
@@ -50,11 +61,14 @@ function placementClasses(placement: OverlayDrawerPlacement): { overlay: string;
           'max-h-[90vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto overscroll-y-contain rounded-card',
       };
     case 'fullscreen':
-    default:
       return {
         overlay: 'items-stretch justify-stretch',
         panel: 'overlay-panel-viewport w-full overflow-y-auto overscroll-y-contain',
       };
+    default: {
+      const exhaustive: never = placement;
+      return exhaustive;
+    }
   }
 }
 
@@ -62,7 +76,9 @@ export function OverlayDrawer({
   open,
   onOpenChange,
   labelledBy,
+  describedBy,
   ariaLabel,
+  id,
   triggerRef,
   initialFocusRef,
   placement = 'fullscreen',
@@ -103,21 +119,27 @@ export function OverlayDrawer({
 
   return createPortal(
     <div
-      className={cx('fixed inset-0 z-[120] flex bg-black/60', classes.overlay, overlayClassName)}
+      className={cx('fixed inset-0 z-[var(--z-modal)] flex bg-black/60', classes.overlay, overlayClassName)}
       data-testid={backdropTestId}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) close();
+        if (event.target !== event.currentTarget) return;
+        // Keep focus from moving to the document before the trap restores the trigger.
+        event.preventDefault();
+        close();
       }}
     >
       <div
+        id={id}
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}
         aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
         tabIndex={-1}
         data-testid={panelTestId}
-        className={cx('bg-bg shadow-pop outline-none', classes.panel, panelClassName)}
+        data-placement={placement}
+        className={cx('bg-bg shadow-pop outline-none', styles.panel, classes.panel, panelClassName)}
       >
         {children}
       </div>

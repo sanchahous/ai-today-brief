@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AH-2.4 — візуальний review</title>
+<style>
+body{margin:24px;background:#171918;color:#f0e9dc;font:16px/1.5 system-ui}h1,h2{font-family:Georgia,serif}select{font:inherit;padding:8px;background:#282d29;color:inherit}article{border-top:1px solid #737a73;margin-top:24px}figure{margin:0}img{width:100%;height:auto;border:1px solid #737a73}figcaption{margin:8px 0}
+</style>
+<h1>AH-2.4 — оверлеї</h1>
+<p>Каталог <code>/ds-catalog</code> з локального next dev і реальних <code>.env.local</code>. Вісім знімків закритої секції (EN/UK, Night/Day, 390/1440) і шість відкритих станів: ліва, права й повна панелі та disclosure. PNG лише в git-ignored <code>artifacts/_local/ah-2-4-catalog</code>. Окремий підпис цього PR очікується.</p>
+<p>Міграції header, filters drawer, search і share не входять. Повний legacy DoD і G1 не закриті.</p>
+<label for="mode">Розмір: </label><select id="mode"><option value="all">Усі</option><option value="mobile">390</option><option value="desktop">1440</option></select>
+<div id="shots"></div>
+<script>
+const root=document.querySelector('#shots');
+const add=(title,size,src)=>{const article=document.createElement('article');article.dataset.size=size;const heading=document.createElement('h2');heading.textContent=title;article.append(heading);const figure=document.createElement('figure');const caption=document.createElement('figcaption');caption.textContent='Каталог';const img=document.createElement('img');img.alt=title;img.src=src;img.loading='lazy';figure.append(caption,img);article.append(figure);root.append(article)};
+for(const lang of ['en','uk'])for(const theme of ['night','day'])for(const size of ['desktop','mobile'])add(`Каталог · ${lang} · ${theme} · ${size}`,size,`../../_local/ah-2-4-catalog/catalog-${lang}-${theme}-${size}.png`);
+const opens=[['left','en','night','desktop'],['left','en','night','mobile'],['right','en','day','desktop'],['full','en','day','mobile'],['left','uk','night','desktop'],['disclosure','uk','day','mobile']];
+for(const [variant,lang,theme,size] of opens)add(`Відкрито · ${variant} · ${lang} · ${theme} · ${size}`,size,`../../_local/ah-2-4-catalog/open-${variant}-${lang}-${theme}-${size}.png`);
+document.querySelector('#mode').addEventListener('change',event=>{for(const shot of root.children)shot.hidden=event.target.value!=='all'&&event.target.value!==shot.dataset.size});
+</script></html>

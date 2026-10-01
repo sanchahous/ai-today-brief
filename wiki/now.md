@@ -19,7 +19,11 @@ Last updated: 2026-10-01
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
-- **AH-2.3 підписано й змерджено [#388](https://github.com/sanchahous/ai-today-brief/pull/388) у `e75c438`.** Наступна за нумерацією — AH-2.4. UK/CLS/H1/legacy AC і G1 лишаються відкритими. (source: повідомлення власника 2026-10-01; `gh pr view 388`)
+- **AH-2.4 у роботі на `feat/ah-2.4-overlays` від `7f523e6`.** Sheet left/right/full, disclosure з посиланнями, шар `--z-modal`. Номер PR вноситься після створення. Окремий підпис очікується. Наступна після інтеграції — AH-2.5. (source: [AH-2.4 validation](product/after-hours-ah-2-4-validation.md))
+
+- **#389 змерджено в `7f523e6` о 10:19 UTC.** Push: Playwright [run 36848455712](https://github.com/sanchahous/ai-today-brief/actions/runs/36848455712), deps integrity, migration drift і Vercel — success. Sonar на самому push не запускався; на PR #389 Sonar був success. Weekly generation worker падав як `workflow_dispatch`, це не CI merge. (source: `gh run list --commit 7f523e6` 2026-10-01; `gh pr view 389`)
+
+- **AH-2.3 підписано й змерджено [#388](https://github.com/sanchahous/ai-today-brief/pull/388) у `e75c438`.** UK/CLS/H1/legacy AC і G1 лишаються відкритими. (source: повідомлення власника 2026-10-01; `gh pr view 388`)
 
 - **AH-2.2 змерджено [#387](https://github.com/sanchahous/ai-today-brief/pull/387) у `c03a4dd`.** Playwright [run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359) і main push [run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364) — success. Окремого візуального підпису #387 не було. UK/CLS/H1/legacy AC і G1 лишаються відкритими. (source: `gh pr view 387`; `gh run view` 2026-10-01; [AH-2.2 validation](product/after-hours-ah-2-2-validation.md))
 

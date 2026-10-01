@@ -24,3 +24,4 @@ export * from './accordion';
 export * from './toast';
 export * from './combobox';
 export * from './dialog';
+export * from './disclosure-nav';

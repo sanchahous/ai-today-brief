@@ -198,12 +198,6 @@
       "kind": "color",
       "value": "rgba(240,192,64,0.35)",
       "count": 1
-    },
-    {
-      "path": "src/components/ui/overlay-drawer.tsx",
-      "kind": "z-index",
-      "value": "z-[120]",
-      "count": 1
     }
   ]
 }

@@ -4,7 +4,7 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-09-28
+Last updated: 2026-10-01
 
 ## 2026-09-28 — Виправлення візуальних артефактів контролів After Hours та підготовка PR
 
@@ -5566,3 +5566,7 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-10-01 — локальна mock-БД у цьому checkout
 
 Власник попросив прибрати mock-базу з окремого worktree. Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` (~8.6 МБ) і зібрана база `artifacts/_local/mock-db/` (~9.9 МБ) скопійовані в основний checkout. Дані вже були під `raw/_local/*` і `artifacts/_local/*`. Рушій додано в `.gitignore`. Команди `dev:mock` і `mockdb:*` додані в `package.json`. Worktree не видалявся. (source: повідомлення власника 2026-10-01; `.gitignore`; [local-mock-database](ops/local-mock-database.md))
+
+## 2026-10-01 — AH-2.4: оверлеї; #388 підписано, #389 на main
+
+#388 підписано власником і змерджено в `e75c438` (09:45 UTC). #389 змерджено в `7f523e6` (10:19 UTC). Push цього коміту: Playwright run 36848455712, deps integrity, migration drift і Vercel — success. Окремого Sonar workflow на push немає; Sonar PR #389 був success до merge. Weekly generation worker падав як workflow_dispatch, не як CI merge. AH-2.4 додає sheet left/right/full у наявний Dialog, disclosure-меню з посиланнями і шар `--z-modal` 120 замість сирого `z-[120]`. OverlayDrawer лишається єдиною модальною пасткою фокуса. E2E каталогу: 18 passed у Chromium, Firefox і WebKit. 14 PNG у локальній галереї. Міграції header, search, filters і share не входять. Номер PR вноситься після створення. Окремий підпис очікується. (source: `gh pr view 388`; `gh pr view 389`; `gh run view 36848455712`; [AH-2.4 validation](product/after-hours-ah-2-4-validation.md); `e2e/overlays.spec.ts`)

@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { ActionCatalog } from './action-catalog';
 import { FieldCatalog } from './field-catalog';
+import { OverlayCatalog } from './overlay-catalog';
 import {
   Accordion,
   Combobox,
@@ -57,6 +58,7 @@ export function CatalogClient() {
   const [picked, setPicked] = useState('none');
   const [dialogOpen, setDialogOpen] = useState(false);
   const dialogTrigger = useRef<HTMLButtonElement>(null);
+  const dialogId = useId();
 
   return (
     <ToastProvider>
@@ -150,16 +152,30 @@ export function CatalogClient() {
           <ToastDemo />
         </Section>
 
+        <OverlayCatalog />
+
         <Section title="Dialog">
-          <button ref={dialogTrigger} type="button" className={TRIGGER} onClick={() => setDialogOpen(true)}>
+          <button
+            ref={dialogTrigger}
+            type="button"
+            className={TRIGGER}
+            aria-haspopup="dialog"
+            aria-expanded={dialogOpen}
+            aria-controls={dialogId}
+            onClick={() => setDialogOpen(true)}
+          >
             Open dialog
           </button>
           <Dialog
+            id={dialogId}
             open={dialogOpen}
             onOpenChange={setDialogOpen}
             title="Subscribe to the brief"
             description="One email a week. Unsubscribe any time."
+            closeLabel="Close"
             triggerRef={dialogTrigger}
+            backdropTestId="catalog-dialog-backdrop"
+            panelTestId="catalog-dialog-panel"
             footer={
               <button type="button" className={TRIGGER} onClick={() => setDialogOpen(false)}>
                 Done

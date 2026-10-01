@@ -1,0 +1,14 @@
+.panel {
+  animation: overlay-panel-enter var(--duration-fast) var(--ease-standard) both;
+}
+
+@keyframes overlay-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
