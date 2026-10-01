@@ -55,14 +55,18 @@ test.describe('category colour gate', () => {
     const result = await response.json() as { items: { categorySlug: string | null; categoryColor: string | null }[] };
     expect(result.items.length).toBeGreaterThan(0);
     for (const item of result.items) expect(categoryColor(item.categorySlug, item.categoryColor)).toMatch(/^var\(--cat-/);
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/en/news');
     await expect(page.getByTestId('post-card').first()).toBeVisible();
-    const input = page.locator('input[type="search"]:visible').first();
+    await page.getByTestId('search-trigger-compact').click();
+    const dialog = page.getByRole('dialog', { name: /^search$/i });
+    await expect(dialog).toBeVisible();
+    const input = dialog.getByRole('searchbox');
     await input.click();
     const previewResponse = page.waitForResponse((response) => response.url().includes('/api/search?') && response.ok());
     await input.pressSequentially('mcp', { delay: 50 });
     await previewResponse;
-    const badges = page.locator('[role="option"] .cat-badge');
+    const badges = dialog.locator('[role="option"] .cat-badge');
     await expect(badges.first()).toBeVisible();
     expect(await badges.evaluateAll((nodes) => nodes.every((node) =>
       (node as HTMLElement).style.getPropertyValue('--cat-color').startsWith('var(--cat-')))).toBe(true);

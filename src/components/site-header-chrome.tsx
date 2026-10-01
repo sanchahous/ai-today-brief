@@ -319,7 +319,7 @@ export function SiteHeaderChrome({
             </div>
 
             <details className="border-border mt-4 border-t pt-4">
-              <summary className="text-text flex min-h-11 cursor-pointer list-none items-center justify-between rounded-md py-2 text-base font-medium marker:hidden">
+              <summary className="text-text flex h-12 cursor-pointer list-none items-center justify-between rounded-md px-1 text-base font-medium marker:hidden">
                 {t.navCategories}
                 <ArrowRight size={16} className="opacity-60" />
               </summary>
@@ -348,7 +348,7 @@ export function SiteHeaderChrome({
               <Link
                 href={langToggleHref}
                 aria-label={t.langSwitch}
-                className="text-accent inline-flex min-h-11 items-center font-semibold no-underline"
+                className="text-accent inline-flex h-12 items-center font-semibold no-underline"
                 onClick={() => {
                   trackLangSwitch();
                   setMenuOpen(false);
