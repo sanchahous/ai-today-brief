@@ -6,7 +6,13 @@ Last updated: 2026-10-01
 
 ---
 
-[Draft PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), [Vercel Preview](https://ai-today-brief-git-feat-ah-15-typography-sanchahous-projects.vercel.app). Перший deployment успішний; Preview потребує логіну. Pre-push hook перед створенням PR: **339 Chromium passed, 5 skipped**, EXIT=0; власний production server :3000, authenticated revalidate потрібних маршрутів. CI фінальної docs-ревізії ще очікується. (source: PR #385 checks / Vercel comment 2026-09-30; `artifacts/_local/ah-1.5-push.log`)
+## Завершення сесії 2026-10-01
+
+Власник змерджив [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385): `origin/main` — `2dea14c`, PR head — `f5c0adc`. CI цієї ревізії зелений, typography suite у merge — 78 passed. Пізніші локальні `508f87c` (D4 tracking guard та 81-test suite) і `411e2f0` (pre-push діагностика) не увійшли в merge: push зупинив хук. Числа 81 та фінальні після-guard receipts нижче описують локальний залишок, а не змерджену ревізію. (source: повідомлення власника 2026-10-01; `gh pr view/checks 385`; `git diff origin/main`; локальні коміти)
+
+Залишок збережено в гілці `feat/ah-1.5-typography` і `artifacts/_local/ah-1.5-unmerged-follow-up.patch`. У main нічого не пушилося, другий PR не відкрито; потрібне рішення власника про follow-up. Окремий візуальний підпис, прийняття локального CLS і виняток для legacy QA не виводяться автоматично з факту merge. (source: git / PR check 2026-10-01; повідомлення власника; запит цієї сесії)
+
+[PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), [Vercel Preview](https://ai-today-brief-git-feat-ah-15-typography-sanchahous-projects.vercel.app). Перший deployment успішний; Preview потребує логіну. Pre-push hook перед створенням PR: **339 Chromium passed, 5 skipped**, EXIT=0; власний production server :3000, authenticated revalidate потрібних маршрутів. CI фінальної docs-ревізії ще очікується. (source: PR #385 checks / Vercel comment 2026-09-30; `artifacts/_local/ah-1.5-push.log`)
 
 ## Реалізація
 

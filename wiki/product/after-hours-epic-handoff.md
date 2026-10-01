@@ -2,7 +2,7 @@
 
 Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-09-30, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
 Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; live `git` / PR / HTTP checks 2026-09-30 (PR #373–#376)
-Last updated: 2026-09-30
+Last updated: 2026-10-01
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-09-30
 
 ## 1. Стан на 2026-09-30
 
-- **Наступна задача:** після окремого підпису й merge AH-1.5 — підпис G1; AH-2.2 або AH-2.5 може йти за вибором власника, їхні foundations-залежності вже інтегровані. AH-1.5 реалізовано в [draft PR #385](https://github.com/sanchahous/ai-today-brief/pull/385) (`feat/ah-1.5-typography`); [докази](after-hours-ah-1-5-validation.md), UK-підпис очікується. AH-1.2 / #384, AH-1.4 / #382, AH-1.6 / #381 і build-memo #383 перевірено в `origin/main` @ `2ba2b27`; попередні рядки нижче — історичний стан. (source: git / open PR check 2026-09-30; повідомлення власника 2026-09-30; [епік](after-hours-redesign-epic.md))
+- **Наступний крок:** власник змерджив [AH-1.5 / #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`, CI зелений. Tracking guard `508f87c` і діагностика `411e2f0` лишилися локально після блокування push; окремий follow-up PR потребує рішення власника. Підпис UK / локального CLS / legacy QA не припускається з merge. Після цих рішень — G1 та AH-2.2 або AH-2.5 за вибором власника. [Докази і залишок](after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). Попередні рядки нижче — історичний стан. (source: повідомлення власника; git / PR checks 2026-10-01)
 
 - **G0 підписано власником; фаза 0 інтегрована:** #373–#376 змержено.
   AH-1.1 / AH-2.1 виконано через #369; AH-1.3 інтегровано через #378 (`6b3b446`).
