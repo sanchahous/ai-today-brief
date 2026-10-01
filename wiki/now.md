@@ -17,7 +17,7 @@ Last updated: 2026-10-01
 
 ## Стан репозиторію
 
-- **AH-1.5 змерджено власником у [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`; CI зелений, typography E2E у merge — 78 passed.** Пізніший D4 tracking guard (`508f87c`) і діагностика (`411e2f0`) лишилися локально після відхиленого push; 81-test suite та після-guard receipts стосуються цього залишку. Другий PR не відкрито; окремі підписи не виводяться з merge. [Стан і докази](product/after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). (source: повідомлення власника 2026-10-01; gh pr view/checks 385; git diff origin/main)
+- **AH-1.5 змерджено власником у [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`; CI зелений, typography E2E у merge — 78 passed.** Пізніший D4 tracking guard (`508f87c`) і діагностика (`411e2f0`) лишилися локально після відхиленого push; 81-test suite та після-guard receipts стосуються цього залишку. Власник дозволив новий PR; follow-up гілка `feat/ah-1.5-tracking-follow-up` від `2dea14c`, підготовлено 81 E2E та по 28 Digests QA до/після. Окремий підпис очікується. [Стан і докази](product/after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). (source: повідомлення власника 2026-10-01; gh pr view/checks 385; git diff origin/main)
 
 - **AH-1.2 (контраст-гейт 2.0) — реалізовано, PR #384 (2026-09-30), без видимих змін.**
   222 пари замість 158, 0 провалів, найнижчі категорії Night 6,41:1 / Day 5,22:1; сім токенів прототипу

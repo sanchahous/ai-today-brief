@@ -6,6 +6,14 @@ Last updated: 2026-10-01
 
 ---
 
+## Follow-up tracking: 2026-10-01
+
+Власник дозволив окремий PR повідомленням «в новий ПР». Гілка `feat/ah-1.5-tracking-follow-up` створена від `origin/main` @ `2dea14c`; переносить tracking guard, який не увійшов у #385. Правило UK h1/h2/h3 поза CSS layers забезпечує D4 поверх `tracking-tight`: на desktop Digests H1 72 px, tracking −1.8 px до / −0.864 px після (−0.025em → −0.012em). H2/H3 — −0.008em. (source: повідомлення власника 2026-10-01; `src/app/globals.css`; `artifacts/_local/ah-1.5-tracking-audit-before.json`; `ah-1.5-tracking-audit-after.json`)
+
+Focused Digests QA: по **28 сценаріїв до/після**, EN/UK, Night/Day, 320/360/390/768/1024/1440 і 200% text; overflow / small text / H1 problems / axe / console errors — **0 / 0 / 0 / 0 / 0**. Small targets **620 → 614**, це ненульовий legacy-борг, не повний зелений gating. SEO compare двох Digests URL — **0 errors / 0 warnings**. Повторний typography E2E — **81 passed** у Chromium/Firefox/WebKit. Початковий local dev прогін мав 80 passed / 1 H1-readiness timeout; тест тепер чекає видимого H1 до перевірки кількості й font family, як `gotoNewsPage` у project helper. (source: focused audit JSON; `artifacts/_local/ah-1.5-tracking-typography.log`; `ah-1.5-tracking-typography-cold.log`; `e2e/typography.spec.ts`; `e2e/helpers/news-page.ts`)
+
+[Follow-up галерея](../../artifacts/after-hours/qa/ah-1.5-tracking-review.html): по 8 локальних PNG із реальних даних, Digests EN/UK, Night/Day, 390/1440; before на main `2dea14c`. PNG — лише `artifacts/_local/ah-1-5-tracking-before` / `after`, manifests містять SHA-256. Потрібен окремий візуальний підпис нового PR; попередній merge не є ним. PR number, pre-push та CI ще очікуються. (source: `artifacts/after-hours/qa/capture-ah-1.5-tracking.mjs`; before/after manifests; епік §0.1.10)
+
 ## Завершення сесії 2026-10-01
 
 Власник змерджив [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385): `origin/main` — `2dea14c`, PR head — `f5c0adc`. CI цієї ревізії зелений, typography suite у merge — 78 passed. Пізніші локальні `508f87c` (D4 tracking guard та 81-test suite) і `411e2f0` (pre-push діагностика) не увійшли в merge: push зупинив хук. Числа 81 та фінальні після-guard receipts нижче описують локальний залишок, а не змерджену ревізію. (source: повідомлення власника 2026-10-01; `gh pr view/checks 385`; `git diff origin/main`; локальні коміти)
