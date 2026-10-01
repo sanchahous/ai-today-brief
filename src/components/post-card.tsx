@@ -7,7 +7,7 @@ import type { HomeItem } from '@/lib/home';
 import { categoryColor, categoryMeta } from '@/lib/category-meta';
 import { getStrings } from '@/lib/i18n';
 import { SITE_URL, type Lang } from '@/lib/site';
-import { CategoryBadge } from '@/components/home/category-badge';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { CategoryThumb } from '@/components/category-thumb';
 import { trackItemEvent } from '@/lib/analytics-client';
 import {

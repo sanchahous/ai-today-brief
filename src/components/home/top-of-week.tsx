@@ -8,7 +8,7 @@ import type { HomeItem } from '@/lib/home';
 import { ArrowRight, ClockIcon, PlayIcon } from '@/components/icons';
 import { Reveal } from '@/components/reveal';
 import { SectionHead } from '@/components/home/section-head';
-import { CategoryBadge } from '@/components/home/category-badge';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { SponsorCard } from '@/components/home/sponsor-card';
 import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
 

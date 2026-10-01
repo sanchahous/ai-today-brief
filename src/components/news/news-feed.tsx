@@ -319,34 +319,34 @@ export function NewsFeed({
             data-testid="active-filter-chips"
             className="mb-5 flex flex-wrap items-center gap-2"
             role="region"
-            aria-label="Active filters"
+            aria-label={lang === 'uk' ? 'Активні фільтри' : 'Active filters'}
           >
             {filters.q.trim() && (
-              <FilterChip
+              <FilterChip lang={lang}
                 label={`«${filters.q.trim()}»`}
                 active
                 onRemove={removeQuery}
-                removeAriaLabel={`Remove search query ${filters.q.trim()}`}
+
               />
             )}
             {filters.categories.map((slug) => {
               const c = categories.find((x) => x.slug === slug);
               return (
-                <FilterChip
+                <FilterChip lang={lang}
                   key={slug}
                   label={c?.name ?? slug}
                   categorySlug={slug}
                   categoryColor={c?.color}
                   active
                   onRemove={() => toggleCategory(slug)}
-                  removeAriaLabel={`Remove category ${c?.name ?? slug}`}
+
                 />
               );
             })}
             {activeTopics.map((slug) => {
               const name = topicNames.get(slug) ?? slug;
               return (
-                <FilterChip
+                <FilterChip lang={lang}
                   key={slug}
                   label={name}
                   active
@@ -356,17 +356,17 @@ export function NewsFeed({
               );
             })}
             {filters.date !== 'all' && (
-              <FilterChip
+              <FilterChip lang={lang}
                 label={dateChipLabel(filters.date)}
                 onRemove={() => setDateFilter('all')}
-                removeAriaLabel={`Remove date filter ${dateChipLabel(filters.date)}`}
+
               />
             )}
             <ActionButton
               variant="ghost"
               size="sm"
               onClick={reset}
-              className="text-accent hover:underline text-xs p-1 min-h-[36px]"
+              className="text-accent"
             >
               {t.filterReset}
             </ActionButton>

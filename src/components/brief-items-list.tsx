@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { BriefItemCard, BriefSummary } from '@/lib/briefs';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
-import { CategoryBadge } from '@/components/home/category-badge';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { Reveal } from '@/components/reveal';
 import { ArrowRight } from '@/components/icons';
 

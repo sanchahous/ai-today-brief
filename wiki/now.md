@@ -17,12 +17,14 @@ Last updated: 2026-10-01
 
 ## Стан репозиторію
 
-- **AH-1.5 змерджено власником у [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`; CI зелений, typography E2E у merge — 78 passed.** Пізніший D4 tracking guard (`508f87c`) і діагностика (`411e2f0`) лишилися локально після відхиленого push; 81-test suite та після-guard receipts стосуються цього залишку. Відкрито [draft PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); follow-up гілка `feat/ah-1.5-tracking-follow-up` від `2dea14c`, підготовлено 81 E2E та по 28 Digests QA до/після. Окремий підпис очікується. [Стан і докази](product/after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). (source: повідомлення власника 2026-10-01; gh pr view/checks 385; git diff origin/main)
+- **AH-2.2 — реалізовано, окремий візуальний review очікується.** Button/IconButton/Pill/Chip/Tag/Badge/CategoryBadge, каталог EN/UK і міграція News/header/search. 181 E2E passed у трьох браузерах, SEO 58 URL без diff; по 140 public QA сценаріїв, legacy axe 86 на обох сторонах. Гілка `feat/ah-2.2-actions-selection` від main `c477b09`; далі AH-2.3. (source: [AH-2.2 validation](product/after-hours-ah-2-2-validation.md))
+
+- **AH-1.5 код інтегровано через #385 і #386; #386 явно підтверджено власником.** Main `c477b09`, CI #386 зелений. Tracking guard більше не є незмердженим залишком. Погодження #386 не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy QA або G1. (source: повідомлення власника 2026-10-01; [AH-1.5 validation](product/after-hours-ah-1-5-validation.md))
 
 - **AH-1.2 (контраст-гейт 2.0) — реалізовано, PR #384 (2026-09-30), без видимих змін.**
   222 пари замість 158, 0 провалів, найнижчі категорії Night 6,41:1 / Day 5,22:1; сім токенів прототипу
   (`--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`,
-  `--selection-text`) додано для пар; будь-яка пара нижче порогу валить `pr:check`. Гейт G1 чекає AH-1.5.
+  `--selection-text`) додано для пар; будь-яка пара нижче порогу валить `pr:check`. Гейт G1 чекає відкритих AC AH-1.5 і підпису власника.
   (source: `scripts/check-design-tokens.ts`; `npm run tokens:check` 2026-09-30)
 
 - **AH-1.6 (простір, форма, глибина, шари, рух, фокус, брейкпоінти) — змерджено, PR #381 (`55b78dc`, 2026-09-30); візуальний підпис власника отримано.**
@@ -31,16 +33,16 @@ Last updated: 2026-10-01
   радіус `md` 6→8px, тіні (`--shadow-1` / `--shadow-pop`), фокус (`--focus`, відступ 3px), кільце в
   полях розсилки й hero-search. Нові gate-и: `e2e/focus-visible.spec.ts`, docs-аудит токенів.
   AH-1.4 (кольори категорій) інтегровано через PR #382: `--cat-*` / `--art-*` внесено в реєстр §7.1.1
-  після злиття гілок. Наступна задача — AH-1.5 (типографіка, потрібен підпис власника щодо UK).
+  після злиття гілок. Поточна фаза 2 — AH-2.2; відкриті UK AC AH-1.5 збережено в її validation.
   (source: `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `e2e/focus-visible.spec.ts`;
   повний Chromium-набір 192 passed / 0 failed 2026-09-30)
 
 - **Прод віддавав знімок БД від 02.09 — виправлення в гілці `fix/build-memo-stale-across-builds`
-  (2026-09-30), PR чекає мержу.** `/en/news`, `/en`, категорії, `/rss.xml`, item-записи в
+  (2026-09-30), змерджено через #383 у `2ba2b27`.** `/en/news`, `/en`, категорії, `/rss.xml`, item-записи в
   `sitemap.xml` і весь `news-sitemap.xml` показували дані до брифу 31.08, хоча в БД брифи є до
   29.09. Корінь — `withBuildMemo` (#350): диск-memo без часу й без ідентичності білду Vercel
   відновлював у кожен наступний деплой (≈23 прод-деплої). Тепер запис має `t`, TTL 30 хв, scope за
-  `VERCEL_DEPLOYMENT_ID`, а старі файли чистяться. Після мержу перевірити: `/rss.xml` newest =
+  `VERCEL_DEPLOYMENT_ID`, а старі файли чистяться. Read-only перевірку після merge зафіксовано в [AH-1.5 validation](product/after-hours-ah-1-5-validation.md#production-check-після-383): `/rss.xml` newest =
   Sep 29, `news-sitemap.xml` має свіжі матеріали. Runtime `/api/revalidate` і build-логи Vercel не
   перевірено (Hobby, 401/403).
   (source: [ops/supabase-egress-2026-09 § Регресія 2026-09-30](ops/supabase-egress-2026-09.md#регресія-2026-09-30-memo-пережив-білд);

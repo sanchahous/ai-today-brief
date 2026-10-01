@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CategoryBadge } from '@/components/home/category-badge';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { ArrowRight } from '@/components/icons';
 import type { HomeItem } from '@/lib/home';
 import { Reveal } from '@/components/reveal';

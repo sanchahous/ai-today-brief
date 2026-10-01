@@ -3,7 +3,7 @@ import type { BriefItemCard, BriefPackSection } from '@/lib/briefs';
 import { formatPackUpdateLabel } from '@/lib/briefs';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
-import { CategoryBadge } from '@/components/home/category-badge';
+import { CategoryBadge } from '@/components/ui/category-badge';
 import { Reveal } from '@/components/reveal';
 import { ArrowRight } from '@/components/icons';
 import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';

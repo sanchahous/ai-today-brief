@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Tag } from '@/components/ui/tag';
 import { conceptIcon } from '@/lib/concept-meta';
 import type { ConceptSummary } from '@/lib/concepts';
 import { getStrings } from '@/lib/i18n';
@@ -27,17 +27,17 @@ export function ConceptOtherChips({
       </h2>
       <div className="flex flex-wrap gap-2.5">
         {concepts.map((c) => (
-          <Link
+          <Tag
             key={c.slug}
             href={`/${lang}/concepts/${c.slug}`}
-            className="rounded-pill border-border bg-surface text-text hover:border-accent inline-flex items-center gap-2 border px-3.5 py-2 text-[0.9rem] font-semibold no-underline transition"
+            size="md"
           >
             <span className="text-accent inline-flex">
               <CategoryGlyph icon={conceptIcon(c.slug, c.type)} size={16} strokeWidth={1.7} />
             </span>
             {c.name}
             <ArrowRight size={14} className="text-accent" />
-          </Link>
+          </Tag>
         ))}
       </div>
     </section>

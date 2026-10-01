@@ -11,6 +11,7 @@ import { trackEvent } from '@/lib/analytics-client';
 import { HeaderSearchField } from '@/components/header-search-field';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
+import { IconButton } from '@/components/ui/icon-button';
 import { MobileSearchModal } from '@/components/search/mobile-search-modal';
 import {
   BrandBloom,
@@ -202,7 +203,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             >
               {t.subscribe}
             </Link>
-            <button
+            <IconButton
               type="button"
               data-testid="header-search-icon"
               onClick={(e) => {
@@ -214,23 +215,23 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               aria-expanded={searchOpen}
               aria-hidden={heroVisible}
               tabIndex={heroVisible ? -1 : 0}
-              className={`text-text inline-flex h-11 w-11 touch-manipulation items-center justify-center border-0 bg-transparent transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${
+              className={`text-text ${
                 heroVisible ? 'pointer-events-none scale-90 opacity-0' : 'scale-100 opacity-100'
               }`}
             >
               <SearchIcon size={20} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               ref={menuTriggerRef}
               type="button"
               aria-label={menuOpen ? t.closeMenu : t.menu}
               aria-expanded={menuOpen}
               aria-controls={mobileMenuId}
               onClick={() => setMenuOpen((o) => !o)}
-              className="text-text inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent"
+              className="text-text"
             >
               {menuOpen ? <CloseIcon /> : <MenuIcon />}
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -255,15 +256,15 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               <h2 id={mobileMenuTitleId} className="text-text font-serif text-xl font-semibold">
                 {t.menu}
               </h2>
-              <button
+              <IconButton
                 ref={menuCloseRef}
                 type="button"
                 aria-label={t.closeMenu}
                 onClick={() => setMenuOpen(false)}
-                className="text-text hover:bg-surface inline-flex h-11 w-11 items-center justify-center rounded-full border-0 bg-transparent transition-colors duration-200"
+                className="text-text !rounded-pill"
               >
                 <CloseIcon />
-              </button>
+              </IconButton>
             </div>
 
             <div className="my-4 md:hidden">

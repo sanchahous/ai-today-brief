@@ -1,6 +1,6 @@
 # Епік After Hours: передача виконання наступній сесії
 
-Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-09-30, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
+Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-10-01, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
 Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; live `git` / PR / HTTP checks 2026-09-30 (PR #373–#376)
 Last updated: 2026-10-01
 
@@ -10,38 +10,12 @@ Last updated: 2026-10-01
 > Тут лише те, що потрібно, щоб нова сесія стартувала без контексту попередньої: стан, порядок,
 > точки зупинки й пастки. Картки задач тут не дублюються.
 
-## 1. Стан на 2026-09-30
+## 1. Стан на 2026-10-01
 
-- **Наступний крок:** власник змерджив [AH-1.5 / #385](https://github.com/sanchahous/ai-today-brief/pull/385), main `2dea14c`, CI зелений. Tracking guard `508f87c` і діагностика `411e2f0` лишилися локально після блокування push; власник дозволив follow-up PR: `feat/ah-1.5-tracking-follow-up` від `2dea14c`, локальні 81 E2E та Digests QA пройшли; [draft PR #386](https://github.com/sanchahous/ai-today-brief/pull/386), pre-push 340 passed / 5 skipped. Підпис UK / локального CLS / legacy QA не припускається з merge. Після цих рішень — G1 та AH-2.2 або AH-2.5 за вибором власника. [Докази і залишок](after-hours-ah-1-5-validation.md#завершення-сесії-2026-10-01). Попередні рядки нижче — історичний стан. (source: повідомлення власника; git / PR checks 2026-10-01)
-
-- **G0 підписано власником; фаза 0 інтегрована:** #373–#376 змержено.
-  AH-1.1 / AH-2.1 виконано через #369; AH-1.3 інтегровано через #378 (`6b3b446`).
-  GA4, Tag Assistant і прийняті PageSpeed-докази не просити повторно.
-  (source: [baseline](../analytics/2026-09-29-redesign-baseline.md);
-  [епік](after-hours-redesign-epic.md); `gh pr view 373/374/375/376/378` 2026-09-30)
-- **AH-1.7 / #377 змержено в `e47010500d75f809182305692d7916f169611157`.**
-  Власник явно погодив resolve/merge; wiki-конфлікти збережено з обома історіями.
-  E2E run [36732521337](https://github.com/sanchahous/ai-today-brief/actions/runs/36732521337)
-  на head `7240652` перевірено: completed / success.
-  (source: `gh pr view 377`; `gh run view 36732521337` 2026-09-30)
-- **AH-1.4 змерджено в `main`: [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), `5af8d56`, 2026-09-30.**
-  Дев'ять tokenKey, тематичні `--cat-*`, незмінні `--art-*`, усі споживачі,
-  search slug, дев'ять GLYPHS. Токени 2.1.0; 54 пари ≥5.2238:1, ratchet 30
-  кольорових входжень / 4 довільні z-index / 0 raw shadows / 0 <12 px.
-  (source: [AH-1.4 validation](after-hours-ah-1-4-validation.md);
-  `src/lib/category-meta.ts`; `scripts/raw-design-values.baseline.json`)
-- **Наступна задача після AH-1.4 — AH-1.2.** Решта foundations
-  й гейт G1 ще відкриті. Підпис одного видимого PR не поширюється на наступний;
-  кожен видимий PR потребує окремого підпису власника. Legacy QA та no-JS Suspense-борг відкриті.
-  (source: повідомлення власника 2026-09-30; [AH-1.3 validation](after-hours-ah-1-3-validation.md#межі-qa); [епік](after-hours-redesign-epic.md))
-- **AH-4.1 виконано й змерджено:** [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), `3d0cb2b` (lib, URL, чіп активного фільтра); пікер фасету — AH-4.3. Не дублювати.
-- **AH-1.2 реалізовано:** [PR #384](https://github.com/sanchahous/ai-today-brief/pull/384) (контраст-гейт 2.0, 222 пари, без видимих змін).
-- **AH-1.6 змерджено:** [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), `55b78dc`; підпис власника отримано. Реєстр токенів (`design-system-tokens` §7) — gate: кожен новий `--*` у `globals.css` треба додати туди (`--cat-*` / `--art-*` з AH-1.4 уже в §7.1.1).
-- **Частково (◐):** AH-1.5, AH-2.3–2.6. Наступна з foundations — AH-1.5; далі фаза 2 і гейт G1.
-  AH-5.16 не виконується за D6. D1–D13 ухвалені; повторно не питати.
-  (source: [епік](after-hours-redesign-epic.md) §5.3)
-- **AH-4.1 виконано** (lib, URL, чіп активного фільтра; [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), 2026-09-30) — не дублювати; AH-4.3 отримує готові `buildTopicFacet` / `applyNewsFilters` для пікера.
-  (source: [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380); `git fetch origin main` 2026-09-30)
+- **Поточна задача — AH-2.2:** реалізовано на `feat/ah-2.2-actions-selection` від `origin/main` @ `c477b09`; окремий візуальний підпис очікується. Каталог, три браузери, SEO, coarse targets і галерея — [AH-2.2 validation](after-hours-ah-2-2-validation.md). **Наступна задача — AH-2.3** після звірки інтеграції AH-2.2. Власник дозволив брати далі за порядком агента. (source: повідомлення власника 2026-10-01; validation)
+- **#386 змерджено й явно підтверджено власником:** «ПР закритий значить підтверджую 386». Main `c477b09`; CI, включно з [Playwright run 36826783157](https://github.com/sanchahous/ai-today-brief/actions/runs/36826783157), success. Tracking follow-up більше не є локальним залишком чи draft. UK Home/Article/Weekly із #385, прийняття локального CLS, H1/legacy QA та G1 лишаються відкритими. (source: [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); [AH-1.5 validation](after-hours-ah-1-5-validation.md); повідомлення власника)
+- **G0 і фаза 0 завершені:** #373–#376 інтегровані, GA4/Tag Assistant/CWV baseline вже прийняті. AH-1.1 / AH-2.1 — #369; AH-1.3 — #378; AH-1.7 — #377; AH-1.4 — #382; AH-1.2 — #384; AH-1.6 — #381, його окремий підпис отримано. Не дублювати й не просити G0 повторно. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач); [baseline](../analytics/2026-09-29-redesign-baseline.md))
+- **AH-4.1 — #380:** lib/URL/active Chip інтегровані, facet picker — AH-4.3. AH-5.16 знято D6; D1–D13 ухвалено. Частково виконані AH-2.3–2.6 мають картки із залишком. Кожен видимий PR потребує власного підпису. (source: [епік](after-hours-redesign-epic.md); повідомлення власника 2026-10-01)
 
 ## Пакет для підпису G0
 
@@ -145,14 +119,10 @@ QA-матриця працює в режимі report.
 
 ## 4. Після G0
 
-- AH-1.3 і AH-1.7 уже інтегровані. AH-1.4 очікує review; AH-1.2 доповнюється
-  після її merge. (source: [стан §1](#1-стан-на-2026-09-30))
-- AH-1.5 (`next/font/local`, Georgia для українських заголовків) і AH-1.6 (брейкпоінти 960 px)
-  потребують візуального підпису власника.
-- AH-4.1 (Topics lib) ✅ виконано в [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380) паралельно з AH-1.4; пікер фасету — AH-4.3.
-- Далі — порядок і паралельні доріжки з епіку (§5.2–§5.4).
-- AH-3.1, AH-3.7 і AH-3.8 (новий знак) мерджаться в один день, щоб старий і новий знаки не жили
-  одночасно (ADR §4).
+- Foundations інтегровані; відкриті UK/CLS/legacy AC AH-1.5 та G1 див. [стан §1](#1-стан-на-2026-10-01).
+- Власник дозволив продовжувати фазу 2: AH-2.2, потім AH-2.3 за окремими картками/PR; підпис #386 не переноситься на новий PR. (source: повідомлення власника 2026-10-01; [AH-2.2 validation](after-hours-ah-2-2-validation.md))
+- AH-4.1 вже інтегровано, AH-4.3 отримує готову topic lib. Далі — порядок і залежності §5.2–5.4 епіку.
+- AH-3.1 / AH-3.7 / AH-3.8 мерджаться в один день за D7. (source: [епік](after-hours-redesign-epic.md); ADR §4)
 
 ## 5. Точки зупинки: питати власника, не вгадувати
 
@@ -235,13 +205,13 @@ QA-матриця працює в режимі report.
 ```text
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
-2. Підтягни origin/main і перевір фактичний merge PR #373–#376. G0 підписано
-   власником 2026-09-30; фаза 0 інтегрована на 69bcd1c, AH-1.3 змержено в 6b3b446.
-   AH-1.7 змержено в e470105; E2E run 36732521337 успішний. Перевір merge
-   AH-1.4 і її окремий підпис; після інтеграції продовжуй AH-1.2 за карткою
-   wiki/product/after-hours-redesign-epic.md. Роботу AH-1.4 не дублюй.
-   Для нової задачі — окрема гілка feat/ah-<id>-<slug> від
-   origin/main, Definition of Done з §0.1, npm run pr:check перед push, PR у main.
+2. Підтягни origin/main і перевір актуальний стан AH-2.2 у §1 цього handoff та §5.3 епіку.
+   На 2026-10-01 main c477b09, #386 змерджено й явно підтверджено власником.
+   AH-2.2 реалізовано на feat/ah-2.2-actions-selection і очікує окремого review.
+   Не дублюй її; після інтеграції наступна задача AH-2.3. Власник дозволив порядок агента.
+   UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
+   Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,
+   Definition of Done §0.1, npm run pr:check перед push, PR у main.
 3. Після PR онови §5.3 епіку, wiki/now.md, wiki/log.md і рядок «Наступна задача» в handoff.
 4. У точках із розділу «Точки зупинки» зупинись і спитай мене. Нічого не вигадуй.
 Відповідай мені українською.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, type ReactNode } from 'react';
+import { ActionCatalog } from './action-catalog';
 import {
   Accordion,
   Combobox,
@@ -71,6 +72,8 @@ export function CatalogClient() {
           </div>
           <p className="reading-copy mt-4">Reading at 18 px / 1.78. Читання: українська кирилиця та Latin product names.</p>
         </Section>
+
+        <ActionCatalog />
 
         <Section title="Popover">
           <Popover
