@@ -1,6 +1,6 @@
 # AH-2.2: дії й вибір — реалізація й докази
 
-Summary: Button, IconButton, Pill, Chip, Tag, Badge і CategoryBadge зі спільним контрактом розмірів, фокуса та pending. Реалізація готова до окремого візуального review; повний legacy gating і G1 не закриті.
+Summary: Button, IconButton, Pill, Chip, Tag, Badge і CategoryBadge зі спільним контрактом розмірів, фокуса та pending. PR #387 змерджено; окремий візуальний підпис не отримано, повний legacy gating і G1 не закриті.
 Sources: `src/components/ui/`; `src/lib/ui/action-styles.ts`; `src/app/ds-catalog/action-catalog.tsx`; `e2e/actions-selection.spec.ts`; `artifacts/after-hours/qa/ah-2.2-evidence.json`; повідомлення власника й GitHub checks 2026-10-01.
 Last updated: 2026-10-01
 
@@ -8,7 +8,7 @@ Last updated: 2026-10-01
 
 ## Стан і межі погодження
 
-Відкрито [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387), [Vercel Preview](https://ai-today-brief-git-feat-ah-22-action-df444b-sanchahous-projects.vercel.app). `pr:check` EXIT=0 перед push; повний pre-push — **381 Chromium passed / 5 skipped**, EXIT=0, після authenticated revalidate власного server :3000. Сервер після push зупинено. CI/Preview ще виконуються; номер внесено окремим docs-комітом, візуальний підпис очікується. (source: `artifacts/_local/ah-2.2-pr-check.log`; `ah-2.2-push.log`; `ah-2.2-pr387-status.json`; PR #387)
+Відкрито й змерджено [PR #387](https://github.com/sanchahous/ai-today-brief/pull/387) у `c03a4dd` (head `9e65c3b`). Playwright [run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359) і main push [run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364) — success. Окремого візуального підпису не було. `pr:check` EXIT=0 перед push; повний pre-push — **381 Chromium passed / 5 skipped**, EXIT=0, після authenticated revalidate власного server :3000. (source: `gh pr view 387`; `gh run view` 2026-10-01; `artifacts/_local/ah-2.2-pr-check.log`; `ah-2.2-push.log`)
 
 Власник явно підтвердив #386 словами «ПР закритий значить підтверджую 386» і дозволив наступні задачі за порядком агента. #386 змерджено в `c477b09`; CI, включно з [Playwright run 36826783157](https://github.com/sanchahous/ai-today-brief/actions/runs/36826783157), успішний. AH-2.2 почато окремою гілкою `feat/ah-2.2-actions-selection` від цього main після звірки відкритих PR і зайнятості. Це погодження #386; UK Home/Article/Weekly, заміна Preview CLS локальним доказом, H1/legacy QA та G1 лишаються відкритими. (source: повідомлення власника 2026-10-01; [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); `artifacts/_local/ah-2.2-main-pr386.json`; [AH-1.5 validation](after-hours-ah-1-5-validation.md))
 
@@ -47,7 +47,7 @@ Home / News / active filters / Category / Article, EN/UK, Night/Day, 320/360/390
 
 [Локальна галерея](../../artifacts/after-hours/qa/ah-2.2-review.html): **40 пар** before/after із реальних `.env.local` даних і **8 знімків** EN/UK каталогу, Night/Day, 390/1440. Before — чистий `c477b09`; обидві сторони — власні local dev servers. Consent fixture застосовано до фактичного local origin. PNG у git-ignored `artifacts/_local/ah-2-2-{before,after,catalog}`, SHA-256 у manifests і [evidence receipt](../../artifacts/after-hours/qa/ah-2.2-evidence.json). Окремий візуальний підпис очікується; merge агент не виконує. (source: `capture-ah-2.2.mjs`; `capture-catalog-ah-2.2.mjs`; before/after/catalog manifests; епік §0.1.10)
 
-Наступна задача за порядком — **AH-2.3**, після звірки інтеграції AH-2.2; окрема гілка/PR. (source: повідомлення власника 2026-10-01; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+Наступна задача за нумерацією — **AH-2.4**, після AH-2.3. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 
 ## Related pages
 

@@ -24,6 +24,7 @@ const LOGIC_FILES = [
   'src/lib/preferred-lang.ts',
   'src/lib/indexnow.ts',
   'src/lib/ui/action-styles.ts',
+  'src/lib/ui/field-a11y.ts',
 ] as const;
 
 function lcovSourceFiles(lcov: string): Set<string> {

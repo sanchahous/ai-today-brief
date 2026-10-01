@@ -17,7 +17,9 @@ Last updated: 2026-10-01
 
 ## Стан репозиторію
 
-- **AH-2.2 — реалізовано у [draft PR #387](https://github.com/sanchahous/ai-today-brief/pull/387), окремий візуальний review очікується.** Button/IconButton/Pill/Chip/Tag/Badge/CategoryBadge, каталог EN/UK і міграція News/header/search. 252 E2E passed у трьох браузерах, pre-push 381 Chromium passed; SEO 58 URL без diff; по 140 public QA сценаріїв, legacy axe 86 на обох сторонах. Гілка `feat/ah-2.2-actions-selection` від main `c477b09`; CI нового PR ще виконується, далі AH-2.3. (source: [AH-2.2 validation](product/after-hours-ah-2-2-validation.md))
+- **AH-2.3 — у роботі на `feat/ah-2.3-fields` від main `c03a4dd`.** Field, Textarea, SegmentedControl, Switch, рестайл Input/Select/Checkbox/Radio, локалізація SearchInput, двомовна матриця в `/ds-catalog`. Окремий візуальний підпис очікується. Наступна за нумерацією — AH-2.4 після інтеграції. (source: [AH-2.3 validation](product/after-hours-ah-2-3-validation.md))
+
+- **AH-2.2 змерджено [#387](https://github.com/sanchahous/ai-today-brief/pull/387) у `c03a4dd`.** Playwright [run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359) і main push [run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364) — success. Окремого візуального підпису #387 не було. UK/CLS/H1/legacy AC і G1 лишаються відкритими. (source: `gh pr view 387`; `gh run view` 2026-10-01; [AH-2.2 validation](product/after-hours-ah-2-2-validation.md))
 
 - **AH-1.5 код інтегровано через #385 і #386; #386 явно підтверджено власником.** Main `c477b09`, CI #386 зелений. Tracking guard більше не є незмердженим залишком. Погодження #386 не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy QA або G1. (source: повідомлення власника 2026-10-01; [AH-1.5 validation](product/after-hours-ah-1-5-validation.md))
 
@@ -33,7 +35,7 @@ Last updated: 2026-10-01
   радіус `md` 6→8px, тіні (`--shadow-1` / `--shadow-pop`), фокус (`--focus`, відступ 3px), кільце в
   полях розсилки й hero-search. Нові gate-и: `e2e/focus-visible.spec.ts`, docs-аудит токенів.
   AH-1.4 (кольори категорій) інтегровано через PR #382: `--cat-*` / `--art-*` внесено в реєстр §7.1.1
-  після злиття гілок. Поточна фаза 2 — AH-2.2; відкриті UK AC AH-1.5 збережено в її validation.
+  після злиття гілок. Поточна фаза 2 — AH-2.3; відкриті UK AC AH-1.5 збережено в її validation.
   (source: `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `e2e/focus-visible.spec.ts`;
   повний Chromium-набір 192 passed / 0 failed 2026-09-30)
 

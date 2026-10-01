@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactNode } from 'react';
 import { ActionCatalog } from './action-catalog';
+import { FieldCatalog } from './field-catalog';
 import {
   Accordion,
   Combobox,
@@ -74,6 +75,7 @@ export function CatalogClient() {
         </Section>
 
         <ActionCatalog />
+        <FieldCatalog />
 
         <Section title="Popover">
           <Popover

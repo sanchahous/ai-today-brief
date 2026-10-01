@@ -1,74 +1,115 @@
 'use client';
 
 import {
+  createContext,
   forwardRef,
-  useId,
+  useContext,
   type InputHTMLAttributes,
+  type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
 } from 'react';
+import { describedBy } from '@/lib/ui/field-a11y';
+import { Field, FieldError, FieldHint, FieldLabel, useFieldIds } from './field';
+import styles from './fields.module.css';
 
-export interface RadioProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface RadioGroupState {
+  name: string;
+  describedBy?: string;
+  readOnly: boolean;
+  disabled: boolean;
+}
+
+const RadioGroupContext = createContext<RadioGroupState | null>(null);
+
+export interface RadioGroupProps {
+  label: string;
+  name: string;
+  hint?: string;
+  error?: string;
+  readOnly?: boolean;
+  disabled?: boolean;
+  className?: string;
+  children: ReactNode;
+}
+
+const RADIO_MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ']);
+
+function stopReadonlyRadio(
+  event: KeyboardEvent<HTMLInputElement> | MouseEvent<HTMLInputElement>,
+  readOnly: boolean,
+) {
+  if (!readOnly) return;
+  if ('key' in event && !RADIO_MOVE_KEYS.has(event.key)) return;
+  event.preventDefault();
+}
+
+export function RadioGroup({
+  label, name, hint, error, readOnly = false, disabled = false, className = '', children,
+}: RadioGroupProps) {
+  const ids = useFieldIds(name);
+  const described = describedBy([hint ? ids.hintId : null, error ? ids.errorId : null]);
+  return (
+    <Field className={`w-full ${className}`}>
+      <FieldLabel id={ids.labelId}>{label}</FieldLabel>
+      <div
+        role="radiogroup"
+        aria-labelledby={ids.labelId}
+        aria-describedby={described}
+        aria-invalid={error ? true : undefined}
+        aria-readonly={readOnly || undefined}
+        aria-disabled={disabled || undefined}
+        className={`${styles.group} ${styles.stack}`}
+      >
+        <RadioGroupContext.Provider value={{ name, describedBy: described, readOnly, disabled }}>
+          {children}
+        </RadioGroupContext.Provider>
+      </div>
+      <FieldHint id={ids.hintId}>{hint}</FieldHint>
+      <FieldError id={ids.errorId}>{error}</FieldError>
+    </Field>
+  );
+}
+
+export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: ReactNode;
   description?: string;
   badge?: ReactNode;
+  readOnly?: boolean;
 }
 
-export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(
-  {
-    label,
-    description,
-    badge,
-    id,
-    checked,
-    disabled,
-    className = '',
-    onChange,
-    ...props
-  },
-  ref,
-) {
-  const generatedId = useId();
-  const radioId = id ?? generatedId;
-
+export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio({
+  label, description, badge, readOnly, id, className = '', checked, disabled, name,
+  onClick, onKeyDown, 'aria-describedby': describedExtra, ...props
+}, ref) {
+  const group = useContext(RadioGroupContext);
+  const ids = useFieldIds(id);
+  const frozen = readOnly ?? group?.readOnly ?? false;
+  const described = describedBy([describedExtra, group?.describedBy]);
   return (
-    <label
-      htmlFor={radioId}
-      className={`group relative flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2.5 py-1.5 transition select-none hover:bg-surface-2 ${
-        disabled ? 'cursor-not-allowed opacity-50' : ''
-      } ${className}`}
-    >
-      <span className="relative flex size-5 shrink-0 items-center justify-center">
-        <input
-          ref={ref}
-          id={radioId}
-          type="radio"
-          checked={checked}
-          disabled={disabled}
-          onChange={onChange}
-          className="peer sr-only"
-          {...props}
-        />
-        <span
-          aria-hidden="true"
-          className="border-border bg-surface peer-checked:border-accent peer-focus-visible:outline-focus flex size-5 items-center justify-center rounded-full border transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-(--focus-offset)"
-        >
-          {checked && (
-            <span className="bg-accent size-2.5 rounded-full transition-transform" />
-          )}
-        </span>
+    <label htmlFor={ids.controlId} className={`${styles.choice} ${className}`}>
+      <input
+        {...props}
+        ref={ref}
+        id={ids.controlId}
+        type="radio"
+        name={name ?? group?.name}
+        checked={checked}
+        disabled={disabled || group?.disabled}
+        aria-describedby={described}
+        className="sr-only"
+        onClick={(event) => { stopReadonlyRadio(event, frozen); onClick?.(event); }}
+        onMouseDown={(event) => { stopReadonlyRadio(event, frozen); }}
+        onKeyDown={(event) => { stopReadonlyRadio(event, frozen); onKeyDown?.(event); }}
+      />
+      <span aria-hidden="true" className={`${styles.mark} ${styles.markRound}`}>
+        <span className={styles.dot} />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-text text-sm font-medium leading-snug">
-          {label}
-        </span>
-        {description && (
-          <span className="text-muted text-xs leading-normal">
-            {description}
-          </span>
-        )}
+      <span className={styles.choiceCopy}>
+        <span className={styles.choiceLabel}>{label}</span>
+        {description ? <span className={styles.hint}>{description}</span> : null}
       </span>
-      {badge && <span className="ml-auto shrink-0">{badge}</span>}
+      {badge ? <span className="shrink-0">{badge}</span> : null}
     </label>
   );
 });
