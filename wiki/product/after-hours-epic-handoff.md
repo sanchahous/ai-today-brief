@@ -12,7 +12,7 @@ Last updated: 2026-10-01
 
 ## 1. Стан на 2026-10-01
 
-- **Поточна задача — AH-2.3:** гілка `feat/ah-2.3-fields` від `origin/main` `c03a4dd`. Field / Textarea / SegmentedControl / Switch, рестайл наявних полів, локалізація SearchInput, каталог EN/UK. Окремий візуальний підпис очікується. **Наступна — AH-2.4** після інтеграції. (source: [AH-2.3 validation](after-hours-ah-2-3-validation.md))
+- **Поточна задача — AH-2.3:** [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) на `feat/ah-2.3-fields` від `origin/main` `c03a4dd`. Field / Textarea / SegmentedControl / Switch, рестайл наявних полів, локалізація SearchInput, каталог EN/UK. Окремий візуальний підпис очікується. **Наступна — AH-2.4** після інтеграції. (source: [AH-2.3 validation](after-hours-ah-2-3-validation.md); PR #388)
 - **#387 змерджено в `c03a4dd`, CI включно з Playwright success.** Окремого текстового візуального підпису #387 не було. Merge не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy QA чи G1. (source: [PR #387](https://github.com/sanchahous/ai-today-brief/pull/387); [Playwright run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359); [main Playwright run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364))
 - **#386 змерджено й явно підтверджено власником:** «ПР закритий значить підтверджую 386». Main `c477b09`; CI, включно з [Playwright run 36826783157](https://github.com/sanchahous/ai-today-brief/actions/runs/36826783157), success. Tracking follow-up більше не є локальним залишком чи draft. UK Home/Article/Weekly із #385, прийняття локального CLS, H1/legacy QA та G1 лишаються відкритими. (source: [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); [AH-1.5 validation](after-hours-ah-1-5-validation.md); повідомлення власника)
 - **G0 і фаза 0 завершені:** #373–#376 інтегровані, GA4/Tag Assistant/CWV baseline вже прийняті. AH-1.1 / AH-2.1 — #369; AH-1.3 — #378; AH-1.7 — #377; AH-1.4 — #382; AH-1.2 — #384; AH-1.6 — #381, його окремий підпис отримано. Не дублювати й не просити G0 повторно. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач); [baseline](../analytics/2026-09-29-redesign-baseline.md))
@@ -208,7 +208,7 @@ QA-матриця працює в режимі report.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
 2. Підтягни origin/main і перевір актуальний стан у §1 цього handoff та §5.3 епіку.
    На 2026-10-01 main c03a4dd, #387 змерджено, Playwright success, візуального підпису #387 немає.
-   AH-2.3 реалізовано на feat/ah-2.3-fields і очікує власного review.
+   AH-2.3 реалізовано в PR #388 на feat/ah-2.3-fields і очікує власного review.
    Не дублюй її; після інтеграції наступна задача AH-2.4.
    UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
    Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,

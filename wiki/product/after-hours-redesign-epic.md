@@ -46,7 +46,7 @@ Last updated: 2026-10-01
 > [after-hours-epic-readiness](after-hours-epic-readiness.md); декомпозицію й порядок робіт задає цей
 > епік. (source: `git show 3f47256 --stat`; grep `src/` після rebase 2026-09-29)
 
-> **Актуально 2026-10-01:** main `c03a4dd` (merge #387). Playwright #387 і push на main — success. Окремого візуального підпису #387 не було. AH-2.3 реалізується на `feat/ah-2.3-fields`. G1 та відкриті AH-1.5 UK/CLS/legacy AC збережено. (source: `gh pr view 387`; `gh run view` 36837592359 і 36837852364; повідомлення власника)
+> **Актуально 2026-10-01:** main `c03a4dd` (merge #387). Playwright #387 і push на main — success. Окремого візуального підпису #387 не було. AH-2.3 — [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388), підпис відкритий. G1 та відкриті AH-1.5 UK/CLS/legacy AC збережено. (source: `gh pr view 387`; `gh run view` 36837592359 і 36837852364; PR #388)
 
 ## 0. Як користуватися епіком
 
@@ -353,7 +353,7 @@ flowchart TD
 | AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
-| AH-2.3 | ◐ Поля: Field, Textarea, SegmentedControl, Switch, рестайл Input/Select/Checkbox/Radio, локалізація SearchInput; гілка `feat/ah-2.3-fields`; підпис відкритий ([докази](after-hours-ah-2-3-validation.md)) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
+| AH-2.3 | ◐ Поля в [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388): Field, Textarea, SegmentedControl, Switch, рестайл Input/Select/Checkbox/Radio, локалізація SearchInput; підпис відкритий ([докази](after-hours-ah-2-3-validation.md)) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї (#369: Popover, Dialog, DropdownMenu, Tooltip, Accordion) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
 | AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
@@ -975,7 +975,7 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 - [x] Клавіатура: стрілки в radiogroup / segmented, Space у checkbox / switch.
 - [x] Каталог показує default / focus / invalid / disabled / read-only для кожного поля.
 
-**Стан 2026-10-01:** гілка `feat/ah-2.3-fields` від `c03a4dd`. AC картки закриті локальними E2E каталогу. Окремий візуальний підпис і full-page legacy DoD відкриті. Номер PR — у docs-коміті після створення. (source: [AH-2.3 validation](after-hours-ah-2-3-validation.md); `e2e/fields.spec.ts`)
+**Стан 2026-10-01:** [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) на `feat/ah-2.3-fields` від `c03a4dd`. AC картки закриті локальними E2E каталогу. Окремий візуальний підпис і full-page legacy DoD відкриті. (source: [AH-2.3 validation](after-hours-ah-2-3-validation.md); `e2e/fields.spec.ts`; PR #388)
 
 ### AH-2.4 · Оверлеї: Dialog / Sheet, Drawer, Menu, Disclosure, Popover
 

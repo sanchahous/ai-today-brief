@@ -8,7 +8,7 @@ Last updated: 2026-10-01
 
 ## Стан
 
-Реалізовано на гілці `feat/ah-2.3-fields` від `origin/main` `c03a4dd` (merge AH-2.2 / #387). Номер PR вноситься окремим docs-комітом після створення. Combobox і SearchInput не дубльовано: SearchInput лишився в `input.tsx`, отримав `lang` для placeholder і назви кнопки очищення. (source: картка [AH-2.3](after-hours-redesign-epic.md#ah-23--поля-field-input-searchinput-textarea-select-checkbox-radio-segmentedcontrol-switch); diff гілки)
+Реалізовано в [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) на гілці `feat/ah-2.3-fields` від `origin/main` `c03a4dd` (merge AH-2.2 / #387). Combobox і SearchInput не дубльовано: SearchInput лишився в `input.tsx`, отримав `lang` для placeholder і назви кнопки очищення. (source: [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388); картка [AH-2.3](after-hours-redesign-epic.md#ah-23--поля-field-input-searchinput-textarea-select-checkbox-radio-segmentedcontrol-switch))
 
 #387 змерджено в `c03a4dd`. Playwright ревізії `9e65c3b` ([run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359)) і push на main ([run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364)) завершились success. Sonar, dependencies, migration drift і Vercel на PR були success ще до завершення Playwright. Це не візуальний підпис #387 і не закриває UK/CLS/H1/legacy AC чи G1. (source: `gh pr view 387`; `gh run view` 2026-10-01)
 

@@ -5558,3 +5558,7 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-10-01 — AH-2.3: поля; #387 звірено як merged
 
 #387 змерджено в `c03a4dd`. Playwright ревізії `9e65c3b` (run 36837592359) і push на main (run 36837852364) — success. Окремого візуального підпису #387 немає. AH-2.3 додає Field, Textarea, SegmentedControl, Switch, рестайл Input/Select/Checkbox/Radio і локалізацію SearchInput без дубля Combobox. Каталог EN/UK показує default/focus/invalid/disabled/read-only; форма фокусує перше невалідне поле. Chromium fields E2E 30 passed на localhost:3107; Firefox/WebKit keyboard і axe 390 passed. 8 PNG каталогу в локальній галереї. Production RSS 30 Sep, sitemap publication 1 Oct, news Updated 30 Sep — не старіше за baseline. Номер PR AH-2.3 вноситься після створення. (source: `gh pr view 387`; `gh run view` 2026-10-01; [AH-2.3 validation](product/after-hours-ah-2-3-validation.md); live HTTP aitodaybrief.com 2026-10-01)
+
+## 2026-10-01 — AH-2.3: PR #388
+
+Створено [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388). `pr:check` EXIT=0 двічі; pre-push після виправлення лічильника options у Combobox — 105 Chromium passed / 5 skipped. Перший push зупинив хук: нативні `option` у Select потрапили в нескопований лічильник Combobox; тест звужено до listbox Combobox, failed log не обходився. Номер PR внесено в validation, epic, now, handoff, index. Окремий візуальний підпис очікується. Merge не виконувався. (source: PR #388; `artifacts/_local/ah-2.3-pr-check.log`; `ah-2.3-pr-check-2.log`; pre-push 2026-10-01)

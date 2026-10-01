@@ -17,7 +17,7 @@ Last updated: 2026-10-01
 
 ## Стан репозиторію
 
-- **AH-2.3 — у роботі на `feat/ah-2.3-fields` від main `c03a4dd`.** Field, Textarea, SegmentedControl, Switch, рестайл Input/Select/Checkbox/Radio, локалізація SearchInput, двомовна матриця в `/ds-catalog`. Окремий візуальний підпис очікується. Наступна за нумерацією — AH-2.4 після інтеграції. (source: [AH-2.3 validation](product/after-hours-ah-2-3-validation.md))
+- **AH-2.3 — [PR #388](https://github.com/sanchahous/ai-today-brief/pull/388) на `feat/ah-2.3-fields` від main `c03a4dd`.** Field, Textarea, SegmentedControl, Switch, рестайл Input/Select/Checkbox/Radio, локалізація SearchInput, двомовна матриця в `/ds-catalog`. Окремий візуальний підпис очікується. Наступна за нумерацією — AH-2.4 після інтеграції. (source: [AH-2.3 validation](product/after-hours-ah-2-3-validation.md); PR #388)
 
 - **AH-2.2 змерджено [#387](https://github.com/sanchahous/ai-today-brief/pull/387) у `c03a4dd`.** Playwright [run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359) і main push [run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364) — success. Окремого візуального підпису #387 не було. UK/CLS/H1/legacy AC і G1 лишаються відкритими. (source: `gh pr view 387`; `gh run view` 2026-10-01; [AH-2.2 validation](product/after-hours-ah-2-2-validation.md))
 
