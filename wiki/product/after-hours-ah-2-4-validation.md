@@ -1,6 +1,6 @@
 # AH-2.4: оверлеї — реалізація й докази
 
-Summary: Sheet-варіанти left, right і full у наявному Dialog, disclosure-меню з посиланнями і один focus trap в OverlayDrawer. Міграції header, filters, search і share лишаються наступним задачам. Окремий візуальний підпис очікується.
+Summary: Sheet-варіанти left, right і full у наявному Dialog, disclosure-меню з посиланнями і один focus trap в OverlayDrawer. PR #390 змерджено в 56a9cf8. Окремого візуального підпису не було. Міграції header, filters, search і share лишаються.
 Sources: `src/components/ui/dialog.tsx`; `src/components/ui/overlay-drawer.tsx`; `src/components/ui/disclosure-nav.tsx`; `e2e/overlays.spec.ts`; `artifacts/after-hours/qa/ah-2.4-evidence.json`; `artifacts/after-hours/qa/capture-catalog-ah-2.4.mjs`; картка [AH-2.4](after-hours-redesign-epic.md#ah-24--оверлеї-dialog--sheet-drawer-menu-disclosure-popover)
 Last updated: 2026-10-01
 
@@ -8,7 +8,7 @@ Last updated: 2026-10-01
 
 ## Стан
 
-Реалізовано в [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) на гілці `feat/ah-2.4-overlays` від `origin/main` `7f523e6` (merge #389). Popover, DropdownMenu, Tooltip, Accordion і `use-dismissable` не дубльовано. (source: PR #390; `git log origin/main -1`; картка AH-2.4)
+Реалізовано в [PR #390](https://github.com/sanchahous/ai-today-brief/pull/390) і змерджено в `56a9cf8` о 11:20 UTC. Popover, DropdownMenu, Tooltip, Accordion і `use-dismissable` не дубльовано. Окремого текстового підпису не було. (source: `gh pr view 390` 2026-10-01; картка AH-2.4)
 
 #388 підписано власником і змерджено в `e75c438` о 09:45 UTC. Це не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC AH-1.5 і G1. (source: повідомлення власника 2026-10-01; `gh pr view 388`)
 
@@ -43,7 +43,7 @@ Last updated: 2026-10-01
 
 [Локальна галерея](../../artifacts/after-hours/qa/ah-2.4-review.html): 8 знімків закритої секції і 6 відкритих станів. PNG у git-ignored `artifacts/_local/ah-2-4-catalog`. SHA-256 файлу manifest — `a45c383f77b8dad6a00eea533bad92dc8363af3c99a2f352237daf7671873f20`. Окремий підпис очікується. Публічний full-page report і G1 цією задачею не закриваються. (source: `capture-catalog-ah-2.4.mjs`; manifest 2026-10-01)
 
-Наступна задача за нумерацією — **AH-2.5** після інтеграції цього PR. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+Наступна задача за нумерацією — **AH-2.5**, її веде окремий PR. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач); [AH-2.5 validation](after-hours-ah-2-5-validation.md))
 
 ## Related pages
 

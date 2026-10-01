@@ -20,6 +20,8 @@ import { realpathSync } from 'node:fs';
  * Playwright loads this config as CommonJS.
  */
 const projectDir = realpathSync(__dirname);
+/** Local runs on a port other than the pre-push server. CI leaves this unset. */
+const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -36,7 +38,7 @@ export default defineConfig({
   workers: process.env.CI ? 2 : 4,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL,
     viewport: { width: 1280, height: 720 },
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -58,14 +60,16 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  webServer: {
-    command: 'npm run start',
-    // Run from the canonical (realpath'd) dir — see projectDir above.
-    cwd: projectDir,
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
-    // Enables the internal /ds-catalog page used by e2e/ui-components.spec.ts (404 without it).
-    env: { DS_CATALOG: '1' },
-    timeout: 120_000,
-  },
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run start',
+        // Run from the canonical (realpath'd) dir — see projectDir above.
+        cwd: projectDir,
+        url: 'http://127.0.0.1:3000',
+        reuseExistingServer: !process.env.CI,
+        // Enables the internal /ds-catalog page used by e2e/ui-components.spec.ts (404 without it).
+        env: { DS_CATALOG: '1' },
+        timeout: 120_000,
+      },
 });

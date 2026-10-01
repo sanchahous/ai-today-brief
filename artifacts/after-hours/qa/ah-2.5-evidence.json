@@ -1,0 +1,22 @@
+{
+  "task": "AH-2.5",
+  "pr": null,
+  "branch": "feat/ah-2.5-feedback-states",
+  "base": "56a9cf8b0969b65b9e2fd850f4252e383044bddc",
+  "catalog": {
+    "file": "artifacts/_local/ah-2-5-catalog/manifest.json",
+    "sha256": "28868e5af98e7da95d4f46d72b2c7cce705e72a4c5fc7fa5a6a81945d776b44f",
+    "screenshots": 12,
+    "server": "http://localhost:3107",
+    "note": "Local next dev with .env.local. PNG files stay in gitignored artifacts/_local. Eight closed catalog shots and four state shots."
+  },
+  "checks": {
+    "playwrightDev": "feedback-states.spec.ts 21 passed across chromium, firefox and webkit against localhost:3108",
+    "loadingCls": "Counted CLS max 0.0178 at 1440 and 0 at 390; skeleton visible on each hop"
+  },
+  "open": [
+    "separate visual sign-off",
+    "full-page legacy DoD and G1",
+    "UK Home/Article/Weekly, Preview CLS, H1/legacy AC from AH-1.5"
+  ]
+}
