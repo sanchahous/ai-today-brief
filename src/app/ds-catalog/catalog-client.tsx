@@ -4,6 +4,7 @@ import { useId, useRef, useState, type ReactNode } from 'react';
 import { ActionCatalog } from './action-catalog';
 import { FeedbackCatalog } from './feedback-catalog';
 import { FieldCatalog } from './field-catalog';
+import { NavigationCatalog } from './navigation-catalog';
 import { OverlayCatalog } from './overlay-catalog';
 import {
   Accordion,
@@ -156,6 +157,8 @@ export function CatalogClient() {
         <FeedbackCatalog />
 
         <OverlayCatalog />
+
+        <NavigationCatalog />
 
         <Section title="Dialog">
           <button

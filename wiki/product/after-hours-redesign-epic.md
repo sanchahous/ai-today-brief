@@ -208,7 +208,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | B3 | Текст дрібніший за 12 px | ✅ закрито #369 | 74 довільні класи замінено на `text-2xs`; `tokens:check` валить будь-який розмір < 12 px у `src/` | там само; grep 2026-09-29 — 0 |
 | B4 | «Сирі» кольори в UI | ◐ | hex-літерали у 14 файлах `.tsx` / `.css` поза admin (було 18); серед них `globals.css` (визначення токенів) і 2 OG-рендери — кандидати в allowlist | grep 2026-09-29 |
 | B5 | Кольори категорій — неон з БД | відкрито | `categories.color` (`#47E4D3` …) + 8 правил `.theme-light .cat-*` з color-mix; прототип має jewel tones на тему (≥ 4,5:1); #369 відклав це до «Хвилі B» | `supabase/migrations/009_seed_categories.sql`; `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
-| B6 | Дві пагінації | відкрито | `src/components/pagination.tsx` (кнопки) лишився в `post-feed.tsx` поруч з `ui/pagination.tsx` | grep 2026-09-29 |
+| B6 | Дві пагінації | ✅ закрито [#392](https://github.com/sanchahous/ai-today-brief/pull/392) | `src/components/pagination.tsx` видалено, `post-feed.tsx` переведено на `ui/pagination.tsx`, `AccessiblePagination` підтримує `rel="prev"` / `rel="next"` та `aria-current="page"` | PR #392 |
 | B7 | Немає фасету Topics / Tool | частково (AH-4.1): lib і URL є, пікер — AH-4.3 | `news-filters.ts` має `topics`, `buildTopicFacet`; у sidebar пікера ще немає | `src/lib/news-filters.ts`, `src/lib/topic-normalize.ts` |
 | B8 | Статичний «Recent highlights» на `/news` | ✅ закрито hotfix-ом 2026-09-29 | до hotfix-у рендерився захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії; блок і ключі `news.summaryTitle` / `news.weekSummary` прибрано в EN і UK в одному PR з епіком | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
 | B9 | Хардкод-статистика на головній | відкрито | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
@@ -355,8 +355,7 @@ flowchart TD
 | AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
-| AH-2.5 | ◐ Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у [#391](https://github.com/sanchahous/ai-today-brief/pull/391); Toast і Skeleton не дубльовано; підпис очікується ([докази](after-hours-ah-2-5-validation.md)) | S | агент | AH-1.6 | G13 (data-стани) |
-| AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
+| AH-2.6 | ◐ Навігація: Pagination (консолідація), Tabs, Breadcrumbs у [#392](https://github.com/sanchahous/ai-today-brief/pull/392); legacy `pagination.tsx` видалено, `post-feed.tsx` мігровано, `LinkTabs` додано, `Breadcrumbs` рестайлено, G2 очікує підпису | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
@@ -1047,12 +1046,14 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 `aria-current` для URL-стану); `src/components/breadcrumbs.tsx` (рестайл, `breadcrumbJsonLd` без змін)
 
 **AC:**
-- [ ] Пагінація скрізь — `<a href>` з `aria-current="page"`, `rel="prev"` / `rel="next"`,
+- [x] Пагінація скрізь — `<a href>` з `aria-current="page"`, `rel="prev"` / `rel="next"`,
   `aria-disabled` для крайніх станів; Ctrl+Click відкриває нову вкладку; ціль ≥ 44 px.
-- [ ] `src/components/pagination.tsx` видалено; категорійні й концептні стрічки гортаються
+- [x] `src/components/pagination.tsx` видалено; категорійні й концептні стрічки гортаються
   посиланнями без читання `searchParams` на сервері (I-2).
-- [ ] Tablist: ← / →, Home / End, `aria-selected`, roving `tabindex` (E2E на каталозі).
-- [ ] SEO-diff: `BreadcrumbList` на всіх маршрутах без змін.
+- [x] Tablist: ← / →, Home / End, `aria-selected`, roving `tabindex` (E2E на каталозі). Link-tabs з `aria-current` для URL-стану.
+- [x] SEO-diff: `BreadcrumbList` на всіх маршрутах без змін.
+
+**Стан 2026-10-01:** реалізовано в [PR #392](https://github.com/sanchahous/ai-today-brief/pull/392) на гілці `feat/ah-2.6-navigation`. `src/components/pagination.tsx` видалено, `src/components/post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті без читання `searchParams` на сервері. `LinkTabs` додано в `src/components/ui/tabs.tsx`. `Breadcrumbs` рестайлено за специфікацією After Hours зі збереженням `breadcrumbJsonLd`. Додано `NavigationCatalog` у `/ds-catalog`, E2E та unit-тести.
 
 **Гейт G2:** примітиви й композити в каталозі з повною state matrix; keyboard/a11y E2E зелені в
 трьох браузерах; News slice можна зібрати без одноразових control-стилів (M2-гейт gap-plan).

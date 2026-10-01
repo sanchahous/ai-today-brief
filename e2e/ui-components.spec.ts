@@ -198,6 +198,79 @@ test.describe('UI primitives accessibility tree', () => {
     await page.getByRole('button', { name: 'Success toast' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible();
   });
+
+  test('Pagination: semantic links with href, aria-current="page", rel="prev/next", aria-disabled on extremes, touch floor >= 44px', async ({ page }) => {
+    const navSection = page.getByTestId('navigation-catalog');
+    await expect(navSection).toBeVisible();
+
+    const interactiveNav = navSection.getByTestId('pagination').first();
+    await expect(interactiveNav).toBeVisible();
+
+    // Check page link has href, aria-current on active page (page 2)
+    const page2Link = interactiveNav.getByRole('link', { name: '2' });
+    await expect(page2Link).toHaveAttribute('href', '#page-2');
+    await expect(page2Link).toHaveAttribute('aria-current', 'page');
+
+    // Previous link has rel="prev"
+    const prevLink = interactiveNav.getByRole('link', { name: /previous|назад/i });
+    await expect(prevLink).toHaveAttribute('rel', 'prev');
+    await expect(prevLink).toHaveAttribute('href', '#page-1');
+
+    // Next link has rel="next"
+    const nextLink = interactiveNav.getByRole('link', { name: /next|далі/i });
+    await expect(nextLink).toHaveAttribute('rel', 'next');
+    await expect(nextLink).toHaveAttribute('href', '#page-3');
+
+    // Touch target sizes >= 44px
+    const page2Box = await page2Link.boundingBox();
+    expect(page2Box).not.toBeNull();
+    expect(page2Box!.width).toBeGreaterThanOrEqual(44);
+    expect(page2Box!.height).toBeGreaterThanOrEqual(44);
+
+    // Interactive click updates page and aria-current
+    const page3Link = interactiveNav.getByRole('link', { name: '3' });
+    await page3Link.click();
+    await expect(page3Link).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('catalog-pagination-active')).toHaveText(/3/);
+
+    // Extreme states check: Page 1 has aria-disabled="true" on previous control
+    const startNav = navSection.getByTestId('catalog-pagination-start');
+    const startPrev = startNav.locator('[aria-disabled="true"]');
+    await expect(startPrev).toBeVisible();
+
+    // Extreme states check: Page 5 of 5 has aria-disabled="true" on next control
+    const endNav = navSection.getByTestId('catalog-pagination-end');
+    const endNext = endNav.locator('[aria-disabled="true"]');
+    await expect(endNext).toBeVisible();
+  });
+
+  test('LinkTabs: renders nav with links, aria-current="page" on selected tab, optional counts', async ({ page }) => {
+    const navSection = page.getByTestId('navigation-catalog');
+    const linkTabsNav = navSection.locator('nav.tabs');
+    await expect(linkTabsNav).toBeVisible();
+
+    const allTab = linkTabsNav.getByRole('link', { name: /all|усі/i });
+    await expect(allTab).toHaveAttribute('aria-current', 'page');
+    await expect(allTab).toHaveAttribute('href', '#digests');
+
+    const dailyTab = linkTabsNav.getByRole('link', { name: /daily|щоденні/i });
+    await expect(dailyTab).not.toHaveAttribute('aria-current', 'page');
+    await dailyTab.click();
+    await expect(dailyTab).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('catalog-linktabs-active')).toHaveText(/daily/);
+  });
+
+  test('Breadcrumbs: renders semantic breadcrumbs with links, separator, and last item aria-current="page"', async ({ page }) => {
+    const breadcrumbsNav = page.getByTestId('catalog-breadcrumbs').getByRole('navigation', { name: /breadcrumb/i });
+    await expect(breadcrumbsNav).toBeVisible();
+
+    const homeLink = breadcrumbsNav.getByRole('link', { name: /home|головна/i });
+    await expect(homeLink).toBeVisible();
+
+    const currentItem = breadcrumbsNav.locator('[aria-current="page"]');
+    await expect(currentItem).toBeVisible();
+    await expect(currentItem).not.toHaveAttribute('href');
+  });
 });
 
 for (const scheme of ['dark', 'light'] as const) {

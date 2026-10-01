@@ -5584,3 +5584,15 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-10-01 — AH-2.5: PR #391
 
 Створено [PR #391](https://github.com/sanchahous/ai-today-brief/pull/391). `pr:check` EXIT=0 перед першим push. Перший push зупинив хук, бо в оболонці лишився `E2E_BASE_URL` на вже зупинений dev-порт; другий push зупинився на одному typography-тесті статті, який окремо потім пройшов. Третій push: 424 Chromium passed / 5 skipped. Номер внесено в validation, epic §5.3/картку, now, handoff, index і evidence. Окремий візуальний підпис очікується. Merge не виконувався. (source: PR #391; `artifacts/_local/ah-2.5-pr-check.log`; pre-push 2026-10-01)
+
+## 2026-10-01 — AH-2.6: навігація (пагінація, таби, breadcrumbs), PR #392
+
+Реалізовано задачу AH-2.6 епіку After Hours на гілці `feat/ah-2.6-navigation` (PR [#392](https://github.com/sanchahous/ai-today-brief/pull/392)):
+- Консолідовано пагінацію: видалено застарілий `src/components/pagination.tsx`, `src/components/post-feed.tsx` переведено на `AccessiblePagination` із синхронізацією URL на клієнті через history pushState/popstate без читання searchParams на сервері (збережено інваріант I-2).
+- В `src/components/ui/pagination.tsx` додано `rel="prev"` та `rel="next"`, повний розмір touch target (min-w-[44px] min-h-[44px]), пігулкові радіуси й моно-шрифт за After Hours специфікацією, експортовано аліас `Pagination`.
+- В `src/components/ui/tabs.tsx` додано компонент `LinkTabs` із `aria-current="page"` для навігації на основі URL.
+- `Breadcrumbs` оновлено за After Hours v3 специфікацією (`pt-6 mb-4`, `gap-x-2 gap-y-0.5`, роздільник `/`, `text-faint max-w-[42ch] truncate`); структуру `breadcrumbJsonLd` збережено на 100% (SEO-дифф 0).
+- Додано секцію `NavigationCatalog` у `/ds-catalog` (інтерактивна пагінація, крайні стани початку/кінця, LinkTabs, Breadcrumbs).
+- Додано юніт-тести в `src/components/ui/navigation.test.ts` (100% pass) та E2E тести в `e2e/ui-components.spec.ts` (23 passed у Chromium, включно з axe WCAG 2.2 AA в Night і Day темах). Усунуто витік `OPENROUTER_API_KEY` у `pipeline/openrouter-summarize.test.ts`.
+- `npm run pr:check` пройдено успішно. Оновлено епік §2.2 (B6), §5.3, картку AH-2.6, handoff, now.md, index.md та log.md. (source: PR #392; `src/components/ui/pagination.tsx`; `src/components/ui/tabs.tsx`; `src/components/breadcrumbs.tsx`; `src/app/ds-catalog/navigation-catalog.tsx`; `e2e/ui-components.spec.ts`)
+

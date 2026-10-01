@@ -151,14 +151,20 @@ describe('generateWithOpenRouterChain', () => {
   });
 
   it('throws immediately when apiKey is missing', async () => {
-    await expect(
-      generateWithOpenRouterChain('prompt', {
-        apiKey: undefined,
-        modelQueue: ['model-a'],
-        callModel: mockCallModel,
-      }),
-    ).rejects.toThrow('OPEN_ROUTER_API_KEY');
-    expect(mockCallModel).not.toHaveBeenCalled();
+    vi.stubEnv('OPEN_ROUTER_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+    try {
+      await expect(
+        generateWithOpenRouterChain('prompt', {
+          apiKey: undefined,
+          modelQueue: ['model-a'],
+          callModel: mockCallModel,
+        }),
+      ).rejects.toThrow('OPEN_ROUTER_API_KEY');
+      expect(mockCallModel).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('uses custom resolveQueue when modelQueue not provided', async () => {
