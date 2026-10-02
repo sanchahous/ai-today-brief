@@ -88,6 +88,11 @@ test.describe('Theme toggle', () => {
         'atb-consent-v1',
         JSON.stringify({ analytics: true, ads: false, updatedAt: '2026-09-30' }),
       );
+      // analytics-client blocks automated browsers; Playwright sets webdriver=true.
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => false,
+        configurable: true,
+      });
     });
     const wasLight = await page
       .locator('html')
