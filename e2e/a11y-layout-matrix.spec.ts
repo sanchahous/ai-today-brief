@@ -3,6 +3,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 import { readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { consentStorageState, resolveE2eBaseUrl } from '../scripts/e2e-server-url';
 import { inspectPage, type PageInspection } from './helpers/inspect-page';
 
 type Theme = 'night' | 'day';
@@ -203,11 +204,12 @@ async function contextFor(
   coarse: boolean,
 ): Promise<BrowserContext> {
   return browser.newContext({
+    baseURL: resolveE2eBaseUrl(),
     viewport: { width, height },
     isMobile: coarse,
     hasTouch: coarse,
     reducedMotion: 'reduce',
-    storageState: './e2e/consent-state.json',
+    storageState: consentStorageState(),
   });
 }
 

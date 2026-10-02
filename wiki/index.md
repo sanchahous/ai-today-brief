@@ -87,7 +87,7 @@ Last updated: 2026-10-02
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
-| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Property 540206735; GSC link, key event, retention 14 місяців і Tag Assistant підтверджено; звернення на три destinations, приймання акаунтами в кошику не доведено | повідомлення й скриншоти власника + витяг доказів / HYPD 2026-09-30 |
+| ⚠️ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Property 540206735; Admin 2026-09-30 підтверджено; ⚠️ conflict Consent Mode: production opt-out vs код PR #396 opt-in — pending Preview Tag Assistant | повідомлення й скриншоти власника 2026-09-30; PR #396 / wiki §11 open-questions |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
 | ✅ [analytics/2026-10-02-singapore-bot-traffic](analytics/2026-10-02-singapore-bot-traffic.md) | Singapore/direct = автоматизований трафік Tencent Cloud (AS132203), підтверджений Vercel Firewall і логами; Івано-Франківськ = власні headless-перевірки; Bot Protection у `Log`, план `Challenge` + bypass; правила читання GA4 | Vercel Firewall/Logs/Usage, GA4 Home, `item_events`, повідомлення власника 2026-10-02 |
 | ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: всі докази й AC прийнято; інтеграція через #376; GA4 Admin підтверджено, CWV home/news/article прийнято власником, daily/weekly виключено; підпис G0 2026-09-30 | GA4 Data API + повідомлення, скриншоти й HTML-звіти власника + JSON-витяги 2026-09-29…30 |
@@ -123,7 +123,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | AH-2.6 у PR #392; AH-2.5 у PR #391; далі AH-3.1; підпис на кожен PR знято, включно з high і agent+human (ATB-64, #397); ATB-22/23/27 ще в waiting на старих запитах merge; G1/UK/CLS/legacy відкриті | дозвіл власника 2026-10-02; PR #397; PR #391 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | AH-3.6 у PR #396 (opt-in CMP, ⚠️ conflict §11); AH-3.1 у PR #393; далі AH-3.7; ATB-64 (#397); ATB-22/23/27 waiting; G1/UK/CLS/legacy відкриті | PR #396, #393; дозвіл власника 2026-10-02 |
 | ✅ [product/after-hours-ah-2-5-validation](product/after-hours-ah-2-5-validation.md) | PR #391: Notice, Spinner, ErrorState, StaleNotice; ланцюг станів у каталозі; CLS loading нижче 0,05; 12 PNG; підпис відкритий | PR #391 + e2e/feedback-states.spec.ts + catalog manifest 2026-10-01 |
 | ✅ [product/after-hours-ah-2-4-validation](product/after-hours-ah-2-4-validation.md) | #390 змерджено в 56a9cf8: sheet left/right/full, disclosure, --z-modal; окремий підпис не отримано | PR #390 + gh run list 2026-10-01 |
 | ✅ [product/after-hours-ah-2-3-validation](product/after-hours-ah-2-3-validation.md) | #388 підписано і змерджено в e75c438: Field, Textarea, Segmented, Switch, рестайл полів, локалізація SearchInput; full-page DoD відкритий | PR #388 + власник 2026-10-01 |
@@ -155,6 +155,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |
 | ✅ [ops/github-actions-cost](ops/github-actions-cost.md) | Профіль витрат CI: хто палив Actions-хвилини, чому e2e коштував 15 хв, що змінив перехід у public | нове 2026-08-18, GitHub REST live check |
+| ✅ [ops/e2e-local](ops/e2e-local.md) | `PORT` / `E2E_BASE_URL` для Playwright і `e2e:affected` — паралельні checkout-и без чужого `:3000` | [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401), ATB-66, 2026-10-02 |
 | ✅ [ops/video-render-runbook](ops/video-render-runbook.md) | Точні команди рендеру/озвучки/субтитрів/result-маніфесту в `ai-today-brief-video` | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 | ✅ [ops/video-weekly-checklist](ops/video-weekly-checklist.md) | Тижневий чеклист випуску weekly-відео, крок за кроком | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 

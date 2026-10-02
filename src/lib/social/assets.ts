@@ -4,6 +4,8 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import sharp, { type Sharp } from 'sharp';
+import { BRAND_MARK_RENDER_ACCENT } from '@/lib/brand-mark';
+import { rasterizeBrandMark } from '@/lib/brand-mark-raster';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { storageBlob } from '@/lib/storage/binary';
 import { toSupabaseRenderUrl } from '@/lib/image-loader';
@@ -14,7 +16,6 @@ const TEXT_FONT = join(DEJAVU_DIRECTORY, 'DejaVuSans.ttf');
 const TEXT_FONT_BOLD = join(DEJAVU_DIRECTORY, 'DejaVuSans-Bold.ttf');
 const BUCKET = 'social-assets';
 const BRAND_DARK = '#101418';
-const BRAND_TEAL = '#47e4d3';
 const BRAND_TEXT = '#f7fafc';
 const STORAGE_BINARY_VERSION = 'binary-v2';
 
@@ -139,9 +140,28 @@ function overlaySvg(width: number, height: number) {
         </linearGradient>
       </defs>
       <rect width="${width}" height="${height}" fill="url(#shade)"/>
-      <rect x="${Math.round(width * 0.075)}" y="${Math.round(height * 0.09)}" width="${Math.round(width * 0.055)}" height="8" rx="4" fill="${BRAND_TEAL}"/>
     </svg>
   `);
+}
+
+function brandHeaderPlacement(width: number, height: number) {
+  const contentLeft = Math.round(width * 0.075);
+  const markSize = Math.max(36, Math.round(Math.min(width, height) * 0.055));
+  const markTop = Math.round(height * 0.09);
+  const eyebrowSize = Math.round(width * 0.023);
+  const gap = 12;
+  const eyebrowLeft = contentLeft + markSize + gap;
+  const eyebrowTop = markTop + Math.max(0, Math.round((markSize - eyebrowSize) / 2));
+  return {
+    contentLeft,
+    contentWidth: Math.round(width * 0.85),
+    markSize,
+    markLeft: contentLeft,
+    markTop,
+    eyebrowLeft,
+    eyebrowTop,
+    eyebrowWidth: Math.max(1, Math.round(width * 0.85) - markSize - gap),
+  };
 }
 
 async function textLayer(options: {
@@ -190,19 +210,18 @@ export async function renderSocialAssetImage(
   const bodyLines = options?.body?.trim()
     ? splitLines(options.body, options.bodyMaxChars ?? 48, options.bodyMaxLines ?? 5)
     : [];
-  const contentLeft = Math.round(width * 0.075);
-  const contentWidth = Math.round(width * 0.85);
+  const header = brandHeaderPlacement(width, height);
   const [eyebrowLayer, titleLayer, bodyLayer, footerLayer] = await Promise.all([
     textLayer({
       text: eyebrow.toUpperCase(),
-      width: contentWidth,
+      width: header.eyebrowWidth,
       size: Math.round(width * 0.023),
-      color: BRAND_TEAL,
+      color: BRAND_MARK_RENDER_ACCENT,
       bold: true,
     }),
     textLayer({
       text: lines.join('\n'),
-      width: contentWidth,
+      width: header.contentWidth,
       size: titleSize,
       color: BRAND_TEXT,
       bold: true,
@@ -211,7 +230,7 @@ export async function renderSocialAssetImage(
     bodyLines.length
       ? textLayer({
           text: bodyLines.join('\n'),
-          width: contentWidth,
+          width: header.contentWidth,
           size: bodySize,
           color: '#d4dde1',
           spacing: Math.round(bodySize * 0.16),
@@ -220,7 +239,7 @@ export async function renderSocialAssetImage(
     options?.footer
       ? textLayer({
           text: options.footer,
-          width: contentWidth,
+          width: header.contentWidth,
           size: Math.round(width * 0.022),
           color: '#b9c4ca',
         })
@@ -312,17 +331,20 @@ export async function renderSocialAssetImage(
     );
   }
 
+  const mark = await rasterizeBrandMark(header.markSize, { palette: 'yellow' });
+
   return base
     .composite([
       { input: overlaySvg(width, height), top: 0, left: 0 },
+      { input: mark, top: header.markTop, left: header.markLeft },
       {
         input: eyebrowLayer,
-        top: Math.round(height * 0.125),
-        left: contentLeft,
+        top: header.eyebrowTop,
+        left: header.eyebrowLeft,
       },
-      { input: titleLayer, top: Math.max(0, titleTop), left: contentLeft },
-      ...(bodyLayer ? [{ input: bodyLayer, top: Math.max(0, bodyTop), left: contentLeft }] : []),
-      ...(footerLayer ? [{ input: footerLayer, top: footerTop, left: contentLeft }] : []),
+      { input: titleLayer, top: Math.max(0, titleTop), left: header.contentLeft },
+      ...(bodyLayer ? [{ input: bodyLayer, top: Math.max(0, bodyTop), left: header.contentLeft }] : []),
+      ...(footerLayer ? [{ input: footerLayer, top: footerTop, left: header.contentLeft }] : []),
     ])
     .jpeg({ quality: 88, progressive: true })
     .toBuffer();

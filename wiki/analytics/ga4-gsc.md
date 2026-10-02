@@ -4,8 +4,7 @@ Summary: Єдина активна property 540206735; GSC link, newsletter_subs
 Sources: повідомлення й скриншоти власника 2026-09-30 (селектор property і деталі GSC link); HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
 Last updated: 2026-10-02
 
-> Оновлено: **2026-10-02** (правила читання Singapore/China); стан property — **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events,
-> env) — онови цей файл у тому ж PR.
+> Оновлено: **2026-10-02** (правила читання Singapore/China; consent opt-in PR #396). Стан property — **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events, consent, env) — онови цей файл у тому ж PR.
 
 ## Поточний стан (перевірка 2026-09-30)
 
@@ -58,8 +57,15 @@ GA4-destination всередині — він не збирав нічого і 
 Vercel більше не читається — можна видалити з env.
 
 - **Search Console:** `sc-domain:aitodaybrief.com`.
-- **Consent Mode v2:** analytics granted / ads denied за замовчуванням; CMP opt-out
-  оновлює gtag consent (`applyConsentToGtag`).
+- **Consent Mode v2 (код, PR #396 / AH-3.6, 2026-10-02):** `analytics_storage: denied`
+  за замовчуванням (opt-in CMP); `hasAnalyticsConsent()` → false без збереженого вибору;
+  до «Accept all» — без GA collect (e2e assertion). CMP оновлює gtag consent через
+  `applyConsentToGtag` (`src/lib/consent-mode-snippet.ts`, `src/lib/analytics-client.ts`).
+- ⚠️ **Conflict:** production Tag Assistant власника **2026-09-30** (див. Admin-чекліст нижче)
+  показував `analytics_storage = granted` за замовчуванням (opt-out). Код після PR #396
+  навмисно змінює дефолт на opt-in — потрібна повторна перевірка власника на Vercel Preview
+  перед merge. (source: [open-questions](../open-questions.md) §11; PR
+  [#396](https://github.com/sanchahous/ai-today-brief/pull/396))
 
 ## Admin-конфігурація канонічної property — перевірено 2026-09-30
 
@@ -85,12 +91,14 @@ Vercel більше не читається — можна видалити з e
   2026-09-30; `src/components/home/newsletter-form.tsx`; [event-taxonomy](event-taxonomy.md))
 - [x] **Data retention**: event data **14 місяців**, user data **14 місяців**;
   reset після нової дії користувача увімкнено. (source: скриншот власника 2026-09-30)
-- [x] **Tag Assistant:** підключено `aitodaybrief.com`, знайдено `G-5R89X6Q5D4` /
-  `GT-KVJZSX7K`; `page_view` відправлено на канонічний ID і дві залишкові destinations.
-  На події Config `analytics_storage = granted`, `ad_storage`, `ad_user_data`,
-  `ad_personalization = denied` — і початкові, і поточні значення. Сценарій opt-out
-  у цих скриншотах не показано. (source: повідомлення й два скриншоти Tag Assistant
-  власника 2026-09-30; [витяг доказів](../../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json))
+- [x] **Tag Assistant (production, до AH-3.6):** підключено `aitodaybrief.com`, знайдено
+  `G-5R89X6Q5D4` / `GT-KVJZSX7K`; `page_view` відправлено на канонічний ID і дві
+  залишкові destinations. На події Config `analytics_storage = granted`, `ad_storage`,
+  `ad_user_data`, `ad_personalization = denied` — і початкові, і поточні значення.
+  Сценарій opt-out у цих скриншотах не показано. ⚠️ Це **історичний** production-доказ
+  opt-out; код PR #396 змінює дефолт на opt-in — див. conflict вище. (source: повідомлення
+  й два скриншоти Tag Assistant власника 2026-09-30;
+  [витяг доказів](../../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json))
 
 Власник повідомив, що всі налаштування вже були такими, змін не робив.
 Admin/Tag Assistant умови AH-0.6 закриті; очищення destinations не є умовою G0.
@@ -115,7 +123,9 @@ HYPD live check 2026-09-30; GA4 Data API 2026-09-29;
 - ✅ Key event: `purchase` (дефолтний, незнімний)
 - ✅ Data retention (event data): **14 місяців** (був дефолт 2)
 - ✅ GSC ↔ GA4 link
-- ✅ Consent Mode v2: analytics granted / ads denied за замовчуванням
+- ✅ Consent Mode v2 (production 2026-09-30): analytics granted / ads denied за замовчуванням
+  (opt-out). ⚠️ Код PR #396 / AH-3.6 → opt-in (`analytics_storage: denied`); conflict —
+  [§11 open-questions](../open-questions.md)
 
 > **2026-08-21:** покриття подій розширено (хаби, топ-новини, дайджести, воронка
 > підписки, dwell) — повний каталог див.
@@ -124,6 +134,11 @@ HYPD live check 2026-09-30; GA4 Data API 2026-09-29;
 ## Залишилось зробити (одноразово)
 
 - [x] **Admin-чекліст канонічної property і Tag Assistant завершено** доказами власника 2026-09-30.
+- [ ] **Consent Mode opt-in (AH-3.6 / PR #396):** власник підтверджує на Vercel Preview Tag
+  Assistant: `analytics_storage=denied` до вибору користувача, GA collect лише після
+  «Accept all». До підтвердження — ⚠️ conflict між production-доказом 2026-09-30 і кодом.
+  (source: PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396);
+  [open-questions](../open-questions.md) §11)
 - [ ] **Окремо після G0:** власнику вирішити, чи прибрати дві залишкові destinations із
   Google tag; не змінювати tag без перевірки. (source: повідомлення власника 2026-09-30)
 - [ ] **`sponsor_inquiry_click` → key event.** Подія ще жодного разу не надходила,

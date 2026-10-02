@@ -412,6 +412,18 @@ html[lang='uk'],
   background: var(--bg);
 }
 
+.brand-mark .mark-plate {
+  fill: var(--bg);
+}
+
+.brand-mark .mark-strokes {
+  stroke: var(--accent);
+}
+
+.brand-mark .mark-dot {
+  fill: var(--signal);
+}
+
 /* Weekly cover art stays whole behind the full-width title. This scrim creates
    reliable text contrast in both themes without cropping the illustration. */
 .weekly-hero-scrim {

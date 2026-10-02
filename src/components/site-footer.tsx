@@ -33,7 +33,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
           <div className="text-faint min-w-0 max-w-md shrink-0 text-sm lg:max-w-xs">
             <p className="flex items-center gap-2">
-              <BrandMark size={22} className="shrink-0" />
+              <BrandMark size={24} className="shrink-0" />
               <span className="text-text font-serif text-base font-semibold">{SITE_NAME}</span>
             </p>
             <p className="mt-2 leading-relaxed">{t.footerTagline}</p>
