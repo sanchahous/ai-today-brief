@@ -56,7 +56,7 @@ const BROAD: RegExp[] = [
   /^(next|postcss|tailwind)\.config\./,
   /^playwright\.config\./,
   /^e2e\/helpers\//, // shared test helpers (viewports, news-page, …)
-  /^e2e\/consent-state\.json$/, // seeded storage state used by every spec
+  /^scripts\/e2e-server-url\.ts$/, // PORT/baseURL + consent storageState used by every spec
   /^src\/components\/icons\.tsx$/, // icon set used across the whole UI
   /^package(-lock)?\.json$/, // dependency bumps can ripple anywhere
 ];

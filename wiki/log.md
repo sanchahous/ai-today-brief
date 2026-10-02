@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-02
 
+## 2026-10-02 — ATB-66 review fix: consent origin + header-layout baseURL
+
+Після review [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401): `consent-state.json`
+мав origin лише `:3000` (банер згоди на `PORT=3101`); `header-layout.spec.ts` ігнорував
+`baseURL`. Розширено `scripts/e2e-server-url.ts` (`consentStorageState`); Playwright і `a11y-layout-matrix`
+генерують storageState з поточного origin; header-layout переходить на відносний `/uk/news`.
+(source: `.orc/T1-f1.task.md`)
+
 ## 2026-10-02 — ATB-66: конфігурований порт e2e через `PORT` (default 3000)
 
 Оркестратор запускає кілька checkout-ів з `PORT` 3100–3199; `playwright.config.ts` і

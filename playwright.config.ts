@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { realpathSync } from 'node:fs';
-import { resolveE2eBaseUrl, resolveE2ePort } from './scripts/e2e-server-url';
+import { consentStorageState, resolveE2eBaseUrl, resolveE2ePort } from './scripts/e2e-server-url';
 
 /**
  * E2E smoke + layout regression for critical UI flows.
@@ -46,7 +46,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     // Pre-seed cookie consent so the bottom-fixed consent banner never intercepts
     // clicks / covers content during tests (it otherwise breaks bottom-of-page flows).
-    storageState: './e2e/consent-state.json',
+    // Origin must match baseURL (including PORT) — see scripts/e2e-server-url.ts.
+    storageState: consentStorageState(baseURL),
   },
   projects: [
     {

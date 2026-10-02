@@ -23,3 +23,20 @@ export function resolveE2eBaseUrl(env: NodeJS.ProcessEnv = process.env): string 
   if (override) return override;
   return `http://127.0.0.1:${resolveE2ePort(env)}`;
 }
+
+export const CONSENT_STORAGE_KEY = 'atb-consent-v1';
+export const CONSENT_STORAGE_VALUE =
+  '{"analytics":false,"ads":false,"updatedAt":"2026-01-01T00:00:00.000Z"}';
+
+/** Playwright storageState seeded before each test so the consent banner never intercepts clicks. */
+export function consentStorageState(origin = resolveE2eBaseUrl()) {
+  return {
+    cookies: [] as [],
+    origins: [
+      {
+        origin,
+        localStorage: [{ name: CONSENT_STORAGE_KEY, value: CONSENT_STORAGE_VALUE }],
+      },
+    ],
+  };
+}

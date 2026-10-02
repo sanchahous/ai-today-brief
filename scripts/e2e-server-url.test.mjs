@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CONSENT_STORAGE_KEY,
+  consentStorageState,
   DEFAULT_E2E_PORT,
   resolveE2eBaseUrl,
   resolveE2ePort,
@@ -36,5 +38,18 @@ describe('resolveE2eBaseUrl', () => {
       resolveE2eBaseUrl({ PORT: '3101', E2E_BASE_URL: 'http://127.0.0.1:3999' }),
       'http://127.0.0.1:3999',
     );
+  });
+});
+
+describe('consentStorageState', () => {
+  it('defaults origin to :3000', () => {
+    const state = consentStorageState();
+    assert.equal(state.origins[0].origin, 'http://127.0.0.1:3000');
+    assert.equal(state.origins[0].localStorage[0].name, CONSENT_STORAGE_KEY);
+  });
+
+  it('matches PORT-derived origin', () => {
+    const state = consentStorageState('http://127.0.0.1:3101');
+    assert.equal(state.origins[0].origin, 'http://127.0.0.1:3101');
   });
 });

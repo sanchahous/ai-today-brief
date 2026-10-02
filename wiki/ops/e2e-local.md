@@ -17,6 +17,11 @@ Last updated: 2026-10-02
 Спільна логіка — `scripts/e2e-server-url.ts`: `resolveE2ePort()` і `resolveE2eBaseUrl()`.
 `E2E_BASE_URL` має пріоритет над `PORT`.
 
+**Cookie consent:** Playwright сідає `localStorage` через
+`consentStorageState()` у `scripts/e2e-server-url.ts` з origin = поточний `baseURL` (порт входить у origin).
+Статичний `e2e/consent-state.json` лишається лише для legacy QA-скриптів у `artifacts/` на
+`:3000`; конфіг і `a11y-layout-matrix` читають TS-хелпер.
+
 ## Типові сценарії
 
 **Один checkout (як раніше):** нічого не задавати — усе на `http://127.0.0.1:3000`.
