@@ -5652,6 +5652,13 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 - Аватар редактора в `byline.tsx` і `author/page.tsx` — `bg-accent-fill`, не `MARK_COLOR` (`MARK_COLOR*` лишаються для рендерів AH-3.7).
 - Юніт-тест `src/lib/brand-mark.test.ts`. Оновлено епік §2.2 (B11 частково), §5.3, картку AH-3.1, handoff, now.md, index.md. Окремий візуальний підпис очікується. (source: PR #393; `src/lib/brand-mark.ts`; `src/components/icons.tsx`)
 
+## 2026-10-02 — AH-3.7 review fix (T1-f1): знак поверх cover і без колізії з eyebrow
+
+- `pdf.ts` — mark малюється після opaque cover JPEG, щоб залишатися видимим на випусках з art.
+- `social/assets.ts` — eyebrow зміщено праворуч від mark (gap 12px), вертикально вирівняно.
+- `brand-mark.ts` — палітра `yellow` отримала `plateRadius: 3` (прототип `mark.svg`); кольори dark-plate навмисно спільні з night для контрасту на жовтих scrim.
+(source: review T1-f1; PR #402)
+
 ## 2026-10-02 — AH-3.7: знак у генераторах зображень і PDF, PR #402
 
 Реалізовано задачу AH-3.7 епіку After Hours на гілці `feat/ah-3.7-mark-in-generators` (PR [#402](https://github.com/sanchahous/ai-today-brief/pull/402)):

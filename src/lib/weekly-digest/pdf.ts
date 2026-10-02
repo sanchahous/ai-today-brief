@@ -558,11 +558,12 @@ function buildCover(
 ) {
   const copy = COPY[input.locale];
   doc.save().rect(0, 0, PAGE.width, PAGE.height).fill(COLORS.dark).restore();
-  doc.image(mark, PAGE.margin, 40, { width: 24, height: 24 });
   // The art already carries its scrim (see `coverScrim`): it dissolves into the
   // page instead of ending on a seam, and the headline that reaches up into it
   // always sits on dark ground.
   if (cover) doc.image(cover, 0, 0, { width: COVER_IMAGE.width, height: COVER_IMAGE.height });
+  // Paint the mark after the opaque cover JPEG so it stays visible on issues with art.
+  doc.image(mark, PAGE.margin, 40, { width: 24, height: 24 });
 
   doc.save().roundedRect(PAGE.margin + 34, 44, 176, 28, 14).fill(COLORS.accent).restore();
   doc.font('Inter').fontSize(8.5).fillColor(COLORS.dark).text(copy.weekly, PAGE.margin + 34, 54, {

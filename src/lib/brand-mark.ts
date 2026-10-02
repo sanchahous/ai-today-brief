@@ -30,7 +30,10 @@ export interface BrandMarkPalette {
   plateRadius: number;
 }
 
-/** Night palette for site icons; yellow palette for OG/PDF/social on #f0c040 surfaces (I-12). */
+/**
+ * Night palette for site icons. Yellow palette is the dark-plate variant for OG/PDF/social
+ * scrims (readable on #f0c040 duotone suns per I-12) — same ink as `artifacts/after-hours/assets/mark.svg`.
+ */
 export const BRAND_MARK_PALETTES: Record<BrandMarkPaletteId, BrandMarkPalette> = {
   night: {
     plate: SEMANTIC_TOKENS.night.bg,
@@ -42,7 +45,7 @@ export const BRAND_MARK_PALETTES: Record<BrandMarkPaletteId, BrandMarkPalette> =
     plate: SEMANTIC_TOKENS.night.bg,
     stroke: SEMANTIC_TOKENS.night.accent,
     dot: SEMANTIC_TOKENS.night.signal,
-    plateRadius: 6,
+    plateRadius: 3,
   },
 };
 

@@ -28,6 +28,8 @@ describe('brand-mark', () => {
     const yellow = brandMarkSvg({ palette: 'yellow', size: 48 });
     expect(yellow).toContain('width="48"');
     expect(yellow).toContain(BRAND_MARK_PALETTES.yellow.plate);
+    expect(yellow).toContain('rx="3"');
+    expect(BRAND_MARK_PALETTES.yellow.plateRadius).toBe(3);
     expect(BRAND_RENDER_SUN).toBe('#f0c040');
     expect(BRAND_MARK_RENDER_ACCENT).toBe(BRAND_MARK_PALETTES.yellow.stroke);
   });
