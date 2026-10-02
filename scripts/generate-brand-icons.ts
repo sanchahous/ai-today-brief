@@ -9,8 +9,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { BRAND_MARK_SVG } from '../src/lib/brand-mark';
-import { MARK_COLOR_CORE } from '../src/lib/site';
+import { BRAND_MARK_PLATE, BRAND_MARK_SVG } from '../src/lib/brand-mark';
 
 const ROOT = process.cwd();
 const APP_DIR = join(ROOT, 'src', 'app');
@@ -70,7 +69,7 @@ async function main() {
       width: APPLE_SIZE,
       height: APPLE_SIZE,
       channels: 4,
-      background: MARK_COLOR_CORE,
+      background: BRAND_MARK_PLATE,
     },
   })
     .composite([{ input: markPng, gravity: 'center' }])

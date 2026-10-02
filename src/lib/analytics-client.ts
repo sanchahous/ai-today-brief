@@ -44,6 +44,21 @@ export function hasAnalyticsConsent(): boolean {
   }
 }
 
+/**
+ * Playwright, Puppeteer, Selenium and `--enable-automation` Chrome set
+ * `navigator.webdriver`. Our own headless live checks must not count as readers
+ * in GA4 or in the first-party reward signal (`item_events`): the BOT_RE filter in
+ * /api/ev only sees the User-Agent, and these runs send a normal Chrome one.
+ */
+export function isAutomatedBrowser(): boolean {
+  return typeof navigator !== 'undefined' && navigator.webdriver === true;
+}
+
+/** Consent AND not an automated browser — the single gate for every analytics send. */
+function analyticsAllowed(): boolean {
+  return !isAutomatedBrowser() && hasAnalyticsConsent();
+}
+
 /** Merge params attached to every subsequent event (e.g. lang, page_path). */
 export function setGlobalParams(p: Params): void {
   Object.assign(globalParams, p);
@@ -51,7 +66,7 @@ export function setGlobalParams(p: Params): void {
 
 /** GA4 user properties — stable dimensions (lang, theme). */
 export function setUserProperties(props: Record<string, ParamValue>): void {
-  if (!analyticsReady() || !hasAnalyticsConsent()) return;
+  if (!analyticsReady() || !analyticsAllowed()) return;
   window.gtag?.('set', 'user_properties', props);
 }
 
@@ -74,7 +89,7 @@ export function trackEvent(event: string, params: Params = {}): void {
     return;
   }
 
-  if (!hasAnalyticsConsent()) return;
+  if (!analyticsAllowed()) return;
   if (!analyticsReady()) return;
 
   window.gtag?.('event', event, merged);
@@ -107,7 +122,7 @@ export function trackItemEvent(type: string, target: ItemTarget, params: Params 
 
 function sendItemBeacon(type: string, target: ItemTarget, params: Params): void {
   if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return;
-  if (!hasAnalyticsConsent()) return;
+  if (!analyticsAllowed()) return;
   if (!target.id && !target.slug) return;
   const raw = params.value ?? params.percent;
   const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : undefined;
@@ -136,7 +151,7 @@ export function trackDailyVisualEngagement(
   target: DailyVisualTarget,
   entrySource: DailyVisualEntrySource,
 ): void {
-  if (!target.visualSetId || !target.candidateId || !hasAnalyticsConsent()) return;
+  if (!target.visualSetId || !target.candidateId || !analyticsAllowed()) return;
   const params = {
     daily_visual_set_id: target.visualSetId,
     daily_visual_candidate_id: target.candidateId,

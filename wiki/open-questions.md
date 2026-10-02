@@ -5,7 +5,8 @@ Summary: усе, що не має відповіді, суперечить са�
 записом «закрито: …».
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
-`wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`, `wiki/product/after-hours-redesign-epic.md` (live check коду 2026-09-29)
+`wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`, `wiki/product/after-hours-redesign-epic.md` (live check коду 2026-09-29),
+`wiki/analytics/2026-10-02-singapore-bot-traffic.md`, `wiki/ops/vercel-origin-transfer.md` (live check Vercel 2026-10-02)
 Last updated: 2026-10-02
 
 ---
@@ -42,6 +43,14 @@ Tag Assistant показує звернення й на `G-0TEJ3H5V85` / `G-T7X6
 Singapore/direct між property досі невідома; це окрема межа інтерпретації,
 а не незакритий вибір property. (source: скриншоти Tag Assistant власника
 2026-09-30; [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
+
+**З'ясовано 2026-10-02: природа Singapore/direct.** Це автоматизований трафік із Tencent
+Cloud (AS132203), підтверджений даними Vercel Firewall і логів; Івано-Франківськ — власні
+headless-перевірки редизайну (підтвердив власник). Причина *різниці між property* (369
+проти 702 сингапурських `page_view` у третій property) лишається невідомою, але вона вже
+не впливає на висновок про природу трафіку: акаунти двох інших property переміщено в кошик.
+Оператор бота й механізм не встановлені; Bot Protection працює в режимі `Log`.
+(source: [2026-10-02-singapore-bot-traffic](analytics/2026-10-02-singapore-bot-traffic.md))
 
 ## 2. Реальні місячні витрати проєкту невідомі
 
@@ -217,6 +226,19 @@ G11–G16. Оновлення gap-plan від #369 не згадує G05–G07 �
 Config показує `analytics_storage=denied` до вибору, GA collect лише після «Accept all»;
 «Essential only» лишає analytics denied. **Власник рішення:** власник продукту.
 (source: [ga4-gsc](analytics/ga4-gsc.md); PR #396; `e2e/cookie-overlay.spec.ts` 2026-10-02)
+
+## 12. Fast Origin Transfer над лімітом Hobby (12,97 / 10 ГБ за 30 днів)
+
+Проєкт на Hobby, FOT за останні 30 днів 12,97 ГБ при ліміті 10 ГБ; листи Vercel 24.08
+грозили авто-паузою, але минулий цикл перейшов ліміт без блокування. Поточний цикл
+26.09–26.10 іде до ≈14–15 ГБ (оцінка). Причина — ISR-регенерації від широти обходу
+краулерами й деплоїв, а не сінгапурський бот; TTL даних 1 год мовчки перекривав 24 год
+сторінки статті, виправлено в PR цієї перевірки. Невідомо: що саме зробить Vercel після
+10 ГБ, реальний розклад по маршрутах (Observability потребує Pro), чи справді рядки «Pro»
+у білінг-експорті не списання. **Власник рішення:** власник — лишатися на Hobby чи
+перейти на Pro. **Закривається:** FOT за цикл 26.09–26.10 виміряно після деплою PR і
+порівняно з ≈490 МБ/добу; рішення про план зафіксовано.
+(source: [vercel-origin-transfer](ops/vercel-origin-transfer.md) § Повторна перевірка 2026-10-02)
 
 ## Related pages
 

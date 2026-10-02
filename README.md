@@ -32,11 +32,20 @@ npm run dev
 |---|---|
 | `npm run pr:check` | **обов'язково перед пушем**: coverage + typecheck + lint + e2e-check + `build:ci` (8 item-сторінок, не повний SSG) |
 | `npm test` / `npm run test:coverage` | Vitest (гейт ≥70% на logic-модулях) |
-| `npm run e2e` | Playwright (спершу одноразово `npm run e2e:install`) |
+| `npm run e2e` | Playwright (спершу одноразово `npm run e2e:install`; за замовчуванням `http://127.0.0.1:3000`) |
 | `npm run pipeline` / `npm run pipeline:dry` | прогін щоденного pipeline |
 | `npm run wiki:lint` | перевірка бази знань: формат сторінок, посилання, сирітство |
 
 **Ніколи не пушити в `main`** — тільки feature-гілка + PR (`.cursor/rules/pr-gate.mdc`).
+
+### E2E і паралельні checkout-и
+
+`playwright.config.ts` і `npm run e2e:affected` беруть порт із змінної **`PORT`** (за замовчуванням **3000**).
+`next start` / `next dev` теж читають `PORT`, тож кожна копія репозиторію може мати свій порт
+(наприклад `PORT=3101 npm run e2e`) і не перевикористовувати чужий сервер через
+`reuseExistingServer`. Якщо сервер уже запущений зовні — **`E2E_BASE_URL`** (повний URL) вимикає
+вбудований `webServer` у Playwright і має пріоритет над `PORT`. Деталі —
+[wiki/ops/e2e-local.md](wiki/ops/e2e-local.md).
 
 ## Документація
 

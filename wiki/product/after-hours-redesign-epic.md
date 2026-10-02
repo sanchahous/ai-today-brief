@@ -3,7 +3,7 @@
 Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 56 задач (55 обов'язкових + 1 опційна, яку рішення D6 відклало) у порядку виконання, 8 фаз і 8 гейтів, кожна задача з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (3 задачі вже виконані, 9 — частково); усі рішення D1–D13 прийняті 2026-09-29 — ADR.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
-live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30
+live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30; дозвіл власника ATB-64 2026-10-02 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
 Last updated: 2026-10-02
 
 ---
@@ -18,11 +18,14 @@ Last updated: 2026-10-02
 > Фазу 0 інтегровано. AH-1.3 на main після merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
 > наявні legacy QA/no-JS межі збережено в [доказах](after-hours-ah-1-3-validation.md).
 > AH-1.7 / #377 інтегровано в `e470105`, E2E run `36732521337` успішний.
-> AH-1.4 реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), очікує окремого візуального підпису; після інтеграції — AH-1.2.
+> AH-1.4 реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382) і інтегровано; окремий підпис на PR більше не вимагається (ATB-64). Після інтеграції — AH-1.2.
 > Докази: [AH-1.4 validation](after-hours-ah-1-4-validation.md).
 > (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377/378` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
-> Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
-> вимога візуального підпису кожного видимого PR із §0 зберігається.
+> Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0.
+> **2026-10-02, ATB-64 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397)):** власник зняв
+> правило окремого ручного підпису на кожен видимий PR. Після зелених перевірок оркестратор мерджить
+> сам і не чекає `orc verdict accept`. Гейти G1–G7 і далі підписує власник.
+> (source: дозвіл власника в задачі ATB-64, 2026-10-02)
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 >
@@ -54,8 +57,8 @@ Last updated: 2026-10-02
   взаємної залежності можна вести паралельно — див. §5.3 і §5.4.
 - **Розмір** (assumption, один виконавець із готовими даними): **S** ≤ 0,5 дня · **M** ≈ 1 день ·
   **L** 2–3 дні. XL заборонено — ділити на кілька PR.
-- **Виконавець:** `агент` (код, тести, wiki), `власник` (рішення, візуальний підпис, аналітика)
-  або `агент + власник`.
+- **Виконавець:** `агент` (код, тести, wiki), `власник` (рішення на гейтах G1–G7, аналітика)
+  або `агент + власник`. Окремий підпис власника на кожен PR не потрібен (ATB-64, 2026-10-02).
 - **Гілка й PR:** одна задача = одна гілка `feat/ah-<id>-<slug>` = один PR у `main`. Ніколи не
   пушити в `main`. (source: `.cursor/rules/pr-gate.mdc`)
 - **Картка задачі:** Тип · Розмір · Виконавець · Залежить від · Закриває (G-ID аудиту / B-ID з
@@ -93,7 +96,10 @@ Last updated: 2026-10-02
    будь-яка зміна wiki — разом з [index](../index.md) і [log](../log.md).
    (source: `wiki/_meta/project-sync.json`)
 10. В описі PR — посилання на Vercel Preview і знімки до/після (Night/Day, 1440/390) з інструмента
-    AH-0.3; для видимих змін — візуальний підпис власника.
+    AH-0.3. Окремий підпис власника на PR не потрібен, зокрема для ризику high/critical і
+    виконавця «агент + власник»: після зелених перевірок оркестратор мерджить сам
+    (ATB-64, 2026-10-02). Хаб питає мердж лише якщо рев'ю не було незалежним.
+    Гейти G1–G7 лишаються підписом власника.
 11. Нічого з демонстраційного контенту прототипу не потрапляє в production як факт — див.
     інваріант I-6.
 
@@ -213,7 +219,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | B8 | Статичний «Recent highlights» на `/news` | ✅ закрито hotfix-ом 2026-09-29 | до hotfix-у рендерився захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії; блок і ключі `news.summaryTitle` / `news.weekSummary` прибрано в EN і UK в одному PR з епіком | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
 | B9 | Хардкод-статистика на головній | відкрито | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
 | B10 | Нескінченні анімації | відкрито | 11 правил `infinite` у `globals.css` (орби 13–17 с, `pulse`, сцена 404, shimmer); Tension v3 забороняє нескінченні цикли, крім loading-shimmer | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
-| B11 | Бренд-знак | відкрито | production — «bloom» (`MARK_COLOR #47E4D3`); концепт — вкладені A-лінії + celadon-крапка | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
+| B11 | Бренд-знак | частково (AH-3.1): сайт — After Hours mark; рендери OG/PDF/соц — AH-3.7, платформи — AH-3.8 | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
 | B12 | Контракт теми | відкрито | Day-токени вже приймають `.theme-light` і `html[data-theme='day']`, але pre-paint скрипт виставляє лише клас `.theme-light` + `localStorage.theme`; атрибута `data-theme` немає | `src/app/layout.tsx`, `src/components/theme-toggle.tsx`, `e2e/theme.spec.ts`, `src/app/globals.css` |
 | B13 | Брейкпоінти | частково (AH-1.6): токени `--breakpoint-*` і контракт 959 / 960 у `viewports.ts` є; перемикання header — AH-3.3, discovery — AH-4.3 | header і news-layout досі перемикаються на Tailwind `lg` (64rem); за D5 обидва мають перемикатися на 60rem ≈ 960 px | `e2e/helpers/viewports.ts`; `src/app/globals.css`; `tokens.json` `breakpoints` |
 | B14 | Шрифти | ◐ (D3, D4 прийнято) | Шкала в rem і мінімум 12 px — з #369; шрифти досі `@fontsource-variable` через `globals.css`, UK-заголовки — Inter 700; за D3/D4 — `next/font/local` і Georgia для UK display | `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
@@ -356,12 +362,12 @@ flowchart TD
 | AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.6 | ◐ Навігація: Pagination (консолідація), Tabs, Breadcrumbs у [#392](https://github.com/sanchahous/ai-today-brief/pull/392); legacy `pagination.tsx` видалено, `post-feed.tsx` мігровано, `LinkTabs` додано, `Breadcrumbs` рестайлено, G2 очікує підпису | M | агент | AH-2.2 | B6, G11 |
-| AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
+| AH-3.1 | ◐ Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` у [#393](https://github.com/sanchahous/ai-today-brief/pull/393) | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
-| AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; підпис очікується | S | агент | AH-2.2, AH-2.3 | — |
+| AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; ⚠️ conflict wiki §11 pending Tag Assistant | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
 | AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
 | AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #380](https://github.com/sanchahous/ai-today-brief/pull/380)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
@@ -717,7 +723,7 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
   основний контент `/news` прихований legacy Suspense shell і на main, і в AH-1.3.
   Повне приймання цього AC чекає рішення щодо [QA-обмеження](after-hours-ah-1-3-validation.md).
 - [x] Подія `theme_toggle` і user property надсилаються як раніше (`light` / `dark`), opt-out збережено.
-- [ ] Візуальний підпис власника й merge PR.
+- [x] Merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378) підтверджено. Окремий візуальний підпис більше не є умовою DoD (ATB-64, 2026-10-02).
 
 **Стан 2026-09-30:** інтегровано через merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
 на `feat/ah-1.3-night-day-theme`; метадані теми
@@ -735,7 +741,7 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 **Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-1.1 ✅ · **Закриває:** B5
 
 **Стан 2026-09-30:** реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382) на `feat/ah-1.4-category-colours-glyphs`;
-очікує окремого візуального підпису й merge. Токени 2.1.0, mapping/fallback,
+інтегровано; окремий підпис на PR більше не є умовою (ATB-64, 2026-10-02). Токени 2.1.0, mapping/fallback,
 9 гліфів, public споживачі й search preview мігровані; Day-хаки прибрано.
 54 пари ≥5.2238:1 уже в contrast gate; захист DB-colour reads — AST-тест.
 (source: [AH-1.4 validation](after-hours-ah-1-4-validation.md);
@@ -763,7 +769,7 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 - [x] Контраст-гейт покриває всі `--cat-*` на bg / surface / raised в обох темах ≥ 4,5:1.
 - [x] Жоден компонент не бере колір тексту напряму з `category.color` (AST-тест).
 - [x] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
-- [ ] Окремий візуальний підпис власника й merge PR (DoD §0.1).
+- [x] Окремий візуальний підпис більше не вимагається (ATB-64, 2026-10-02); PR #382 інтегровано.
 
 ### AH-1.5 · Типографіка: шрифти, шкала, мінімум 12 px
 
@@ -1030,7 +1036,7 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 - [x] Текст toast з'являється в `[role=status]` (E2E).
 - [x] Заміна skeleton-а контентом у `loading.tsx` не дає CLS > 0,05 (лабораторно).
 
-**Стан 2026-10-01:** [PR #391](https://github.com/sanchahous/ai-today-brief/pull/391) на `feat/ah-2.5-feedback-states` від `56a9cf8`. Окремий візуальний підпис очікується. G13 поза цим ланцюгом лишається частковим для карток фаз 3–5. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391)
+**Стан 2026-10-02:** [PR #391](https://github.com/sanchahous/ai-today-brief/pull/391) на `feat/ah-2.5-feedback-states` від `56a9cf8` ще відкритий. Окремий підпис не потрібен (ATB-64): після зелених перевірок мердж без підпису власника. G13 поза цим ланцюгом лишається частковим для карток фаз 3–5. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391; дозвіл власника ATB-64)
 
 ### AH-2.6 · Навігація: Pagination (консолідація), Tabs, Breadcrumbs
 
@@ -1064,9 +1070,9 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 
 ### AH-3.1 · Бренд-знак After Hours на сайті
 
-**Тип:** код · **Розмір:** M · **Виконавець:** агент + власник (підпис) · **Залежить від:**
+**Тип:** код · **Розмір:** M · **Виконавець:** агент + власник · **Залежить від:**
 D7 ✅, AH-1.1 ✅ · **Закриває:** B11 (сайт); [after-hours-redesign](after-hours-redesign.md) §4
-«Знак та ілюстрації»
+«Знак та ілюстрації». Мердж не чекає підпису власника, попри ризик high і спільного виконавця (ATB-64, 2026-10-02).
 
 > **Рішення D7 (2026-09-29): знак міняється скрізь.** Ця задача — сайт; знак у генераторах
 > зображень і PDF — AH-3.7; аватари й банери соцмереж — AH-3.8. Усі три мерджаться разом або
@@ -1087,11 +1093,13 @@ watcher `brand-chrome` → `wiki/now.md`
 `site.ts` лишаються лише доти, доки ними користуються рендери AH-3.7, потім видаляються.
 
 **AC:**
-- [ ] `npm run icons:generate` відтворює `icon.svg`, `favicon.ico`, `apple-icon.png`; знак
+- [x] `npm run icons:generate` відтворює `icon.svg`, `favicon.ico`, `apple-icon.png`; знак
   читабельний на 16 / 32 / 180 / 512 px (знімки в PR).
-- [ ] `logo.png` 512×512; URL `Organization.logo` незмінний (SEO-diff 0).
-- [ ] На сайті не лишилось старого знака «bloom» (grep за його геометрією й `MARK_COLOR` поза рендерами AH-3.7).
-- [ ] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
+- [x] `logo.png` 512×512; URL `Organization.logo` незмінний (SEO-diff 0).
+- [x] На сайті не лишилось старого знака «bloom» (grep за його геометрією й `MARK_COLOR` поза рендерами AH-3.7).
+- [x] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
+
+**Стан 2026-10-01:** реалізовано в [PR #393](https://github.com/sanchahous/ai-today-brief/pull/393) на гілці `feat/ah-3.1-brand-mark`. `src/lib/brand-mark.ts` — пластина + вкладені A-лінії + celadon-крапка; `BrandMark` у header/footer на токенах (`globals.css`); `BrandBloom` видалено; favicon/apple-icon/logo.png згенеровано через `icons:generate`; аватар редактора в byline і author — `bg-accent-fill`, не `MARK_COLOR`. Підпис на PR не потрібен (ATB-64, 2026-10-02). AH-3.7/AH-3.8 — паралельно за D7.
 
 ### AH-3.2 · SearchDialog (Ctrl/Cmd+K)
 

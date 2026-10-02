@@ -19,6 +19,52 @@ Last updated: 2026-10-02
 - `e2e/cookie-overlay.spec.ts`: GA collect assertion, 360px hero CTA не перекритий, focus у картку з футера й назад.
 - Епік §5.3, картка AH-3.6, `now.md`, `index.md`, handoff — оновлено; наступна задача AH-3.7.
 (source: PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396); `npm run pr:check` 2026-10-02)
+## 2026-10-02 — ATB-66 review fix: consent origin + header-layout baseURL
+
+Після review [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401): `consent-state.json`
+мав origin лише `:3000` (банер згоди на `PORT=3101`); `header-layout.spec.ts` ігнорував
+`baseURL`. Розширено `scripts/e2e-server-url.ts` (`consentStorageState`); Playwright і `a11y-layout-matrix`
+генерують storageState з поточного origin; header-layout переходить на відносний `/uk/news`.
+(source: `.orc/T1-f1.task.md`)
+
+## 2026-10-02 — ATB-66: конфігурований порт e2e через `PORT` (default 3000)
+
+Оркестратор запускає кілька checkout-ів з `PORT` 3100–3199; `playwright.config.ts` і
+`e2e:affected` жорстко тримали `:3000`, тож `reuseExistingServer` підхоплював чужий білд.
+Додано `scripts/e2e-server-url.ts` (`resolveE2ePort`, `resolveE2eBaseUrl`); `E2E_BASE_URL` лишається
+override. Документація: [ops/e2e-local](ops/e2e-local.md), README, `.cursor/rules/pr-gate.mdc`.
+[PR #401](https://github.com/sanchahous/ai-today-brief/pull/401). (source: `.orc/T1.task.md`; код
+`playwright.config.ts`, `scripts/e2e-affected.ts`)
+
+## 2026-10-02 — Vercel Firewall: опубліковано два deny-правила (сканери, ASN132203)
+
+Власник попросив знизити навантаження на Hobby, блокувати явні атаки й скрейпи, лишити `ExaSearchBot` і за потреби перемкнути Bot Protection на `Challenge`. Після `vercel login` власника правила додано через CLI (`rules add` → `diff` → `publish`, власник написав «Публікуй»): «Deny scanner and exploit paths» і «Deny Tencent Cloud ASN 132203 scraper». Перевірка: сканерські шляхи → 403, сторінки/фіди/sitemap → 200, cron `pg_net` о 12:30:00 після публікації → 200 для всіх чотирьох `/api/internal/*`. Bot Protection і AI Bots лишаються в `Log`: спробу `bypass`-правила заблокував auto-mode класифікатор, а без `bypass` `Challenge` зупинив би cron. Оновлено [діагноз](analytics/2026-10-02-singapore-bot-traffic.md) § Стан захисту, [now](now.md). Відкат: вимкнути правило в Firewall → Rules і опублікувати. (source: `vercel firewall rules list` / `diff` / `publish` 2026-10-02 ≈12:28 UTC; curl 12:29 UTC; Supabase `net._http_response`; Vercel runtime logs)
+
+## 2026-10-02 — Діагноз Singapore/direct у GA4 і перевірка Fast Origin Transfer
+
+Власник попросив з'ясувати, що стоїть за сплеском «Direct» з ~22.09. Зроблено:
+- Нова сторінка [2026-10-02-singapore-bot-traffic](analytics/2026-10-02-singapore-bot-traffic.md): Singapore = автоматизований трафік Tencent Cloud (AS132203; 3,2 тис. із 7,2 тис. запитів за добу, JA4 не Chrome при UA «Windows Chrome»); Івано-Франківськ = власні headless-перевірки редизайну (підтвердив власник); докази, межі знання, правила читання GA4.
+- [vercel-origin-transfer](ops/vercel-origin-transfer.md) § Повторна перевірка 2026-10-02: Hobby, FOT 12,97 / 10 ГБ за 30 днів, бот не причина; знахідка — `PUBLIC_CONTENT_REVALIDATE_SECONDS = 3600` мовчки перекривав `revalidate = 86400` сторінки статті.
+- Оновлено [open-questions](open-questions.md) (#1 закриває природу Singapore/direct; новий #11 про FOT), [overview](overview.md) §9, [redesign baseline](analytics/2026-09-29-redesign-baseline.md) (оновлення 2026-10-02), [ga4-gsc](analytics/ga4-gsc.md) (runbook), [event-taxonomy](analytics/event-taxonomy.md) (принцип 4), [now](now.md), [index](index.md).
+- Код у тому ж [PR #399](https://github.com/sanchahous/ai-today-brief/pull/399): `navigator.webdriver` мовчить GA4 і first-party біконі; TTL публічних читань 3600 → 86400. `pr:check` EXIT=0 до push; pre-push e2e 61 passed / 1 skipped.
+- Bot Protection і AI Bots увімкнено власником у режимі `Log` (дашборд Vercel). Створити firewall-конфіг через API/конектор не вдалося (`404`). Перші 73 позначені запити: 64 Tencent (Chrome/117 Windows, Sogou spider), 7 наш `pg_net` на `/api/internal/*`, 1 ExaSearchBot — `Challenge` лише з `bypass` для `/api/internal/*`.
+(source: Vercel Firewall/Logs/Usage/Billing live check 2026-10-02; GA4 Home 2026-10-02; prod Supabase `item_events` SQL 2026-10-02; повідомлення власника 2026-10-02)
+
+## 2026-10-02 — ATB-64: підпис не блокує high і «агент + власник»
+
+Коригує запис вище: попереднє формулювання лишало виняток high/critical і спільної задачі, через який AH-3.1 усе ще чекала б підпису.
+- Політика проєкту: `merge_ask_risks` порожній, `merge_ask_shared = false`. Хаб питає мердж лише якщо рев'ю не було незалежним.
+- Картка AH-3.1 більше не каже «(підпис)». Відкритий AH-2.5 ([PR #391](https://github.com/sanchahous/ai-today-brief/pull/391)) під це правило теж підпадає.
+- ATB-22 (AH-3.1), ATB-23 (AH-3.2) і ATB-27 (AH-3.6) лишаються в waiting/approval на старих запитах merge.
+(source: рев'ю T1; дозвіл власника ATB-64; [PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
+
+## 2026-10-02 — ATB-64: знято ручний підпис на кожен PR епіку After Hours
+
+Власник дозволив прибрати правило окремого підпису й мержити задачі епіку після перевірок.
+- У [епіку](product/after-hours-redesign-epic.md) §0.1 пункт 10 більше не вимагає візуального підпису на кожен PR. Гейти G1–G7 лишаються за власником.
+- У [handoff](product/after-hours-epic-handoff.md) знято рядок «кожен видимий PR потребує власного підпису». Наступна продуктова задача — AH-3.1 після інтеграції AH-2.6.
+- Оркестратор проєкту: `merge = auto`, `verdict = never` (не чекати `orc verdict accept`).
+(source: дозвіл власника в задачі ATB-64, 2026-10-02; [PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
 
 ## 2026-09-28 — Виправлення візуальних артефактів контролів After Hours та підготовка PR
 
@@ -5609,4 +5655,13 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 - Додано секцію `NavigationCatalog` у `/ds-catalog` (інтерактивна пагінація, крайні стани початку/кінця, LinkTabs, Breadcrumbs).
 - Додано юніт-тести в `src/components/ui/navigation.test.ts` (100% pass) та E2E тести в `e2e/ui-components.spec.ts` (23 passed у Chromium, включно з axe WCAG 2.2 AA в Night і Day темах). Усунуто витік `OPENROUTER_API_KEY` у `pipeline/openrouter-summarize.test.ts`.
 - `npm run pr:check` пройдено успішно. Оновлено епік §2.2 (B6), §5.3, картку AH-2.6, handoff, now.md, index.md та log.md. (source: PR #392; `src/components/ui/pagination.tsx`; `src/components/ui/tabs.tsx`; `src/components/breadcrumbs.tsx`; `src/app/ds-catalog/navigation-catalog.tsx`; `e2e/ui-components.spec.ts`)
+
+## 2026-10-01 — AH-3.1: бренд-знак After Hours на сайті, PR #393
+
+Реалізовано задачу AH-3.1 епіку After Hours на гілці `feat/ah-3.1-brand-mark` (PR [#393](https://github.com/sanchahous/ai-today-brief/pull/393)):
+- `src/lib/brand-mark.ts` — пластина + вкладені A-лінії + celadon-крапка (прототип `artifacts/after-hours/assets/mark.svg` / `app.js` `markSvg`); кольори з `SEMANTIC_TOKENS.night` для статичних растрів.
+- `BrandMark` у `src/components/icons.tsx` на токенах через `.brand-mark` у `globals.css`; `BrandBloom` видалено; header і footer використовують один компонент (мін. 24 px у footer).
+- `npm run icons:generate` оновлює `icon.svg`, `favicon.ico`, `apple-icon.png`; `logo.png` 512×512 на тому ж SVG (URL без змін).
+- Аватар редактора в `byline.tsx` і `author/page.tsx` — `bg-accent-fill`, не `MARK_COLOR` (`MARK_COLOR*` лишаються для рендерів AH-3.7).
+- Юніт-тест `src/lib/brand-mark.test.ts`. Оновлено епік §2.2 (B11 частково), §5.3, картку AH-3.1, handoff, now.md, index.md. Окремий візуальний підпис очікується. (source: PR #393; `src/lib/brand-mark.ts`; `src/components/icons.tsx`)
 

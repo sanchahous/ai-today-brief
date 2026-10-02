@@ -94,6 +94,26 @@ describe('analytics-client', () => {
     expect(gtag).toHaveBeenCalledWith('set', 'user_properties', { lang: 'uk', theme: 'dark' });
   });
 
+  it('sends nothing from an automated browser (navigator.webdriver)', async () => {
+    vi.stubGlobal('navigator', { webdriver: true });
+    const mod = await import('@/lib/analytics-client');
+    expect(mod.isAutomatedBrowser()).toBe(true);
+    mod.trackEvent('test_event', { foo: 'bar' });
+    mod.setUserProperties({ lang: 'en' });
+    expect(gtag).not.toHaveBeenCalled();
+  });
+
+  it('does not treat webdriver false or a missing flag as automation', async () => {
+    grantAnalytics(storage);
+    vi.stubGlobal('navigator', { webdriver: false });
+    const mod = await import('@/lib/analytics-client');
+    expect(mod.isAutomatedBrowser()).toBe(false);
+    vi.stubGlobal('navigator', {});
+    expect(mod.isAutomatedBrowser()).toBe(false);
+    mod.trackEvent('test_event');
+    expect(gtag).toHaveBeenCalledTimes(1);
+  });
+
   it('logs to console in dev when GA is not configured', async () => {
     vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', '');
     vi.stubEnv('NODE_ENV', 'development');
@@ -160,6 +180,23 @@ describe('trackItemEvent', () => {
     );
     const mod = await import('@/lib/analytics-client');
     mod.trackItemEvent('share', { id: 'abc' }, { method: 'x' });
+    expect(sendBeacon).not.toHaveBeenCalled();
+    expect(gtag).not.toHaveBeenCalled();
+  });
+
+  it('sends neither GA4 nor any beacon from an automated browser', async () => {
+    vi.stubGlobal('navigator', { sendBeacon, webdriver: true });
+    const mod = await import('@/lib/analytics-client');
+    mod.trackItemEvent('view', { id: 'abc', lang: 'en' });
+    mod.trackDailyVisualEngagement(
+      'visual_impression',
+      {
+        visualSetId: '11111111-1111-4111-8111-111111111111',
+        candidateId: '22222222-2222-4222-8222-222222222222',
+        lang: 'en',
+      },
+      'entry_hero',
+    );
     expect(sendBeacon).not.toHaveBeenCalled();
     expect(gtag).not.toHaveBeenCalled();
   });

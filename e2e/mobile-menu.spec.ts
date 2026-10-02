@@ -62,7 +62,8 @@ test.describe('Mobile menu overlay', () => {
       for (let index = 0; index < targetCount; index += 1) {
         const box = await tapTargets.nth(index).boundingBox();
         expect(box).not.toBeNull();
-        expect(box!.height).toBeGreaterThanOrEqual(44);
+        // Chromium may report 43.999969px for a computed 44px control (see theme.spec.ts).
+        expect(Number(box!.height.toFixed(2))).toBeGreaterThanOrEqual(44);
       }
 
       await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
