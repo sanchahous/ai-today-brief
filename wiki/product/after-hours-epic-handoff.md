@@ -13,6 +13,7 @@ Last updated: 2026-10-02
 ## 1. Стан на 2026-10-02
 
 - **AH-3.6 відкрито в [#396](https://github.com/sanchahous/ai-today-brief/pull/396)** на `feat/ah-3.6-consent-card`: After Hours consent-картка на `Button`/`Switch`, opt-in CMP, focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts`. ⚠️ consent conflict [open-questions §11](../open-questions.md); merge після checks (ATB-64). **Наступна після інтеграції — AH-3.7.** (source: PR #396; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-3.7 відкрито в [#402](https://github.com/sanchahous/ai-today-brief/pull/402)** на `feat/ah-3.7-mark-in-generators`: After Hours mark у OG, weekly PDF, LinkedIn document, Instagram carousel і соц-ассетах через спільну геометрію `brand-mark.ts`; `MARK_COLOR*` видалено з `site.ts`. **Наступна — AH-3.8** (brand-kit і платформи). Підпис на PR не потрібен (ATB-64). (source: PR #402; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-3.1 відкрито в [#393](https://github.com/sanchahous/ai-today-brief/pull/393)** на `feat/ah-3.1-brand-mark`: After Hours brand mark (пластина + A-лінії + celadon-крапка) у `brand-mark.ts`, `BrandMark` у header/footer, favicon/apple-icon/logo.png через `icons:generate`, аватар редактора на токенах. **Наступна після інтеграції — AH-3.2.** AH-3.7/AH-3.8 мерджаться з AH-3.1 в один день (D7). Підпис на PR не потрібен (ATB-64). (source: PR #393; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації (`src/components/pagination.tsx` видалено, `post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті), `LinkTabs` з `aria-current="page"` у `src/components/ui/tabs.tsx`, рестайл `Breadcrumbs` за специфікацією After Hours (`breadcrumbJsonLd` без змін), секція `NavigationCatalog` у `/ds-catalog`, E2E та unit-тести. (source: PR #392)
 - **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`. Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис не потрібен (ATB-64): мердж після зелених перевірок. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391)
@@ -219,6 +220,7 @@ QA-матриця працює в режимі report.
    На 2026-10-01 AH-2.6 реалізовано в PR #392 на feat/ah-2.6-navigation.
    AH-2.5 реалізовано в PR #391 на feat/ah-2.5-feedback-states і очікує власного review.
    AH-3.6 реалізовано в PR #396 на feat/ah-3.6-consent-card; після інтеграції — AH-3.7.
+   AH-3.7 реалізовано в PR #402 на feat/ah-3.7-mark-in-generators. Наступна задача — AH-3.8 (brand-kit).
    AH-3.1 реалізовано в PR #393 на feat/ah-3.1-brand-mark; після інтеграції — AH-3.2 (SearchDialog).
    UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
    Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,

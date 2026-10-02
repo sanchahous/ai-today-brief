@@ -1,3 +1,5 @@
+import { BRAND_RENDER_SUN } from '@/lib/brand-mark';
+
 /**
  * Generative duotone illustration for share / OG cards.
  *
@@ -9,8 +11,8 @@
  * edge runtime. Pure string building, no Node/DOM APIs → safe in edge + tests.
  */
 
-/** Master brand accent — the "signal" sun, constant across every category. */
-export const BRAND_SUN = '#f0c040';
+/** Master brand accent — the "signal" sun, constant across every category (I-12). */
+export const BRAND_SUN = BRAND_RENDER_SUN;
 
 export interface DuotonePalette {
   /** Deep base tone (sky bottom + farthest ridge). */

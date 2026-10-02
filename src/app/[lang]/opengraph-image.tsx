@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { brandMarkDataUri } from '@/lib/brand-mark';
 import { duotoneDataUri, paletteFromCategory } from '@/lib/card/duotone';
 import { isLang, SITE_NAME } from '@/lib/site';
 
@@ -81,9 +82,13 @@ export default async function OgImage({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {[6, 11, 15, 21].map((h) => (
-              <div key={h} style={{ width: 4, height: h, borderRadius: 2, background: '#f0c040' }} />
-            ))}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={brandMarkDataUri({ palette: 'yellow', size: 64 })}
+              alt=""
+              width={40}
+              height={40}
+            />
             <div
               style={{
                 fontSize: 24,

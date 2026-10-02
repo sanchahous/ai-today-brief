@@ -2,6 +2,8 @@ import 'server-only';
 
 import { join } from 'node:path';
 import PDFDocument from 'pdfkit';
+import { BRAND_MARK_RENDER_ACCENT } from '@/lib/brand-mark';
+import { rasterizeBrandMark } from '@/lib/brand-mark-raster';
 
 const FONT_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf', 'ttf');
 const SANS = join(FONT_DIRECTORY, 'DejaVuSans.ttf');
@@ -32,14 +34,19 @@ export interface WeeklyLinkedInDocumentInput {
   }>;
 }
 
-function addPage(doc: PDFKit.PDFDocument, page: number, label: string) {
+function addPage(doc: PDFKit.PDFDocument, page: number, label: string, mark: Buffer) {
   doc.addPage({ size: [WIDTH, HEIGHT], margin: MARGIN });
   doc.rect(0, 0, WIDTH, HEIGHT).fill('#0b1013');
-  doc.font('SansBold').fontSize(12).fillColor('#f7f6f1').text('AI Today Brief', MARGIN, 35);
+  doc.image(mark, MARGIN, 30, { width: 22, height: 22 });
+  doc
+    .font('SansBold')
+    .fontSize(12)
+    .fillColor('#f7f6f1')
+    .text('AI Today Brief', MARGIN + 30, 35, { lineBreak: false });
   doc
     .font('SansBold')
     .fontSize(8)
-    .fillColor('#47e4d3')
+    .fillColor(BRAND_MARK_RENDER_ACCENT)
     .text(label.toUpperCase(), WIDTH - MARGIN - 180, 38, { width: 180, align: 'right' });
   doc
     .font('Sans')
@@ -66,7 +73,7 @@ function section(doc: PDFKit.PDFDocument, label: string, value: string, y: numbe
   doc
     .font('SansBold')
     .fontSize(8)
-    .fillColor('#47e4d3')
+    .fillColor(BRAND_MARK_RENDER_ACCENT)
     .text(label.toUpperCase(), MARGIN, y, { width: CONTENT_WIDTH, lineBreak: false });
   doc
     .font('Sans')
@@ -113,6 +120,7 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
   doc.registerFont('Sans', SANS);
   doc.registerFont('SansBold', SANS_BOLD);
   doc.registerFont('Serif', SERIF);
+  const mark = await rasterizeBrandMark(22, { palette: 'yellow' });
   const chunks: Buffer[] = [];
   const completed = new Promise<Buffer>((resolve, reject) => {
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -120,11 +128,11 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
     doc.on('error', reject);
   });
 
-  addPage(doc, 1, 'Weekly Digest');
+  addPage(doc, 1, 'Weekly Digest', mark);
   doc
     .font('SansBold')
     .fontSize(10)
-    .fillColor('#47e4d3')
+    .fillColor(BRAND_MARK_RENDER_ACCENT)
     .text(input.theme.toUpperCase(), MARGIN, 170, {
       width: CONTENT_WIDTH,
       height: 18,
@@ -146,7 +154,7 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
     });
 
   features.forEach((story, index) => {
-    addPage(doc, index + 2, `Top 3 · ${index + 1}`);
+    addPage(doc, index + 2, `Top 3 · ${index + 1}`, mark);
     const titleBottom = heading(
       doc,
       story.headline,
@@ -166,7 +174,7 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
     );
   });
 
-  addPage(doc, 5, 'Radar');
+  addPage(doc, 5, 'Radar', mark);
   const radarY = heading(doc, 'Four signals worth keeping on your radar', 105, 25, 72) + 18;
   const radarSlotHeight = (CONTENT_BOTTOM - radarY) / radar.length;
   radar.forEach((story, index) => {
@@ -189,7 +197,7 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
       });
   });
 
-  addPage(doc, 6, 'Next week');
+  addPage(doc, 6, 'Next week', mark);
   const actionY = heading(doc, 'What to do next week', 105, 29, 65) + 20;
   const closingY = CONTENT_BOTTOM - 105;
   const takeaways = input.keyTakeaways.slice(0, 5);
@@ -199,7 +207,7 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
     doc
       .font('SansBold')
       .fontSize(16)
-      .fillColor('#47e4d3')
+      .fillColor(BRAND_MARK_RENDER_ACCENT)
       .text(String(index + 1), MARGIN, itemY, { width: 20, lineBreak: false });
     doc
       .font('Sans')
@@ -214,7 +222,7 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
   });
   section(doc, 'Editor’s closing note', input.conclusion, closingY, CONTENT_BOTTOM - closingY - 18);
 
-  addPage(doc, 7, 'Sources');
+  addPage(doc, 7, 'Sources', mark);
   const sourceY = heading(doc, 'Read the evidence, not just the summary', 105, 25, 65) + 20;
   const ctaY = CONTENT_BOTTOM - 24;
   const sourceSlotHeight = (ctaY - sourceY - 10) / input.stories.length;
@@ -242,7 +250,7 @@ export async function renderWeeklyLinkedInDocument(input: WeeklyLinkedInDocument
   doc
     .font('SansBold')
     .fontSize(11)
-    .fillColor('#47e4d3')
+    .fillColor(BRAND_MARK_RENDER_ACCENT)
     .text('Read the full edition', MARGIN, ctaY, {
       link: input.webUrl,
       underline: true,

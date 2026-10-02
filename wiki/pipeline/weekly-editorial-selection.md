@@ -11,7 +11,7 @@ social copy fail-open 2026-08-28, revision Stage 0 2026-08-29,
 ElevenLabs TTS 2026-09-03; social URL rewrite is a publish RPC, not a selector change;
 X self-reply is USE + compact click URL 2026-09-03;
 LinkedIn first comment is compact `?s=` + article card on the post 2026-09-03.
-Last updated: 2026-09-03
+Last updated: 2026-10-02
 
 ---
 
@@ -406,6 +406,13 @@ Telegram/інших каналах після bounded repair: лишок кон�
 відкриваються в `in_review`. Відсутні Instagram story image на поточній ревізії більше не
 валять увесь пакет. Це оркестрація пакета, не shortlist/rank/claims.
 (source: `src/lib/weekly-digest/social-adapter.ts`, owner session 2026-08-28)
+
+## Бренд-знак на PDF/соц-виходах (2026-10-02)
+
+Відбір не змінювався. PDF, LinkedIn document, Instagram carousel і jpeg-ассети після
+AH-3.7 несуть After Hours mark з `src/lib/brand-mark.ts` ([PR #402](https://github.com/sanchahous/ai-today-brief/pull/402)).
+Review fix T1-f1: mark на PDF cover — поверх art; eyebrow у соц-ассетах — праворуч від mark.
+(source: [weekly-digest](weekly-digest.md) § After Hours brand mark; review T1-f1)
 
 ## Related pages
 
