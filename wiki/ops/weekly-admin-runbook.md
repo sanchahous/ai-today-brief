@@ -16,8 +16,9 @@ Last updated: 2026-10-02
 
 PDF, LinkedIn document, Instagram carousel і jpeg-ассети з Content Studio тепер несуть
 After Hours mark з `src/lib/brand-mark.ts` (AH-3.7, [PR #402](https://github.com/sanchahous/ai-today-brief/pull/402)).
+На cover PDF знак лежить поверх art; у соц-jpeg eyebrow — праворуч від mark (review T1-f1).
 Перегенеруй зразки локально: `npm run weekly:pdf:sample`, `npm run social:asset:sample`.
-(source: `src/lib/weekly-digest/pdf.ts`; `src/lib/social/assets.ts`)
+(source: `src/lib/weekly-digest/pdf.ts`; `src/lib/social/assets.ts`; review T1-f1)
 
 ## Головне правило (прочитай один раз)
 

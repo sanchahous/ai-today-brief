@@ -2033,10 +2033,14 @@ standfirst, 3×4200 + 4×850 body) — 7 сторінок, обидві лока
 Weekly PDF (`src/lib/weekly-digest/pdf.ts`), LinkedIn document (`linkedin-document.ts`),
 Instagram carousel (`instagram-carousel-render.ts`) і daily/weekly соц-ассети
 (`src/lib/social/assets.ts`) тепер малюють After Hours mark з єдиної геометрії
-`src/lib/brand-mark.ts` (палітра `yellow` для жовтих поверхонь I-12). Растеризація для
-PDFKit/sharp — `src/lib/brand-mark-raster.ts`. Legacy сигнальні смужки й `MARK_COLOR*` у
-`site.ts` видалено. (source: [PR #402](https://github.com/sanchahous/ai-today-brief/pull/402);
-`src/lib/brand-mark.ts`)
+`src/lib/brand-mark.ts` (палітра `yellow` для жовтих поверхонь I-12, `plateRadius: 3`).
+Растеризація для PDFKit/sharp — `src/lib/brand-mark-raster.ts`. Legacy сигнальні смужки й
+`MARK_COLOR*` у `site.ts` видалено.
+
+**Review fix T1-f1 (2026-10-02):** cover PDF малює mark *після* opaque cover JPEG, інакше art
+перекриває знак; соц-ассети ставлять eyebrow праворуч від mark (12px gap), без вертикального
+перетину. (source: [PR #402](https://github.com/sanchahous/ai-today-brief/pull/402);
+`src/lib/brand-mark.ts`; review T1-f1)
 
 ## Related pages
 

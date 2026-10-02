@@ -411,7 +411,8 @@ Telegram/інших каналах після bounded repair: лишок кон�
 
 Відбір не змінювався. PDF, LinkedIn document, Instagram carousel і jpeg-ассети після
 AH-3.7 несуть After Hours mark з `src/lib/brand-mark.ts` ([PR #402](https://github.com/sanchahous/ai-today-brief/pull/402)).
-(source: [weekly-digest](weekly-digest.md) § After Hours brand mark)
+Review fix T1-f1: mark на PDF cover — поверх art; eyebrow у соц-ассетах — праворуч від mark.
+(source: [weekly-digest](weekly-digest.md) § After Hours brand mark; review T1-f1)
 
 ## Related pages
 
