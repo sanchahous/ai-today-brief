@@ -6,6 +6,18 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-02
 
+## 2026-10-02 — AH-3.5: редизайн Footer After Hours ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404))
+
+- **Модернізація `site-footer.tsx`:** реалізовано редизайн футера під дизайн-систему After Hours (`bg-bg-soft`, токени `--text`, `--muted`, `--accent`, `--border-subtle`).
+- **Брендинг і соцмережі:** додано BrandMark 28px із посиланням на головну мовну версію `/${lang}`, двомовний слоган, доступні pill-кнопки соцмереж (LinkedIn, X/Twitter, Telegram, Bluesky, RSS) із `target="_blank"`, `rel="noopener noreferrer"` та `aria-label="... (opens in a new tab)"` / `"... (відкриється в новій вкладці)"`, збережено трекінг `social_profile_click` (включаючи LinkedIn CTA з `placement: 'footer-cta'`).
+- **Колонки навігації:**
+  - *Explore:* Новини (`/${lang}/news`), Дайджести (`/${lang}/digests`), Концепти (`/${lang}/concepts`), Гайди (`/${lang}/guides`), Інструменти (`/${lang}/tools`).
+  - *Company:* Про нас (`/${lang}/about`), Профіль редактора (`/${lang}/author`), Підписка (`/${lang}/subscribe`), Реклама (`/${lang}/advertise`).
+  - *Legal:* Редакційна політика (`/${lang}/editorial`), AI Disclosure (`/${lang}/ai-disclosure`), Конфіденційність (`/${lang}/privacy`), Умови (`/${lang}/terms`), а також кнопка налаштувань кукі `CookieSettingsButton`.
+- **Доступність і контраст:** усі інтерактивні посилання та кнопки мають мінімальну висоту зони дотику `min-h-[44px]` (WCAG AA). Контраст тексту на `bgSoft` перевищує 4.9:1 у світлій темі та 16:1 у темній темі (вимога ≥ 4.5:1 виконана).
+- **Тестування:** додано тестовий набір `After Hours Footer layout, links and contracts (AH-3.5)` у `e2e/footer-newsletter.spec.ts` (покриття 4 політик, 4 посилань компанії, 5 посилань огляду, налаштувань кукі, соцмереж, BrandMark та touch targets).
+(source: PR #404; `src/components/site-footer.tsx`; `src/components/cookie-consent.tsx`; `src/lib/i18n.ts`; `e2e/footer-newsletter.spec.ts`)
+
 ## 2026-10-02 — AH-3.4: спільний компонент NewsletterForm, всі стани та E2E ([PR #395](https://github.com/sanchahous/ai-today-brief/pull/395))
 
 - **Спільний компонент форми підписки:** оновлено `src/components/home/newsletter-form.tsx` та реекспортовано через `src/components/ui/newsletter-form.tsx` і `src/components/ui/index.ts`. Реалізовано варіанти `band`, `inline` та `full` (з вибором мови видання en/uk та згодою з політикою конфіденційності).

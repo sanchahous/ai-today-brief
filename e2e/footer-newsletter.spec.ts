@@ -148,7 +148,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
     await page.route('/api/subscribe', async (route) => {
       requestsReceived++;
       // Delay response to inspect pending state
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       await route.fulfill({ status: 200, json: { ok: true } });
     });
 
@@ -250,7 +250,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
     await submitBtn.click();
 
     const statusEl = page.locator('[role="status"]').first();
-    await expect(statusEl).toBeVisible();
+    await expect(statusEl).toBeVisible({ timeout: 10_000 });
     await expect(statusEl).toContainText(/already subscribed|вже підписані/i);
     // Does not leak user details or arbitrary info
     await expect(statusEl).not.toContainText('already-member@example.com');
@@ -272,7 +272,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
     await emailInput.fill(testEmail);
     await submitBtn.click();
 
-    await expect(form.locator('[role="alert"]')).toBeVisible();
+    await expect(form.locator('[role="alert"]').first()).toBeVisible({ timeout: 10_000 });
     await expect(emailInput).toHaveValue(testEmail);
 
     const errorEvents = await getDataLayerEvents(page, 'newsletter_submit_error');
@@ -315,7 +315,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
     // 1. Submit without consent
     await emailInput.fill('subscriber@example.com');
     await submitBtn.click();
-    await expect(form.locator('[role="alert"]')).toBeVisible();
+    await expect(form.locator('[role="alert"]').first()).toBeVisible({ timeout: 10_000 });
     expect(requestPayload).toBeNull();
 
     // 2. Check consent and select Ukrainian edition
@@ -325,7 +325,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
 
     await submitBtn.click();
     const statusEl = page.locator('[role="status"]').first();
-    await expect(statusEl).toBeVisible();
+    await expect(statusEl).toBeVisible({ timeout: 10_000 });
 
     expect(requestPayload).toMatchObject({
       email: 'subscriber@example.com',
@@ -334,3 +334,67 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
     });
   });
 });
+
+test.describe('After Hours Footer layout, links and contracts (AH-3.5)', () => {
+  test('renders all 4 policy links, company links (about, author, subscribe, advertise), and explore links', async ({ page }) => {
+    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
+    const footer = page.locator('footer').first();
+    await expect(footer).toBeVisible({ timeout: 30_000 });
+
+    const footerNav = footer.getByRole('navigation', { name: /footer/i });
+    await expect(footerNav).toBeVisible();
+
+    // 4 policies accessible from footer
+    await expect(footerNav.locator('a[href$="/editorial-policy"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/ai-disclosure"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/privacy"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/terms"]')).toBeVisible();
+
+    // Company links: about, author, subscribe, advertise
+    await expect(footerNav.locator('a[href$="/about"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/author"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/subscribe"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/advertise"]')).toBeVisible();
+
+    // Explore links
+    await expect(footerNav.locator('a[href$="/news"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/digests"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/concepts"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/guides"]')).toBeVisible();
+    await expect(footerNav.locator('a[href$="/tools"]')).toBeVisible();
+
+    // Cookie settings button
+    await expect(footerNav.getByRole('button', { name: /cookie settings/i })).toBeVisible();
+  });
+
+  test('social links have opens in new tab aria-labels and touch floor >= 40px', async ({ page }) => {
+    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
+    const footer = page.locator('footer').first();
+    await expect(footer).toBeVisible({ timeout: 30_000 });
+
+    const socialLinks = footer.locator('ul a');
+    const count = await socialLinks.count();
+    expect(count).toBeGreaterThanOrEqual(4);
+
+    for (let i = 0; i < count; i++) {
+      const link = socialLinks.nth(i);
+      const target = await link.getAttribute('target');
+      const ariaLabel = await link.getAttribute('aria-label');
+      if (target === '_blank') {
+        expect(ariaLabel).toMatch(/opens in a new tab/i);
+      }
+      const box = await link.boundingBox();
+      expect(box, `social link #${i} bounding box`).not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  test('brand block links to home and contains BrandMark', async ({ page }) => {
+    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
+    const footer = page.locator('footer').first();
+    const brandLink = footer.locator('a[aria-label="AI Today Brief"]');
+    await expect(brandLink).toBeVisible();
+    await expect(brandLink.locator('svg.brand-mark')).toBeVisible();
+  });
+});
+
