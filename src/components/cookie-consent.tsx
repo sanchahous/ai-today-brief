@@ -259,7 +259,7 @@ export function CookieSettingsButton({ lang }: { lang: Lang }) {
         footerConsentTriggerRef.current = node;
       }}
       onClick={() => dispatchOpenConsent()}
-      className="hover:text-text inline-flex min-h-[44px] min-w-[44px] items-center text-left text-sm"
+      className="text-muted hover:text-accent inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center text-left text-sm transition-colors"
     >
       {t.footerCookie}
     </button>

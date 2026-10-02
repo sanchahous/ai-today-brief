@@ -9,7 +9,7 @@ Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30, повідомлення власника про кошик GA4 + HYPD і live tag check 2026-09-30, AH-2.6 navigation consolidation 2026-10-01 (#392), AH-3.4 newsletter form and states 2026-10-02 (#395), діагноз Singapore bot + Fast Origin Transfer 2026-10-02
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30, повідомлення власника про кошик GA4 + HYPD і live tag check 2026-09-30, AH-2.6 navigation consolidation 2026-10-01 (#392), AH-3.4 newsletter form and states 2026-10-02 (#395), AH-3.5 footer redesign 2026-10-02 (#404), діагноз Singapore bot + Fast Origin Transfer 2026-10-02
 Last updated: 2026-10-02
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -123,7 +123,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | AH-3.6 у PR #396 (opt-in CMP, ⚠️ conflict §11); AH-3.1 у PR #393; далі AH-3.7; ATB-64 (#397); ATB-22/23/27 waiting; G1/UK/CLS/legacy відкриті | PR #396, #393; дозвіл власника 2026-10-02 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | AH-3.5 у PR #404 (Footer redesign); AH-3.6 у PR #396; AH-3.1 у PR #393; AH-3.7 у PR #402; ATB-64 (#397); ATB-22/23/27 waiting; G1/UK/CLS/legacy відкриті | PR #404, #396, #393, #402; дозвіл власника 2026-10-02 |
 | ✅ [product/after-hours-ah-2-5-validation](product/after-hours-ah-2-5-validation.md) | PR #391: Notice, Spinner, ErrorState, StaleNotice; ланцюг станів у каталозі; CLS loading нижче 0,05; 12 PNG; підпис відкритий | PR #391 + e2e/feedback-states.spec.ts + catalog manifest 2026-10-01 |
 | ✅ [product/after-hours-ah-2-4-validation](product/after-hours-ah-2-4-validation.md) | #390 змерджено в 56a9cf8: sheet left/right/full, disclosure, --z-modal; окремий підпис не отримано | PR #390 + gh run list 2026-10-01 |
 | ✅ [product/after-hours-ah-2-3-validation](product/after-hours-ah-2-3-validation.md) | #388 підписано і змерджено в e75c438: Field, Textarea, Segmented, Switch, рестайл полів, локалізація SearchInput; full-page DoD відкритий | PR #388 + власник 2026-10-01 |
