@@ -1,6 +1,5 @@
 import sharp from 'sharp';
-import { BRAND_MARK_SVG } from '@/lib/brand-mark';
-import { MARK_COLOR_CORE } from '@/lib/site';
+import { BRAND_MARK_PLATE, BRAND_MARK_SVG } from '@/lib/brand-mark';
 
 export const dynamic = 'force-static';
 
@@ -19,7 +18,7 @@ export async function GET() {
     .png()
     .toBuffer();
   const png = await sharp({
-    create: { width: SIZE, height: SIZE, channels: 4, background: MARK_COLOR_CORE },
+    create: { width: SIZE, height: SIZE, channels: 4, background: BRAND_MARK_PLATE },
   })
     .composite([{ input: mark, gravity: 'center' }])
     .png()

@@ -5643,3 +5643,12 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 - Додано юніт-тести в `src/components/ui/navigation.test.ts` (100% pass) та E2E тести в `e2e/ui-components.spec.ts` (23 passed у Chromium, включно з axe WCAG 2.2 AA в Night і Day темах). Усунуто витік `OPENROUTER_API_KEY` у `pipeline/openrouter-summarize.test.ts`.
 - `npm run pr:check` пройдено успішно. Оновлено епік §2.2 (B6), §5.3, картку AH-2.6, handoff, now.md, index.md та log.md. (source: PR #392; `src/components/ui/pagination.tsx`; `src/components/ui/tabs.tsx`; `src/components/breadcrumbs.tsx`; `src/app/ds-catalog/navigation-catalog.tsx`; `e2e/ui-components.spec.ts`)
 
+## 2026-10-01 — AH-3.1: бренд-знак After Hours на сайті, PR #393
+
+Реалізовано задачу AH-3.1 епіку After Hours на гілці `feat/ah-3.1-brand-mark` (PR [#393](https://github.com/sanchahous/ai-today-brief/pull/393)):
+- `src/lib/brand-mark.ts` — пластина + вкладені A-лінії + celadon-крапка (прототип `artifacts/after-hours/assets/mark.svg` / `app.js` `markSvg`); кольори з `SEMANTIC_TOKENS.night` для статичних растрів.
+- `BrandMark` у `src/components/icons.tsx` на токенах через `.brand-mark` у `globals.css`; `BrandBloom` видалено; header і footer використовують один компонент (мін. 24 px у footer).
+- `npm run icons:generate` оновлює `icon.svg`, `favicon.ico`, `apple-icon.png`; `logo.png` 512×512 на тому ж SVG (URL без змін).
+- Аватар редактора в `byline.tsx` і `author/page.tsx` — `bg-accent-fill`, не `MARK_COLOR` (`MARK_COLOR*` лишаються для рендерів AH-3.7).
+- Юніт-тест `src/lib/brand-mark.test.ts`. Оновлено епік §2.2 (B11 частково), §5.3, картку AH-3.1, handoff, now.md, index.md. Окремий візуальний підпис очікується. (source: PR #393; `src/lib/brand-mark.ts`; `src/components/icons.tsx`)
+
