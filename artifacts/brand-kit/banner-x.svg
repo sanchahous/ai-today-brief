@@ -1,17 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500">
   <!-- X / Bluesky / Mastodon banner (1500x500, 3:1).
-       All content inside the central ~1200x380 safe area: X crops edges on
-       mobile and the avatar overlaps the bottom-left corner. -->
-  <rect width="1500" height="500" fill="#0f1115"/>
-  <circle cx="1390" cy="-40" r="220" fill="#f0c040" opacity="0.07"/>
-  <circle cx="120" cy="540" r="180" fill="#5bc9f0" opacity="0.05"/>
-  <text x="750" y="225" text-anchor="middle"
-        font-family="Fraunces, Georgia, 'Times New Roman', serif"
-        font-size="92" font-weight="700" fill="#e8e8e8">AI Today <tspan fill="#f0c040">Brief</tspan></text>
-  <text x="750" y="295" text-anchor="middle"
-        font-family="Inter, Arial, sans-serif"
-        font-size="30" fill="#9aa1ad">Daily AI &amp; engineering brief for developers — signal, not noise</text>
-  <text x="750" y="360" text-anchor="middle"
-        font-family="Inter, Arial, sans-serif"
-        font-size="28" font-weight="600" fill="#f0c040">aitodaybrief.com</text>
+       Safe area ~1200x380 centred — mobile crops edges; avatar overlaps bottom-left. -->
+  <rect width="1500" height="500" fill="#171918"/>
+  <circle cx="1390" cy="-40" r="220" fill="#d4b483" opacity="0.07"/>
+  <circle cx="120" cy="540" r="180" fill="#b5d8cc" opacity="0.05"/>
+  <g transform="translate(750 250)">
+    <g transform="translate(-430 -44)">
+      <g transform="scale(1.375)">
+        <rect width="64" height="64" rx="6" fill="#171918"/>
+        <g fill="none" stroke="#d4b483" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 49 31 13l20 36"/>
+          <path d="M18 49l13-25 14 25"/>
+          <path d="M25 40h15"/>
+        </g>
+        <circle cx="49" cy="15" r="4" fill="#b5d8cc"/>
+      </g>
+      <text x="104" y="58"
+            font-family="Fraunces, Georgia, 'Times New Roman', serif"
+            font-size="92" font-weight="700" fill="#f0e9dc">AI Today <tspan fill="#d4b483">Brief</tspan></text>
+    </g>
+    <text y="52" text-anchor="middle"
+          font-family="Inter, Arial, sans-serif"
+          font-size="30" fill="#b9b7ac">Daily AI &amp; engineering brief for developers — signal, not noise</text>
+    <text y="108" text-anchor="middle"
+          font-family="Inter, Arial, sans-serif"
+          font-size="28" font-weight="600" fill="#d4b483">aitodaybrief.com</text>
+  </g>
 </svg>

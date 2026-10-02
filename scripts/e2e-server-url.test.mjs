@@ -43,7 +43,7 @@ describe('resolveE2eBaseUrl', () => {
 
 describe('consentStorageState', () => {
   it('defaults origin to :3000', () => {
-    const state = consentStorageState();
+    const state = consentStorageState(resolveE2eBaseUrl({}));
     assert.equal(state.origins[0].origin, 'http://127.0.0.1:3000');
     assert.equal(state.origins[0].localStorage[0].name, CONSENT_STORAGE_KEY);
   });

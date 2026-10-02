@@ -7,8 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0f1115; --panel:#14181f; --ink:#e8e8e8; --muted:#9aa1ad;
-    --gold:#f0c040; --violet:#b58cf7; --line:#242a33;
+    --bg:#171918; --panel:#1f2321; --ink:#f0e9dc; --muted:#b9b7ac;
+    --brass:#d4b483; --mint:#b5d8cc; --line:#3b413c;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{background:#000}
@@ -22,46 +22,48 @@
   .slide:last-child{page-break-after:auto}
   /* ambient brand glows, echoing the LinkedIn banner */
   .glow{position:absolute;border-radius:50%;filter:blur(2px)}
-  .glow-gold{width:760px;height:760px;right:-260px;top:-300px;background:radial-gradient(circle,rgba(240,192,64,.14),transparent 62%)}
-  .glow-violet{width:640px;height:640px;left:-260px;bottom:-260px;background:radial-gradient(circle,rgba(181,140,247,.10),transparent 62%)}
+  .glow-gold{width:760px;height:760px;right:-260px;top:-300px;background:radial-gradient(circle,rgba(212,180,131,.14),transparent 62%)}
+  .glow-violet{width:640px;height:640px;left:-260px;bottom:-260px;background:radial-gradient(circle,rgba(181,216,204,.10),transparent 62%)}
   .content{position:relative;z-index:1;display:flex;flex-direction:column;height:100%}
 
   /* mark */
-  .mark{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:40px;letter-spacing:-1px}
-  .mark .at{color:var(--ink)} .mark .b{color:var(--gold)} .mark .dot{color:var(--gold)}
+  .mark{width:40px;height:40px;flex:0 0 auto}
+  .mark .mark-plate{fill:#171918}
+  .mark .mark-strokes{stroke:#d4b483}
+  .mark .mark-dot{fill:#b5d8cc}
   .kicker{font-size:20px;letter-spacing:5px;text-transform:uppercase;color:var(--muted);font-weight:600}
   .brandrow{display:flex;align-items:center;gap:22px}
   .brandrow .kicker{margin-top:4px}
 
   .spacer{flex:1}
 
-  .eyebrow{color:var(--gold);font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;margin-bottom:34px}
+  .eyebrow{color:var(--brass);font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;margin-bottom:34px}
   h1{font-family:"Fraunces",Georgia,serif;font-weight:700;color:var(--ink);line-height:.98;letter-spacing:-2px}
   .h-xl{font-size:150px}
   .h-lg{font-size:118px}
-  .accent{color:var(--gold)}
+  .accent{color:var(--brass)}
   .sub{color:var(--muted);font-size:38px;line-height:1.35;margin-top:40px;max-width:820px;font-weight:400}
 
   .foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:34px;margin-top:34px}
-  .foot .site{color:var(--gold);font-size:30px;font-weight:600}
+  .foot .site{color:var(--brass);font-size:30px;font-weight:600}
   .foot .meta{color:var(--muted);font-size:24px;letter-spacing:.5px}
 
   /* slide 2 list */
   .listhead{font-family:"Fraunces",Georgia,serif;font-size:74px;font-weight:700;letter-spacing:-1px;margin-bottom:20px}
   ul{list-style:none;display:flex;flex-direction:column;gap:44px;margin-top:26px}
   li{display:flex;gap:34px;align-items:flex-start}
-  .num{flex:0 0 auto;width:66px;height:66px;border:2px solid var(--gold);border-radius:50%;
-       display:flex;align-items:center;justify-content:center;color:var(--gold);
+  .num{flex:0 0 auto;width:66px;height:66px;border:2px solid var(--brass);border-radius:50%;
+       display:flex;align-items:center;justify-content:center;color:var(--brass);
        font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:34px}
   .li-t{font-size:42px;font-weight:600;color:var(--ink);line-height:1.18}
   .li-s{font-size:29px;color:var(--muted);margin-top:10px;line-height:1.32}
 
   /* slide 3 cta */
   .center{align-items:flex-start}
-  .pill{display:inline-flex;align-items:center;gap:16px;border:2px solid var(--gold);color:var(--gold);
+  .pill{display:inline-flex;align-items:center;gap:16px;border:2px solid var(--brass);color:var(--brass);
         font-size:34px;font-weight:700;padding:22px 46px;border-radius:999px;margin-top:46px}
-  .pill .dotg{width:16px;height:16px;border-radius:50%;background:var(--gold)}
-  .bigsite{color:var(--gold);font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:64px;margin-top:56px;letter-spacing:-1px}
+  .pill .dotg{width:16px;height:16px;border-radius:50%;background:var(--brass)}
+  .bigsite{color:var(--brass);font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:64px;margin-top:56px;letter-spacing:-1px}
   .tags{color:var(--muted);font-size:32px;margin-top:26px;letter-spacing:.5px}
 </style>
 </head>
@@ -73,7 +75,7 @@
     <div class="glow glow-violet"></div>
     <div class="content">
       <div class="brandrow">
-        <span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span>
+        <svg class="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect class="mark-plate" width="64" height="64" rx="6"/><g class="mark-strokes" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 49 31 13l20 36"/><path d="M18 49l13-25 14 25"/><path d="M25 40h15"/></g><circle class="mark-dot" cx="49" cy="15" r="4"/></svg>
         <span class="kicker">AI Today Brief</span>
       </div>
       <div class="spacer"></div>
@@ -93,7 +95,7 @@
     <div class="glow glow-gold"></div>
     <div class="content">
       <div class="brandrow">
-        <span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span>
+        <svg class="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect class="mark-plate" width="64" height="64" rx="6"/><g class="mark-strokes" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 49 31 13l20 36"/><path d="M18 49l13-25 14 25"/><path d="M25 40h15"/></g><circle class="mark-dot" cx="49" cy="15" r="4"/></svg>
         <span class="kicker">What you get</span>
       </div>
       <div class="spacer"></div>
@@ -135,7 +137,7 @@
     <div class="glow glow-violet"></div>
     <div class="content">
       <div class="brandrow">
-        <span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span>
+        <svg class="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect class="mark-plate" width="64" height="64" rx="6"/><g class="mark-strokes" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 49 31 13l20 36"/><path d="M18 49l13-25 14 25"/><path d="M25 40h15"/></g><circle class="mark-dot" cx="49" cy="15" r="4"/></svg>
         <span class="kicker">AI Today Brief</span>
       </div>
       <div class="spacer"></div>

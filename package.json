@@ -30,6 +30,7 @@
     "wiki:sync:test": "node --test wiki/_tools/wiki-project-sync.test.mjs",
     "wiki:check": "npm run wiki:sync && npm run wiki:sync:test && node wiki/_tools/wiki-lint.mjs --strict",
     "icons:generate": "npx tsx scripts/generate-brand-icons.ts",
+    "brand-kit:export": "npx tsx scripts/export-brand-kit-png.ts",
     "tokens:check": "tsx scripts/check-design-tokens.ts",
     "design:raw:report": "tsx scripts/report-raw-design-values.ts --report",
     "design:raw:check": "tsx scripts/report-raw-design-values.ts --check",
