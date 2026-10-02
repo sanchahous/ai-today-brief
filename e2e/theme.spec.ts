@@ -78,6 +78,11 @@ test.describe('Theme toggle', () => {
     const calls: unknown[][] = [];
     await page.exposeFunction('captureThemeGtag', (...args: unknown[]) => calls.push(args));
     await page.evaluate(() => {
+      // Playwright sets navigator.webdriver; analytics-client blocks all sends when it is true.
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => false,
+        configurable: true,
+      });
       // Test transport: prevent network writes while capturing the actual client calls.
       window.gtag = (...args: unknown[]) => {
         // The exposed binding exists only in this test page.
