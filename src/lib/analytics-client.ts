@@ -29,18 +29,18 @@ function analyticsReady(): boolean {
 }
 
 /**
- * Opt-out model: analytics on until the user explicitly disables it in the CMP.
- * No stored choice → full analytics; stored with analytics: false → blocked.
+ * Opt-in model: analytics off until the user grants it in the CMP.
+ * No stored choice → blocked; stored with analytics: true → granted.
  */
 export function hasAnalyticsConsent(): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
     const stored = raw ? parseConsentJson(raw) : null;
-    if (!stored) return true;
+    if (!stored) return false;
     return stored.analytics;
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -65,7 +65,7 @@ export function applyConsentToGtag(consent: Pick<ConsentState, 'analytics' | 'ad
   });
 }
 
-/** Send a GA4 event. Blocked only after explicit analytics opt-out in the CMP. */
+/** Send a GA4 event. Blocked until analytics is granted in the CMP. */
 export function trackEvent(event: string, params: Params = {}): void {
   const merged = { ...globalParams, ...params };
 

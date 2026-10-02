@@ -4,7 +4,7 @@ Summary: виконуваний епік переносу дизайн-сист�
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
 live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 
 ---
 
@@ -361,7 +361,7 @@ flowchart TD
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
-| AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
+| AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; підпис очікується | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
 | AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
 | AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #380](https://github.com/sanchahous/ai-today-brief/pull/380)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
@@ -1208,9 +1208,11 @@ consent-картку), LinkedIn CTA, копірайт; фон `bg-deep`.
 за замовчуванням); збереження вибору; повторне відкриття з футера.
 
 **AC:**
-- [ ] До вибору — жодного GA collect-запиту (consent mode default denied; network-assertion).
-- [ ] `cookie-overlay.spec.ts` зелений; картка не перекриває основний CTA на 360 px.
-- [ ] Фокус переходить у картку при відкритті з футера й повертається після закриття.
+- [x] До вибору — жодного GA collect-запиту (consent mode default denied; network-assertion).
+- [x] `cookie-overlay.spec.ts` зелений; картка не перекриває основний CTA на 360 px.
+- [x] Фокус переходить у картку при відкритті з футера й повертається після закриття.
+
+**Стан 2026-10-02:** PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`: `cookie-consent.tsx` на Button/Switch, opt-in (`analytics_storage: denied`, `hasAnalyticsConsent` без збереженого вибору), focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts`. (source: PR #396; `npm run pr:check` 2026-10-02)
 
 ### AH-3.7 · Знак у генераторах зображень і PDF
 

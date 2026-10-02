@@ -4,7 +4,15 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-10-01
+Last updated: 2026-10-02
+
+## 2026-10-02 — AH-3.6 Consent-картка (PR #396)
+
+- `src/components/cookie-consent.tsx`: After Hours UI на `Button`/`Switch`, рівноцінні «Accept all» / «Essential only», manage-panel, focus-trap при reopen з футера, `--radius-card`, `data-testid="cookie-consent"`.
+- Opt-in CMP: `consent-mode-snippet.ts` → `analytics_storage: denied`; `hasAnalyticsConsent()` без збереженого вибору → false; оновлено unit-тести.
+- `e2e/cookie-overlay.spec.ts`: GA collect assertion, 360px hero CTA не перекритий, focus у картку з футера й назад.
+- Епік §5.3, картка AH-3.6, `now.md`, `index.md`, handoff — оновлено; наступна задача AH-3.7.
+(source: PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396); `npm run pr:check` 2026-10-02)
 
 ## 2026-09-28 — Виправлення візуальних артефактів контролів After Hours та підготовка PR
 

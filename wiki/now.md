@@ -11,11 +11,13 @@ weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
 desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392)
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 
 ---
 
 ## Стан репозиторію
+
+- **AH-3.6 відкрито в [#396](https://github.com/sanchahous/ai-today-brief/pull/396)** на `feat/ah-3.6-consent-card`: After Hours consent-картка на `Button`/`Switch`, opt-in CMP (`analytics_storage: denied`, analytics off без збереженого вибору), focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts` (GA collect, 360px CTA, focus return). Окремий візуальний підпис очікується. Наступна після інтеграції — AH-3.7. (source: PR #396; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
