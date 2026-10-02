@@ -34,6 +34,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, type Dirent } from 'node:fs';
+import { resolveE2eBaseUrl, resolveE2ePort } from './e2e-server-url';
 
 // --- named specs referenced by hand-written rules (the rest are auto-discovered) ----------
 const SMOKE = 'e2e/smoke.spec.ts';
@@ -303,11 +304,14 @@ function changedFiles(): string[] {
 }
 
 // --- server / build -----------------------------------------------------------------------
+const e2eBaseUrl = resolveE2eBaseUrl();
+const e2ePort = resolveE2ePort();
+
 async function serverIsUp(): Promise<boolean> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 1000);
-    await fetch('http://127.0.0.1:3000', { signal: ctrl.signal });
+    await fetch(e2eBaseUrl, { signal: ctrl.signal });
     clearTimeout(timer);
     return true;
   } catch {
@@ -316,7 +320,7 @@ async function serverIsUp(): Promise<boolean> {
 }
 
 function runProductionBuild(): void {
-  console.log('e2e:affected — no server on :3000; running production build first…\n');
+  console.log(`e2e:affected — no server on :${e2ePort}; running production build first…\n`);
   const b = spawnSync('npm', ['run', 'build:ci'], {
     stdio: 'inherit',
     shell: true,
@@ -389,9 +393,9 @@ async function main(): Promise<void> {
   }
 
   if (process.env.SKIP_BUILD === '1') {
-    console.log('e2e:affected — SKIP_BUILD=1; assuming a server is reachable on :3000.\n');
+    console.log(`e2e:affected — SKIP_BUILD=1; assuming a server is reachable on :${e2ePort}.\n`);
   } else if (await serverIsUp()) {
-    console.log('e2e:affected — reusing the server already on :3000 (skipping build).\n');
+    console.log(`e2e:affected — reusing the server already on :${e2ePort} (skipping build).\n`);
   } else {
     runProductionBuild();
   }

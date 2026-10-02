@@ -17,6 +17,8 @@ npm run pr:check
 
 Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`) + `typecheck` + `lint` + `e2e:check` + **`wiki:check`** (project↔wiki sync + lint --strict) + **`build:ci`**. `build:ci` prerenders 8 paths (`E2E_MINIMAL_PRERENDER=1`) **only when git shows a site-affecting change** vs `origin/main` (plus the working tree). Wiki / pipeline / `.gitignore` / `library/` / `scripts/` — skip, no PostgREST SSG. `FORCE_SSG_BUILD=1` forces the build. Full catalog prerender is **Vercel production only** (`npm run build:full` locally if you need it).
 
+**Parallel worktrees:** set **`PORT`** (default `3000`) so `playwright.config.ts` and `e2e:affected` start/reuse the matching `next start` — not a neighbour's server on `:3000`. **`E2E_BASE_URL`** overrides when pointing at an external server (`wiki/ops/e2e-local.md`).
+
 - `pr:check` fails → fix, re-run until green, **then** push / open the PR.
 - Can't fix within scope → report the failure and **do not** open the PR.
 - Code under a wiki sync watcher (`wiki/_meta/project-sync.json`) without updating the listed wiki pages → `wiki:sync` fails; update pages + `wiki/log.md` in the same PR.
