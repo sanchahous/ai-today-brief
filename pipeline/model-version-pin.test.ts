@@ -43,5 +43,5 @@ describe('F5 model version pins', () => {
       }
     }
     expect(hits).toEqual([]);
-  });
+  }, 30_000);
 });

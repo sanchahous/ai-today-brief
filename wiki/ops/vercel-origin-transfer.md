@@ -6,8 +6,9 @@ Summary: 24 серпня Vercel попередив про 100% безкошто�
 вигорілої до 14.08 квоти, він не росте.
 Sources: листи Vercel 2026-08-24; live check заголовків і розмірів `aitodaybrief.com` 2026-08-24;
 `next.config.ts`; `src/app/[lang]/news/page.tsx`; `src/app/sitemap.ts`;
-`node_modules/next/dist/docs/01-app/01-getting-started/08-caching.md`
-Last updated: 2026-08-24
+`node_modules/next/dist/docs/01-app/01-getting-started/08-caching.md`;
+Vercel Usage / Logs / Billing / API (`get_auth_user`, `list_billing_charges`) live check 2026-10-02
+Last updated: 2026-10-02
 
 ---
 
@@ -153,7 +154,32 @@ Vercel MCP на плані Hobby не дає ані агрегатів runtime-�
 кешу й розмірах відповідей (source: live check MCP 2026-08-24). Скільки саме ГБ це віддає за
 місяць, буде видно лише на наступному циклі білінгу.
 
+## Повторна перевірка 2026-10-02
+
+Fast Origin Transfer (FOT) знову над лімітом, але причина інша, ніж у серпні, і **сінгапурський бот її не створює** (див. [діагноз бота](../analytics/2026-10-02-singapore-bot-traffic.md)).
+
+| Факт | Значення | Джерело |
+|---|---|---|
+| План | **Hobby** (`billing.plan: hobby`, `softBlock: null`; Billing → «Hobby Plan, Active»). Ліміт FOT 10 ГБ чинний | Vercel API `get_auth_user` і дашборд Billing, 2026-10-02 |
+| Використання за 30 днів (2.09–2.10) | FOT **12,97 / 10 ГБ**; Fast Data Transfer 5,33 / 100 ГБ; CDN Requests 260 тис. / 1 млн | Vercel Usage, 2026-10-02 |
+| Білінг-цикл | 26.09 – 26.10 (період підписки в API акаунта) | Vercel API `get_auth_user`, 2026-10-02 |
+| Денна витрата FOT | ≈190–580 МБ/добу; піки 12–14.09 (≈700 і ≈960 МБ) | Vercel Usage, стовпчики графіка (±) |
+| Бот | чиста база ≈375 МБ/добу до 22.09 → ≈440 після (≈+15–20%); сходинки немає | там само (оцінка зі стовпчиків) |
+| Проєкція | цикл 26.09–26.10 іде до ≈14–15 ГБ; 10 ГБ перетне ≈16–17.10 (≈490 МБ/добу) | розрахунок із Usage (assumption) |
+| Минулий цикл | оцінка ≈12 ГБ, паузи не було | розрахунок із Usage (assumption) |
+
+> ⚠️ Conflict: Billing-експорт (FOCUS) містить рядки «Pro» і «Additional Team Seats» із $-оцінками (FOT ≈ $0,02–0,03/добу, ISR Writes ≈ $0,05–0,17/добу), а акаунт і Billing кажуть Hobby. Рядки трактуємо як оцінки за прейскурантом, не як списання (needs verification). Див. [open-questions](../open-questions.md) #11. (source: Vercel API `list_billing_charges`, дні 2026-09-02…26)
+
+**Що саме витрачає FOT.** За одну годину 2026-10-02 runtime-лог показав ≈104 виклики функцій: 36 — внутрішні cron-пінги `pg_net`, решта ≈65 — ISR-регенерації сторінок, з них 42 — статті `/[lang]/news/[category]/[item]`. Кожна регенерація ходить у Supabase REST (`brief_items`, `categories`, `articles`, `concepts`) і передає відрендерену сторінку (≈146 КБ на статтю) з compute на CDN. Серед ≈68 регенерацій не-cron було 67 різних шляхів, тобто це **широта обходу краулерами** (Googlebot, Bing, AI-боти, бот Tencent) плюс скидання кешу на кожному деплої, а не повторні запити до тих самих сторінок. (source: Vercel runtime logs, 1 год до 2026-10-02 11:01 UTC; Vercel Logs деталі запиту)
+
+**Знахідка: `export const revalidate = 86400` на сторінці статті фактично не діяв.** Next бере *найнижчий* `revalidate` серед page, layout і даних маршруту ([документація](../../node_modules/next/dist/docs/01-app/02-guides/caching-without-cache-components.md)), а `PUBLIC_CONTENT_REVALIDATE_SECONDS = 3600` задавав годину для кожного `unstable_cache` і `fetch` публічних читань. Vercel-лог статті показує `Cache TTL 1h` і `Revalidation Reason: Time-based`. Коментар у `page.tsx` («24 h … the old 30 min window mostly fed bot-driven regenerations») описував намір, якого код не виконував. (source: `src/lib/public-content-tag.ts`, `src/app/[lang]/news/[category]/[item]/page.tsx:31-34`; Vercel Logs 2026-10-02 14:01 EEST)
+
+**Виправлення (PR цієї сторінки):** `PUBLIC_CONTENT_REVALIDATE_SECONDS = 86400`. Це безпечно для оновлень контенту, бо їх не чекає таймер: publish (`revalidateSiteSurfaces`), Telegram editor-take, weekly release і `/api/revalidate` викликають `revalidatePublicContentTag()`. Хаби з власним `revalidate = 3600` (home, news, digests) і далі регенеруються щогодини, але вже з Data Cache, а не з Supabase. **Очікуваний ефект скромний:** виграють лише сторінки, яких торкаються кілька разів на добу; більшість статей відвідують раз на добу чи рідше. Виміряти на наступному циклі білінгу. (source: `src/lib/revalidate-site.ts`, `src/app/api/telegram/route.ts` `handleEditorTake`; assumption щодо ефекту)
+
+**Не встановлено:** розклад FOT по маршрутах (Observability-запити потребують Pro — API `402`, дашборд Hobby дає лише добовий графік); що Vercel робить після 10 ГБ на Hobby (листи 24.08 грозили авто-паузою, минулий цикл перейшов 10 ГБ без блокування). (source: Vercel API 2026-10-02; [листи 24.08](#три-листи-дві-різні-речі))
+
 ## Related pages
 
 - [vercel-image-quota](vercel-image-quota.md)
 - [owner-checklist](owner-checklist.md)
+- [2026-10-02-singapore-bot-traffic](../analytics/2026-10-02-singapore-bot-traffic.md)

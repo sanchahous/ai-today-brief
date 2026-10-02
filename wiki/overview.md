@@ -6,7 +6,7 @@ Sources: `wiki/strategy/startup-plan.md`, `wiki/strategy/master-roadmap.md`, `wi
 `wiki/audits/2026-06-12-analytics-gsc.md`, `wiki/analytics/ga4-gsc.md`, `wiki/pipeline/guide.md`,
 `wiki/ops/owner-checklist.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `.cursor/rules/00-core.mdc`, `.env.example`, `package.json`,
 live check git/PR 2026-08-04, editorial quality overhaul PR5 (гілка `feat/weekly-editorial-voice`, 2026-08-06)
-Last updated: 2026-09-30
+Last updated: 2026-10-02
 
 ---
 
@@ -174,8 +174,10 @@ IndexNow (Bing/Yandex). Повний перелік env — `.env.example`; по
 > Google tag надсилає звернення на три destination ID за скриншотом Tag Assistant.
 > Admin-чекліст канонічної property завершено доказами власника: GSC link,
 > newsletter_subscribe як key event, retention 14 місяців, page_view і Config consent.
-> Питання #1 закрито; історичні proxy-воронки та природа Singapore/direct лишаються
-> межами інтерпретації. Приймання подій акаунтами в кошику не встановлено.
+> Питання #1 закрито; історичні proxy-воронки лишаються межами інтерпретації. Природу
+> Singapore/direct з'ясовано 2026-10-02 — автоматизований трафік Tencent Cloud
+> ([діагноз](analytics/2026-10-02-singapore-bot-traffic.md)). Приймання подій акаунтами в
+> кошику не встановлено.
 > Див. [open-questions #1](open-questions.md#1-конфлікт-трьох-ga4-property). (source:
 > повідомлення власника 2026-09-30; HYPD live check 2026-09-30;
 > [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
