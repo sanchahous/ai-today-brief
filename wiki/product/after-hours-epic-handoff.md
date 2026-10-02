@@ -1,8 +1,8 @@
 # Епік After Hours: передача виконання наступній сесії
 
-Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-10-01, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
-Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; live `git` / PR / HTTP checks 2026-09-30 (PR #373–#376)
-Last updated: 2026-10-01
+Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-10-02, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт. Підпис на кожен PR знято; мердж після перевірок.
+Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; live `git` / PR / HTTP checks 2026-09-30 (PR #373–#376); дозвіл власника ATB-64 2026-10-02 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
+Last updated: 2026-10-02
 
 ---
 
@@ -10,7 +10,7 @@ Last updated: 2026-10-01
 > Тут лише те, що потрібно, щоб нова сесія стартувала без контексту попередньої: стан, порядок,
 > точки зупинки й пастки. Картки задач тут не дублюються.
 
-## 1. Стан на 2026-10-01
+## 1. Стан на 2026-10-02
 
 - **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації (`src/components/pagination.tsx` видалено, `post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті), `LinkTabs` з `aria-current="page"` у `src/components/ui/tabs.tsx`, рестайл `Breadcrumbs` за специфікацією After Hours (`breadcrumbJsonLd` без змін), секція `NavigationCatalog` у `/ds-catalog`, E2E та unit-тести. **Наступна після інтеграції — AH-3.1.** (source: PR #392; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`. Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис очікується. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391)
@@ -19,7 +19,8 @@ Last updated: 2026-10-01
 - **#387 змерджено в `c03a4dd`, CI включно з Playwright success.** Окремого текстового візуального підпису #387 не було. Merge не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy QA чи G1. (source: [PR #387](https://github.com/sanchahous/ai-today-brief/pull/387); [Playwright run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359); [main Playwright run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364))
 - **#386 змерджено й явно підтверджено власником:** «ПР закритий значить підтверджую 386». Main `c477b09`; CI, включно з [Playwright run 36826783157](https://github.com/sanchahous/ai-today-brief/actions/runs/36826783157), success. Tracking follow-up більше не є локальним залишком чи draft. UK Home/Article/Weekly із #385, прийняття локального CLS, H1/legacy QA та G1 лишаються відкритими. (source: [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); [AH-1.5 validation](after-hours-ah-1-5-validation.md); повідомлення власника)
 - **G0 і фаза 0 завершені:** #373–#376 інтегровані, GA4/Tag Assistant/CWV baseline вже прийняті. AH-1.1 / AH-2.1 — #369; AH-1.3 — #378; AH-1.7 — #377; AH-1.4 — #382; AH-1.2 — #384; AH-1.6 — #381, його окремий підпис отримано. Не дублювати й не просити G0 повторно. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач); [baseline](../analytics/2026-09-29-redesign-baseline.md))
-- **AH-4.1 — #380:** lib/URL/active Chip інтегровані, facet picker — AH-4.3. AH-5.16 знято D6; D1–D13 ухвалено. Частково виконані AH-2.3–2.6 мають картки із залишком. Кожен видимий PR потребує власного підпису. (source: [епік](after-hours-redesign-epic.md); повідомлення власника 2026-10-01)
+- **AH-4.1 — #380:** lib/URL/active Chip інтегровані, facet picker — AH-4.3. AH-5.16 знято D6; D1–D13 ухвалено. Частково виконані AH-2.3–2.6 мають картки із залишком. (source: [епік](after-hours-redesign-epic.md); повідомлення власника 2026-10-01)
+- **Підпис на кожен PR знято 2026-10-02 (ATB-64, [PR #397](https://github.com/sanchahous/ai-today-brief/pull/397)).** Наступна продуктова задача лишається AH-3.1 після інтеграції AH-2.6. Нові задачі епіку мерджаться після зелених перевірок без `orc verdict accept` і без підпису власника на PR. Гейти G1–G7 і далі питають власника. (source: дозвіл власника в ATB-64, 2026-10-02; [епік §0.1](after-hours-redesign-epic.md#01-definition-of-done--для-кожного-pr-епіку))
 
 ## Пакет для підпису G0
 
@@ -149,7 +150,9 @@ QA-матриця працює в режимі report.
 4. **Будь-який відступ** від ADR D1–D13 або від інваріантів I-1…I-12.
 5. **Багатогодинні процеси.** Агент готує команду, запускає її власник на своїй машині.
 6. **Дії в акаунтах власника** (GA4, налаштування Vercel, соцмережі) виконує лише власник. Агент не
-   мерджить PR і не вмикає auto-merge.
+   мерджить PR командою `gh` і не вмикає GitHub auto-merge. Мердж зеленого PR епіку робить
+   оркестратор сам, без підпису на кожен PR (ATB-64, 2026-10-02). Виняток оркестратора: ризик
+   high/critical, спільна задача, не-незалежне рев'ю, захищені шляхи.
 
 ## 6. Правила й пастки, перевірені на практиці
 
@@ -216,6 +219,8 @@ QA-матриця працює в режимі report.
    UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
    Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,
    Definition of Done §0.1, npm run pr:check перед push, PR у main.
+   Окремий підпис власника на PR не потрібен: оркестратор мерджить після зелених перевірок
+   (ATB-64, 2026-10-02). Гейти G1–G7 і далі зупиняють і питають власника.
 3. Після PR онови §5.3 епіку, wiki/now.md, wiki/log.md і рядок «Наступна задача» в handoff.
 4. У точках із розділу «Точки зупинки» зупинись і спитай мене. Нічого не вигадуй.
 Відповідай мені українською.

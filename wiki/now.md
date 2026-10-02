@@ -10,12 +10,14 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392)
-Last updated: 2026-10-01
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392); per-PR owner signature removed 2026-10-02 (ATB-64, #397)
+Last updated: 2026-10-02
 
 ---
 
 ## Стан репозиторію
+
+- **Підпис власника на кожен PR епіку After Hours знято 2026-10-02 (ATB-64, [PR #397](https://github.com/sanchahous/ai-today-brief/pull/397)).** Оркестратор мерджить задачу після зелених перевірок і не чекає `orc verdict accept`. Наступна продуктова задача лишається AH-3.1 після інтеграції AH-2.6. Гейти G1–G7 і далі підписує власник. (source: дозвіл власника в ATB-64, 2026-10-02; [епік §0.1](product/after-hours-redesign-epic.md#01-definition-of-done--для-кожного-pr-епіку); [handoff](product/after-hours-epic-handoff.md))
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 

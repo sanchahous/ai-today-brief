@@ -3,8 +3,8 @@
 Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 56 задач (55 обов'язкових + 1 опційна, яку рішення D6 відклало) у порядку виконання, 8 фаз і 8 гейтів, кожна задача з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (3 задачі вже виконані, 9 — частково); усі рішення D1–D13 прийняті 2026-09-29 — ADR.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
-live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30
-Last updated: 2026-10-01
+live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30; дозвіл власника ATB-64 2026-10-02 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
+Last updated: 2026-10-02
 
 ---
 
@@ -21,8 +21,11 @@ Last updated: 2026-10-01
 > AH-1.4 реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), очікує окремого візуального підпису; після інтеграції — AH-1.2.
 > Докази: [AH-1.4 validation](after-hours-ah-1-4-validation.md).
 > (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377/378` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
-> Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
-> вимога візуального підпису кожного видимого PR із §0 зберігається.
+> Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0.
+> **2026-10-02, ATB-64 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397)):** власник зняв
+> правило окремого ручного підпису на кожен видимий PR. Після зелених перевірок оркестратор мерджить
+> сам і не чекає `orc verdict accept`. Гейти G1–G7 і далі підписує власник.
+> (source: дозвіл власника в задачі ATB-64, 2026-10-02)
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 >
@@ -54,8 +57,8 @@ Last updated: 2026-10-01
   взаємної залежності можна вести паралельно — див. §5.3 і §5.4.
 - **Розмір** (assumption, один виконавець із готовими даними): **S** ≤ 0,5 дня · **M** ≈ 1 день ·
   **L** 2–3 дні. XL заборонено — ділити на кілька PR.
-- **Виконавець:** `агент` (код, тести, wiki), `власник` (рішення, візуальний підпис, аналітика)
-  або `агент + власник`.
+- **Виконавець:** `агент` (код, тести, wiki), `власник` (рішення на гейтах G1–G7, аналітика)
+  або `агент + власник`. Окремий підпис власника на кожен PR не потрібен (ATB-64, 2026-10-02).
 - **Гілка й PR:** одна задача = одна гілка `feat/ah-<id>-<slug>` = один PR у `main`. Ніколи не
   пушити в `main`. (source: `.cursor/rules/pr-gate.mdc`)
 - **Картка задачі:** Тип · Розмір · Виконавець · Залежить від · Закриває (G-ID аудиту / B-ID з
@@ -93,7 +96,8 @@ Last updated: 2026-10-01
    будь-яка зміна wiki — разом з [index](../index.md) і [log](../log.md).
    (source: `wiki/_meta/project-sync.json`)
 10. В описі PR — посилання на Vercel Preview і знімки до/після (Night/Day, 1440/390) з інструмента
-    AH-0.3; для видимих змін — візуальний підпис власника.
+    AH-0.3. Окремий візуальний підпис власника на PR не потрібен: після зелених перевірок
+    оркестратор мерджить сам (ATB-64, 2026-10-02). Гейти G1–G7 лишаються підписом власника.
 11. Нічого з демонстраційного контенту прототипу не потрапляє в production як факт — див.
     інваріант I-6.
 
