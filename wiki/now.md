@@ -10,18 +10,22 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392)
-Last updated: 2026-10-01
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392); per-PR owner signature removed 2026-10-02 (ATB-64, #397)
+Last updated: 2026-10-02
 
 ---
 
 ## Стан репозиторію
 
+- **Підпис власника на кожен PR епіку After Hours знято 2026-10-02 (ATB-64, [PR #397](https://github.com/sanchahous/ai-today-brief/pull/397)).** Оркестратор мерджить після зелених перевірок і не чекає `orc verdict accept`, зокрема для high/critical і «агент + власник» (AH-3.1). Наступна продуктова задача лишається AH-3.1 після інтеграції AH-2.6. Гейти G1–G7 і далі підписує власник. (source: дозвіл власника в ATB-64, 2026-10-02; [епік §0.1](product/after-hours-redesign-epic.md#01-definition-of-done--для-кожного-pr-епіку); [handoff](product/after-hours-epic-handoff.md))
+
+- **ATB-22 (AH-3.1), ATB-23 (AH-3.2) і ATB-27 (AH-3.6) ще в waiting/approval** на запитах merge, відкритих до ATB-64. Нова політика їх не знімає, доки хаб не перечитає конфіг і ці запити не закриті. (source: дошка оркестратора 2026-10-02)
+
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
 - **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації (`src/components/pagination.tsx` видалено, `src/components/post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті без читання `searchParams` на сервері), `LinkTabs` з `aria-current="page"` у `src/components/ui/tabs.tsx`, рестайл `Breadcrumbs` за After Hours v3 spec (`breadcrumbJsonLd` без змін), секція `NavigationCatalog` у `/ds-catalog`, unit-тести та E2E тести. Наступна після інтеграції — AH-3.1. (source: PR #392; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 
-- **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`: Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис очікується. Наступна після інтеграції — AH-2.6. (source: [AH-2.5 validation](product/after-hours-ah-2-5-validation.md); PR #391)
+- **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`: Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис не потрібен (ATB-64). Наступна після інтеграції — AH-2.6. (source: [AH-2.5 validation](product/after-hours-ah-2-5-validation.md); PR #391)
 
 - **AH-2.4 змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390), `56a9cf8`, о 11:20 UTC.** Окремого підпису не було. Push Playwright, deps integrity, migration drift і Vercel — success. Sonar на push не запускався. Міграції споживачів лишаються. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01; [AH-2.4 validation](product/after-hours-ah-2-4-validation.md))
 
