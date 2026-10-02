@@ -3,7 +3,7 @@ import { GA_MEASUREMENT_ID, analyticsConfigured, gtagInitScript } from '@/lib/an
 
 /**
  * GA4 bootstrap — defers network work until after interactive (CWV).
- * Consent Mode: analytics granted by default; CMP opt-out sets denied.
+ * Consent Mode: analytics denied by default; CMP opt-in sets granted.
  * `send_page_view: false` — App Router sends page_view on route change.
  * Automated browsers are muted in the init script (see `gtagInitScript`).
  */
