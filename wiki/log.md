@@ -5728,3 +5728,12 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 - Аватар редактора в `byline.tsx` і `author/page.tsx` — `bg-accent-fill`, не `MARK_COLOR` (`MARK_COLOR*` лишаються для рендерів AH-3.7).
 - Юніт-тест `src/lib/brand-mark.test.ts`. Оновлено епік §2.2 (B11 частково), §5.3, картку AH-3.1, handoff, now.md, index.md. Окремий візуальний підпис очікується. (source: PR #393; `src/lib/brand-mark.ts`; `src/components/icons.tsx`)
 
+## 2026-10-02 — AH-3.8: brand-kit аватар і банери соцмереж, PR #403
+
+Реалізовано задачу AH-3.8 епіку After Hours на гілці `feat/ah-3.8-brand-kit` (PR [#403](https://github.com/sanchahous/ai-today-brief/pull/403)):
+- `artifacts/brand-kit/avatar.svg` і банери X/LinkedIn/YouTube/Facebook перемальовано з After Hours mark (геометрія `brand-mark.ts`, Night-палітра замість legacy ATB monogram).
+- `npm run brand-kit:export` (`scripts/export-brand-kit-png.ts`) генерує PNG у нативних розмірах платформ.
+- `artifacts/brand-kit/README.md` — таблиця розмірів, експорт і чекліст завантаження для X, Telegram, LinkedIn, YouTube (+ опційні Facebook/Bluesky/Mastodon/Instagram/Threads).
+- `launch-card-independent.html` — After Hours mark і палітра замість legacy ATB wordmark.
+- AC «завантаження на платформи» — чекає власника в день релізу D7 (разом з AH-3.1/AH-3.7). Оновлено епік §2.2 (B11), §5.3, картку AH-3.8, handoff, now.md. (source: PR #403; `artifacts/brand-kit/`)
+

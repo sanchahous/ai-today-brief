@@ -1,17 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="4200" height="700" viewBox="0 0 4200 700">
-  <!-- LinkedIn Page cover (4200x700, renders ~1128x191 on desktop).
-       Mobile crops both sides and the logo overlaps the lower-left — wordmark
-       sits in the central ~60% width, vertically centered. -->
-  <rect width="4200" height="700" fill="#0f1115"/>
-  <circle cx="3950" cy="-80" r="380" fill="#f0c040" opacity="0.07"/>
-  <circle cx="260" cy="780" r="320" fill="#b58cf7" opacity="0.05"/>
-  <text x="2100" y="320" text-anchor="middle"
-        font-family="Fraunces, Georgia, 'Times New Roman', serif"
-        font-size="150" font-weight="700" fill="#e8e8e8">AI Today <tspan fill="#f0c040">Brief</tspan></text>
-  <text x="2100" y="430" text-anchor="middle"
-        font-family="Inter, Arial, sans-serif"
-        font-size="52" fill="#9aa1ad">Daily AI &amp; engineering brief for developers — signal, not noise</text>
-  <text x="2100" y="530" text-anchor="middle"
-        font-family="Inter, Arial, sans-serif"
-        font-size="48" font-weight="600" fill="#f0c040">aitodaybrief.com</text>
+  <!-- LinkedIn Page cover (4200x700). Mobile crops sides; logo overlaps lower-left. -->
+  <rect width="4200" height="700" fill="#171918"/>
+  <circle cx="3950" cy="-80" r="380" fill="#d4b483" opacity="0.07"/>
+  <circle cx="260" cy="780" r="320" fill="#b5d8cc" opacity="0.05"/>
+  <g transform="translate(2100 350)">
+    <g transform="translate(-700 -70)">
+      <g transform="scale(2.1875)">
+        <rect width="64" height="64" rx="6" fill="#171918"/>
+        <g fill="none" stroke="#d4b483" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 49 31 13l20 36"/>
+          <path d="M18 49l13-25 14 25"/>
+          <path d="M25 40h15"/>
+        </g>
+        <circle cx="49" cy="15" r="4" fill="#b5d8cc"/>
+      </g>
+      <text x="160" y="98"
+            font-family="Fraunces, Georgia, 'Times New Roman', serif"
+            font-size="150" font-weight="700" fill="#f0e9dc">AI Today <tspan fill="#d4b483">Brief</tspan></text>
+    </g>
+    <text y="88" text-anchor="middle"
+          font-family="Inter, Arial, sans-serif"
+          font-size="52" fill="#b9b7ac">Daily AI &amp; engineering brief for developers — signal, not noise</text>
+    <text y="188" text-anchor="middle"
+          font-family="Inter, Arial, sans-serif"
+          font-size="48" font-weight="600" fill="#d4b483">aitodaybrief.com</text>
+  </g>
 </svg>
