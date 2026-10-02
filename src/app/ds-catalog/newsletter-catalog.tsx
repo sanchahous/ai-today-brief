@@ -24,46 +24,46 @@ export function NewsletterCatalog() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold">Language:</span>
           <button
             type="button"
             onClick={() => setLang('en')}
-            className={`rounded px-2.5 py-1 text-xs font-medium border ${lang === 'en' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted'}`}
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${lang === 'en' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
           >
             English
           </button>
           <button
             type="button"
             onClick={() => setLang('uk')}
-            className={`rounded px-2.5 py-1 text-xs font-medium border ${lang === 'uk' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted'}`}
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${lang === 'uk' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
           >
             Українська
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold">Variant:</span>
           {VARIANTS.map((v) => (
             <button
               key={v}
               type="button"
               onClick={() => setSelectedVariant(v)}
-              className={`rounded px-2.5 py-1 text-xs font-medium border ${selectedVariant === v ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted'}`}
+              className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${selectedVariant === v ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
             >
               {v}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold">State:</span>
           {STATES.map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => setSelectedStatus(s)}
-              className={`rounded px-2 py-1 text-xs font-medium border ${selectedStatus === s ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted'}`}
+              className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${selectedStatus === s ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
             >
               {s}
             </button>
