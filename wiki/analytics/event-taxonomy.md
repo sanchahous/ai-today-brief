@@ -2,7 +2,7 @@
 
 Summary: єдиний каталог усіх аналітичних подій сайту: що рахуємо, звідки стреляє кожна подія, які параметри несе, куди тече (GA4 і/або first-party бікон `/api/ev`).
 Sources: `src/lib/analytics-client.ts`, `src/lib/analytics-events.ts`, `src/lib/tool-telemetry.ts`, `src/components/analytics/*`, `src/hooks/use-engaged-dwell.ts`, код-ревʼю 2026-08-21
-Last updated: 2026-08-21
+Last updated: 2026-10-02
 
 ---
 
@@ -20,6 +20,11 @@ key events), а ця — **подієву таксономію коду**. До�
 3. **Події на клік обгортаються** client-компонентом-обгорткою (`src/components/analytics/`),
    а не переписуванням Server Component на `'use client'` — обгортки ловлять `onClickCapture`
    навколо server-renderених лінків.
+4. **Автоматизовані браузери мовчать (2026-10-02).** `navigator.webdriver === true`
+   (Playwright, Puppeteer, Selenium) вимикає і GA4 (`ga-disable-<ID>` в init-скрипті
+   `gtagInitScript`), і обидва first-party біконі (`/api/ev`, `/api/daily/visual-engagement`) —
+   єдина брама `analyticsAllowed()` в `analytics-client.ts`. Бот, що ховає прапорець, цим не
+   зупиняється: див. [діагноз](2026-10-02-singapore-bot-traffic.md).
 
 ## Каталог подій, доданих 2026-08-21 (source: `src/components/analytics/*`, код-ревʼю 2026-08-21)
 
