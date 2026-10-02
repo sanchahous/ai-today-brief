@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-02
 
+## 2026-10-02 — AH-3.4: спільний компонент NewsletterForm, всі стани та E2E ([PR #395](https://github.com/sanchahous/ai-today-brief/pull/395))
+
+- **Спільний компонент форми підписки:** оновлено `src/components/home/newsletter-form.tsx` та реекспортовано через `src/components/ui/newsletter-form.tsx` і `src/components/ui/index.ts`. Реалізовано варіанти `band`, `inline` та `full` (з вибором мови видання en/uk та згодою з політикою конфіденційності).
+- **Матриця станів і доступність:** повна підтримка станів `idle`, `invalid`, `pending` (з `aria-busy` та синхронним захистом від rapid double-click через `isSubmittingRef`), `success` (лише за наявності 2xx-відповіді від `/api/subscribe`), `already_subscribed` (без розкриття PII), `error` (зі збереженням введеного значення в полі email) та `not_configured`.
+- **Beehiiv-обіцянки та аналітика:** замінено непідтверджені твердження на чесні фактичні обіцянки Beehiiv (Double opt-in, джерела в кожній новині, 1 лист/день, відписка в 1 клік); жодних спливаючих модалок підписки. Інтегровано аналітичні воронки `newsletter_impression` (1 на сесію на placement), `newsletter_form_start` та `newsletter_submit_error`.
+- **Каталог компонентів та сторінка підписки:** додано вкладку `Newsletter Form` у `/ds-catalog` (`src/app/ds-catalog/newsletter-catalog.tsx`), сторінку `/[lang]/subscribe` переведено на `variant="full"`.
+- **Тестування:** додано 11 модульних тестів чистої логіки в `src/lib/ui/newsletter.test.ts` (100% покриття, додано до `LOGIC_INCLUDE`), розширено `e2e/footer-newsletter.spec.ts` до 13 тестів (39 перевірок успішно пройдено на Chromium, Firefox і WebKit). Всі перевірки `npm run pr:check` зелені.
+(source: PR #395; `src/components/home/newsletter-form.tsx`; `src/lib/ui/newsletter.ts`; `e2e/footer-newsletter.spec.ts`)
 ## 2026-10-02 — AH-3.6 review fix (T1-f5): epic §5.3 row AH-2.5 + log order
 
 - Відновлено рядок `| AH-2.5 |` у [епіку §5.3](product/after-hours-redesign-epic.md) (зник під час merge T1-f4).
