@@ -18,6 +18,14 @@ import {
 } from '@/lib/public-content-cache';
 import { excludeRelatedById, pickAdjacentStories } from '@/lib/items-nav';
 
+describe('public content Data Cache window', () => {
+  it('is not shorter than the 24 h the item and hub pages declare', () => {
+    // Next uses the lowest revalidate across page + data reads, so a shorter
+    // window here silently overrides `export const revalidate = 86400`.
+    expect(PUBLIC_CONTENT_REVALIDATE_SECONDS).toBeGreaterThanOrEqual(86400);
+  });
+});
+
 describe('anon REST fetch cache policy', () => {
   it('caches only PostgREST GET URLs', () => {
     expect(
