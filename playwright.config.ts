@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { realpathSync } from 'node:fs';
+import { consentStorageState, resolveE2eBaseUrl, resolveE2ePort } from './scripts/e2e-server-url';
 
 /**
  * E2E smoke + layout regression for critical UI flows.
@@ -20,8 +21,9 @@ import { realpathSync } from 'node:fs';
  * Playwright loads this config as CommonJS.
  */
 const projectDir = realpathSync(__dirname);
-/** Local runs on a port other than the pre-push server. CI leaves this unset. */
-const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000';
+/** `E2E_BASE_URL` wins; else `PORT` (default 3000). CI leaves both unset. */
+const baseURL = resolveE2eBaseUrl();
+const e2ePort = resolveE2ePort();
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -44,7 +46,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     // Pre-seed cookie consent so the bottom-fixed consent banner never intercepts
     // clicks / covers content during tests (it otherwise breaks bottom-of-page flows).
-    storageState: './e2e/consent-state.json',
+    // Origin must match baseURL (including PORT) — see scripts/e2e-server-url.ts.
+    storageState: consentStorageState(baseURL),
   },
   projects: [
     {
@@ -66,10 +69,10 @@ export default defineConfig({
         command: 'npm run start',
         // Run from the canonical (realpath'd) dir — see projectDir above.
         cwd: projectDir,
-        url: 'http://127.0.0.1:3000',
+        url: baseURL,
         reuseExistingServer: !process.env.CI,
         // Enables the internal /ds-catalog page used by e2e/ui-components.spec.ts (404 without it).
-        env: { DS_CATALOG: '1' },
+        env: { DS_CATALOG: '1', PORT: String(e2ePort) },
         timeout: 120_000,
       },
 });

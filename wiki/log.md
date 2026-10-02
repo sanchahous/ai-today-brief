@@ -6,6 +6,23 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-02
 
+## 2026-10-02 — ATB-66 review fix: consent origin + header-layout baseURL
+
+Після review [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401): `consent-state.json`
+мав origin лише `:3000` (банер згоди на `PORT=3101`); `header-layout.spec.ts` ігнорував
+`baseURL`. Розширено `scripts/e2e-server-url.ts` (`consentStorageState`); Playwright і `a11y-layout-matrix`
+генерують storageState з поточного origin; header-layout переходить на відносний `/uk/news`.
+(source: `.orc/T1-f1.task.md`)
+
+## 2026-10-02 — ATB-66: конфігурований порт e2e через `PORT` (default 3000)
+
+Оркестратор запускає кілька checkout-ів з `PORT` 3100–3199; `playwright.config.ts` і
+`e2e:affected` жорстко тримали `:3000`, тож `reuseExistingServer` підхоплював чужий білд.
+Додано `scripts/e2e-server-url.ts` (`resolveE2ePort`, `resolveE2eBaseUrl`); `E2E_BASE_URL` лишається
+override. Документація: [ops/e2e-local](ops/e2e-local.md), README, `.cursor/rules/pr-gate.mdc`.
+[PR #401](https://github.com/sanchahous/ai-today-brief/pull/401). (source: `.orc/T1.task.md`; код
+`playwright.config.ts`, `scripts/e2e-affected.ts`)
+
 ## 2026-10-02 — Vercel Firewall: опубліковано два deny-правила (сканери, ASN132203)
 
 Власник попросив знизити навантаження на Hobby, блокувати явні атаки й скрейпи, лишити `ExaSearchBot` і за потреби перемкнути Bot Protection на `Challenge`. Після `vercel login` власника правила додано через CLI (`rules add` → `diff` → `publish`, власник написав «Публікуй»): «Deny scanner and exploit paths» і «Deny Tencent Cloud ASN 132203 scraper». Перевірка: сканерські шляхи → 403, сторінки/фіди/sitemap → 200, cron `pg_net` о 12:30:00 після публікації → 200 для всіх чотирьох `/api/internal/*`. Bot Protection і AI Bots лишаються в `Log`: спробу `bypass`-правила заблокував auto-mode класифікатор, а без `bypass` `Challenge` зупинив би cron. Оновлено [діагноз](analytics/2026-10-02-singapore-bot-traffic.md) § Стан захисту, [now](now.md). Відкат: вимкнути правило в Firewall → Rules і опублікувати. (source: `vercel firewall rules list` / `diff` / `publish` 2026-10-02 ≈12:28 UTC; curl 12:29 UTC; Supabase `net._http_response`; Vercel runtime logs)

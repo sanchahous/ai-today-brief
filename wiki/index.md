@@ -156,6 +156,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |
 | ✅ [ops/github-actions-cost](ops/github-actions-cost.md) | Профіль витрат CI: хто палив Actions-хвилини, чому e2e коштував 15 хв, що змінив перехід у public | нове 2026-08-18, GitHub REST live check |
+| ✅ [ops/e2e-local](ops/e2e-local.md) | `PORT` / `E2E_BASE_URL` для Playwright і `e2e:affected` — паралельні checkout-и без чужого `:3000` | [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401), ATB-66, 2026-10-02 |
 | ✅ [ops/video-render-runbook](ops/video-render-runbook.md) | Точні команди рендеру/озвучки/субтитрів/result-маніфесту в `ai-today-brief-video` | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 | ✅ [ops/video-weekly-checklist](ops/video-weekly-checklist.md) | Тижневий чеклист випуску weekly-відео, крок за кроком | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 
