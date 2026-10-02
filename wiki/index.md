@@ -10,8 +10,8 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30, повідомлення власника про кошик GA4 + HYPD і live tag check 2026-09-30, AH-2.6 navigation consolidation 2026-10-01 (#392)
-Last updated: 2026-10-01
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30, повідомлення власника про кошик GA4 + HYPD і live tag check 2026-09-30, AH-2.6 navigation consolidation 2026-10-01 (#392), діагноз Singapore bot + Fast Origin Transfer 2026-10-02
+Last updated: 2026-10-02
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -90,6 +90,7 @@ Last updated: 2026-10-01
 |---|---|---|
 | ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Property 540206735; GSC link, key event, retention 14 місяців і Tag Assistant підтверджено; звернення на три destinations, приймання акаунтами в кошику не доведено | повідомлення й скриншоти власника + витяг доказів / HYPD 2026-09-30 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
+| ✅ [analytics/2026-10-02-singapore-bot-traffic](analytics/2026-10-02-singapore-bot-traffic.md) | Singapore/direct = автоматизований трафік Tencent Cloud (AS132203), підтверджений Vercel Firewall і логами; Івано-Франківськ = власні headless-перевірки; Bot Protection у `Log`, план `Challenge` + bypass; правила читання GA4 | Vercel Firewall/Logs/Usage, GA4 Home, `item_events`, повідомлення власника 2026-10-02 |
 | ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: всі докази й AC прийнято; інтеграція через #376; GA4 Admin підтверджено, CWV home/news/article прийнято власником, daily/weekly виключено; підпис G0 2026-09-30 | GA4 Data API + повідомлення, скриншоти й HTML-звіти власника + JSON-витяги 2026-09-29…30 |
 
 ## Marketing
@@ -123,7 +124,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | AH-3.1 у PR #393; AH-2.6 у PR #392; далі AH-3.2; G1/UK/CLS/legacy відкриті | GitHub checks 2026-10-01; PR #393 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | AH-3.1 у PR #393; AH-2.6 у PR #392; далі AH-3.2; підпис на кожен PR знято, включно з high і agent+human (ATB-64, #397); ATB-22/23/27 ще в waiting на старих запитах merge; G1/UK/CLS/legacy відкриті | дозвіл власника 2026-10-02; PR #393, #397 |
 | ✅ [product/after-hours-ah-2-5-validation](product/after-hours-ah-2-5-validation.md) | PR #391: Notice, Spinner, ErrorState, StaleNotice; ланцюг станів у каталозі; CLS loading нижче 0,05; 12 PNG; підпис відкритий | PR #391 + e2e/feedback-states.spec.ts + catalog manifest 2026-10-01 |
 | ✅ [product/after-hours-ah-2-4-validation](product/after-hours-ah-2-4-validation.md) | #390 змерджено в 56a9cf8: sheet left/right/full, disclosure, --z-modal; окремий підпис не отримано | PR #390 + gh run list 2026-10-01 |
 | ✅ [product/after-hours-ah-2-3-validation](product/after-hours-ah-2-3-validation.md) | #388 підписано і змерджено в e75c438: Field, Textarea, Segmented, Switch, рестайл полів, локалізація SearchInput; full-page DoD відкритий | PR #388 + власник 2026-10-01 |
@@ -147,7 +148,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | ✅ [ops/local-mock-database](ops/local-mock-database.md) | Локальна mock-БД редизайну в цьому checkout: рушій і знімок gitignored, без окремого worktree | копія 2026-10-01, `.gitignore` |
 | ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader; origin JPEG карток; site delivery WebP | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts`, `pipeline/card-image.ts` |
 | ✅ [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md) | Free egress 15/5 GB; Pro до 21 Sep; #350 SSG categories 2063→30; skip `.gitignore`/`library`; Sonar `build:ci`; 30.09 регресія: build-memo пережив білд → прод віддавав знімок 02.09 | Usage Dashboard + edge_logs 2026-09-02; live check 2026-09-30 |
-| ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news була динамічна через searchParams і ніколи не кешувалась; заголовок Cache-Control не рятує — хаб зроблено prerendered, пошук винесено на /news/search; три способи, що не працюють | нове 2026-08-24, live check заголовків прода |
+| ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news була динамічна через searchParams і ніколи не кешувалась; заголовок Cache-Control не рятує — хаб зроблено prerendered, пошук винесено на /news/search; три способи, що не працюють. 2026-10-02: Hobby, 12,97 / 10 ГБ, бот не причина, TTL даних 1 год перекривав 24 год сторінки статті | нове 2026-08-24, live check заголовків прода; Vercel Usage/Logs 2026-10-02 |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
 | ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладка **Fixes & blockers**, Approve на quality фінальний, жовті warnings не тримають socials, blocker-free Ship, Етап 0 ревізій (carry-forward на service path, live preflight, cover більше не auto-revoke соцкопію), Ship без відео + окрема Publish video | нове 2026-08-04, оновлено 2026-09-03 |

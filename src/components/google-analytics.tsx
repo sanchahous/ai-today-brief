@@ -1,23 +1,19 @@
 import Script from 'next/script';
-import { GA_MEASUREMENT_ID, analyticsConfigured } from '@/lib/analytics-config';
+import { GA_MEASUREMENT_ID, analyticsConfigured, gtagInitScript } from '@/lib/analytics-config';
 
 /**
  * GA4 bootstrap — defers network work until after interactive (CWV).
  * Consent Mode: analytics granted by default; CMP opt-out sets denied.
  * `send_page_view: false` — App Router sends page_view on route change.
+ * Automated browsers are muted in the init script (see `gtagInitScript`).
  */
 export function GoogleAnalytics() {
   if (!analyticsConfigured) return null;
 
-  const init = `
-gtag('js',new Date());
-gtag('config','${GA_MEASUREMENT_ID}',{send_page_view:false});
-`;
-
   return (
     <>
       <Script id="gtag-init" strategy="afterInteractive">
-        {init}
+        {gtagInitScript(GA_MEASUREMENT_ID)}
       </Script>
       <Script
         id="gtag-js"

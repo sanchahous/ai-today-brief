@@ -2,9 +2,9 @@
 
 Summary: Єдина активна property 540206735; GSC link, newsletter_subscribe як key event, retention 14 місяців і Tag Assistant підтверджено доказами власника. Google tag продовжує надсилати звернення на три destinations; доля двох залишкових призначень — окреме рішення.
 Sources: повідомлення й скриншоти власника 2026-09-30 (селектор property і деталі GSC link); HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
-Last updated: 2026-09-30
+Last updated: 2026-10-02
 
-> Оновлено: **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events,
+> Оновлено: **2026-10-02** (правила читання Singapore/China); стан property — **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events,
 > env) — онови цей файл у тому ж PR.
 
 ## Поточний стан (перевірка 2026-09-30)
@@ -140,6 +140,11 @@ HYPD live check 2026-09-30; GA4 Data API 2026-09-29;
   Session source/medium. Робочі канали станом на 12.06: Threads, Facebook.
 - **Пошукові запити/кліки:** колекція Search Console у звітах GA, або напряму в
   GSC → Performance.
+- **Singapore і China:** з ~22.09.2026 більшість «Direct» — автоматизований трафік (Tencent
+  Cloud), див. [діагноз](2026-10-02-singapore-bot-traffic.md). Додавайте порівняння
+  «Країна ≠ Singapore, China»; чистий baseline — 2026-09-01…21. Власні headless-перевірки
+  (Playwright і т. п.) із 2026-10-02 PR мовчать у GA4 через `navigator.webdriver`; до того вони
+  потрапляли в звіти як «Івано-Франківськ».
 - **Тест-події:** одна синтетична `newsletter_subscribe` з
   `placement=ga-setup-test` відправлена 12.06.2026 (для появи події в списку) —
   у звітах за червень її можна ігнорувати/відфільтрувати за placement.
