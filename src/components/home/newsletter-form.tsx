@@ -353,7 +353,7 @@ export function NewsletterForm({
             onFocus={markStarted}
             placeholder={placeholder ?? copy.emailPlaceholder}
             aria-label={placeholder ?? copy.emailLabel}
-            className="bg-surface border-border text-text rounded-md focus-visible:border-accent min-h-[44px] flex-1 border px-3 py-2.5 text-sm outline-none transition-colors"
+            className="bg-surface border-border text-text rounded-md focus-visible:border-accent min-h-[44px] flex-1 border px-3 py-2.5 text-sm transition-colors"
           />
           <Button
             type="submit"
@@ -417,7 +417,7 @@ export function NewsletterForm({
           onFocus={markStarted}
           placeholder={placeholder ?? copy.emailPlaceholder}
           aria-label={placeholder ?? copy.emailLabel}
-          className="bg-bg border-border text-text rounded-pill focus-visible:border-accent min-h-[44px] flex-1 basis-52 border px-4 py-3 text-sm outline-none transition-colors"
+          className="bg-bg border-border text-text rounded-pill focus-visible:border-accent min-h-[44px] flex-1 basis-52 border px-4 py-3 text-sm transition-colors"
         />
         <button
           type="submit"
