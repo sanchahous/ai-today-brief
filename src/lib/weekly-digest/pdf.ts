@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import sharp from 'sharp';
+import { rasterizeBrandMark } from '@/lib/brand-mark-raster';
 
 const DEJAVU_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf', 'ttf');
 // PDFKit/fontkit cannot reliably subset the variable WOFF2 used by the site.
@@ -549,16 +550,22 @@ function drawSourceLine(
   return doc.y;
 }
 
-function buildCover(doc: PDFKit.PDFDocument, input: WeeklyPdfInput, cover: Buffer | null) {
+function buildCover(
+  doc: PDFKit.PDFDocument,
+  input: WeeklyPdfInput,
+  cover: Buffer | null,
+  mark: Buffer,
+) {
   const copy = COPY[input.locale];
   doc.save().rect(0, 0, PAGE.width, PAGE.height).fill(COLORS.dark).restore();
+  doc.image(mark, PAGE.margin, 40, { width: 24, height: 24 });
   // The art already carries its scrim (see `coverScrim`): it dissolves into the
   // page instead of ending on a seam, and the headline that reaches up into it
   // always sits on dark ground.
   if (cover) doc.image(cover, 0, 0, { width: COVER_IMAGE.width, height: COVER_IMAGE.height });
 
-  doc.save().roundedRect(PAGE.margin, 44, 176, 28, 14).fill(COLORS.accent).restore();
-  doc.font('Inter').fontSize(8.5).fillColor(COLORS.dark).text(copy.weekly, PAGE.margin, 54, {
+  doc.save().roundedRect(PAGE.margin + 34, 44, 176, 28, 14).fill(COLORS.accent).restore();
+  doc.font('Inter').fontSize(8.5).fillColor(COLORS.dark).text(copy.weekly, PAGE.margin + 34, 54, {
     width: 176,
     align: 'center',
     characterSpacing: 1.2,
@@ -881,17 +888,18 @@ async function buildClosing(doc: PDFKit.PDFDocument, input: WeeklyPdfInput) {
   }
 }
 
-function addHeadersAndFooters(doc: PDFKit.PDFDocument, input: WeeklyPdfInput) {
+function addHeadersAndFooters(doc: PDFKit.PDFDocument, input: WeeklyPdfInput, mark: Buffer) {
   const copy = COPY[input.locale];
   const range = doc.bufferedPageRange();
   for (let index = 1; index < range.count; index += 1) {
     doc.switchToPage(index);
     doc.save().rect(PAGE.margin, FOOTER_RULE_Y, CONTENT_WIDTH, 0.7).fill(COLORS.rule).restore();
+    doc.image(mark, PAGE.margin, FOOTER_TEXT_Y - 2, { width: 12, height: 12 });
     doc
       .font('Inter')
       .fontSize(7.5)
       .fillColor(COLORS.muted)
-      .text(`AI TODAY BRIEF  ·  ${input.issueLabel}`, PAGE.margin, FOOTER_TEXT_Y, {
+      .text(`AI TODAY BRIEF  ·  ${input.issueLabel}`, PAGE.margin + 18, FOOTER_TEXT_Y, {
         lineBreak: false,
       });
     // "Issue 4  /  2" read as an issue-and-story reference, not as pagination.
@@ -943,18 +951,19 @@ export async function renderWeeklyDigestPdf(input: WeeklyPdfInput): Promise<Buff
 
   const features = input.stories.filter((story) => story.rank <= 3);
   const radar = input.stories.filter((story) => story.rank > 3);
-  const [cover, ...featureImages] = await Promise.all([
+  const [cover, mark, ...featureImages] = await Promise.all([
     imageBuffer(input.coverImageUrl, COVER_IMAGE, true),
+    rasterizeBrandMark(24, { palette: 'yellow' }),
     ...features.map((story) => imageBuffer(story.imageUrl, FEATURE_IMAGE)),
   ]);
 
   doc.addPage({ size: 'A4', margin: 0 });
-  buildCover(doc, input, cover ?? null);
+  buildCover(doc, input, cover ?? null, mark);
   buildContents(doc, input, planAnchors(features, radar));
   features.forEach((story, index) => buildFeature(doc, input, story, featureImages[index] ?? null));
   buildRadarSection(doc, input, radar);
   await buildClosing(doc, input);
-  addHeadersAndFooters(doc, input);
+  addHeadersAndFooters(doc, input, mark);
   doc.end();
   return completed;
 }

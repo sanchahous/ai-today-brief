@@ -43,9 +43,15 @@ describe('resolveE2eBaseUrl', () => {
 
 describe('consentStorageState', () => {
   it('defaults origin to :3000', () => {
-    const state = consentStorageState();
-    assert.equal(state.origins[0].origin, 'http://127.0.0.1:3000');
-    assert.equal(state.origins[0].localStorage[0].name, CONSENT_STORAGE_KEY);
+    const previousPort = process.env.PORT;
+    delete process.env.PORT;
+    try {
+      const state = consentStorageState();
+      assert.equal(state.origins[0].origin, 'http://127.0.0.1:3000');
+      assert.equal(state.origins[0].localStorage[0].name, CONSENT_STORAGE_KEY);
+    } finally {
+      if (previousPort !== undefined) process.env.PORT = previousPort;
+    }
   });
 
   it('matches PORT-derived origin', () => {

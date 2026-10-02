@@ -4,6 +4,8 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import sharp, { type Sharp } from 'sharp';
+import { BRAND_MARK_RENDER_ACCENT } from '@/lib/brand-mark';
+import { rasterizeBrandMark } from '@/lib/brand-mark-raster';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { storageBlob } from '@/lib/storage/binary';
 import { toSupabaseRenderUrl } from '@/lib/image-loader';
@@ -14,7 +16,6 @@ const TEXT_FONT = join(DEJAVU_DIRECTORY, 'DejaVuSans.ttf');
 const TEXT_FONT_BOLD = join(DEJAVU_DIRECTORY, 'DejaVuSans-Bold.ttf');
 const BUCKET = 'social-assets';
 const BRAND_DARK = '#101418';
-const BRAND_TEAL = '#47e4d3';
 const BRAND_TEXT = '#f7fafc';
 const STORAGE_BINARY_VERSION = 'binary-v2';
 
@@ -139,9 +140,15 @@ function overlaySvg(width: number, height: number) {
         </linearGradient>
       </defs>
       <rect width="${width}" height="${height}" fill="url(#shade)"/>
-      <rect x="${Math.round(width * 0.075)}" y="${Math.round(height * 0.09)}" width="${Math.round(width * 0.055)}" height="8" rx="4" fill="${BRAND_TEAL}"/>
     </svg>
   `);
+}
+
+function brandMarkPlacement(width: number, height: number) {
+  const size = Math.max(36, Math.round(Math.min(width, height) * 0.055));
+  const left = Math.round(width * 0.075);
+  const top = Math.round(height * 0.09);
+  return { size, left, top };
 }
 
 async function textLayer(options: {
@@ -197,7 +204,7 @@ export async function renderSocialAssetImage(
       text: eyebrow.toUpperCase(),
       width: contentWidth,
       size: Math.round(width * 0.023),
-      color: BRAND_TEAL,
+      color: BRAND_MARK_RENDER_ACCENT,
       bold: true,
     }),
     textLayer({
@@ -312,9 +319,13 @@ export async function renderSocialAssetImage(
     );
   }
 
+  const markPos = brandMarkPlacement(width, height);
+  const mark = await rasterizeBrandMark(markPos.size, { palette: 'yellow' });
+
   return base
     .composite([
       { input: overlaySvg(width, height), top: 0, left: 0 },
+      { input: mark, top: markPos.top, left: markPos.left },
       {
         input: eyebrowLayer,
         top: Math.round(height * 0.125),

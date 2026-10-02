@@ -3,6 +3,8 @@ import 'server-only';
 import { join } from 'node:path';
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas';
 import sharp from 'sharp';
+import { BRAND_MARK_RENDER_ACCENT } from '@/lib/brand-mark';
+import { rasterizeBrandMark } from '@/lib/brand-mark-raster';
 import type { QualityIssue } from '@/lib/social/types';
 import {
   layoutInstagramSlideText,
@@ -16,8 +18,8 @@ import type { InstagramCarouselSpec, InstagramCarouselSlide } from '@/lib/social
 
 const DEJAVU_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf', 'ttf');
 const BRAND_DARK = '#101418';
-const BRAND_TEAL = '#47e4d3';
 const BRAND_TEXT = '#f7fafc';
+const BRAND_MARK_SIZE = 48;
 
 let textFontsRegistered = false;
 
@@ -59,15 +61,29 @@ function overlaySvg() {
         </linearGradient>
       </defs>
       <rect width="${INSTAGRAM_SLIDE_WIDTH}" height="${INSTAGRAM_SLIDE_HEIGHT}" fill="url(#shade)"/>
-      <rect x="${INSTAGRAM_LAYOUT.safeLeft}" y="92" width="96" height="8" rx="4" fill="${BRAND_TEAL}"/>
     </svg>
   `);
+}
+
+let brandMarkLayer: Promise<Buffer> | undefined;
+
+function brandMarkLayerPng() {
+  brandMarkLayer ??= rasterizeBrandMark(BRAND_MARK_SIZE, { palette: 'yellow' });
+  return brandMarkLayer;
+}
+
+async function shadedBackgroundLayers() {
+  const mark = await brandMarkLayerPng();
+  return [
+    { input: overlaySvg(), top: 0, left: 0 },
+    { input: mark, top: 84, left: INSTAGRAM_LAYOUT.safeLeft },
+  ];
 }
 
 async function photoBackground(source: Buffer) {
   return sharp(source)
     .resize(INSTAGRAM_SLIDE_WIDTH, INSTAGRAM_SLIDE_HEIGHT, { fit: 'cover', position: 'attention' })
-    .composite([{ input: overlaySvg(), top: 0, left: 0 }])
+    .composite(await shadedBackgroundLayers())
     .jpeg({ quality: 90 })
     .toBuffer();
 }
@@ -81,7 +97,7 @@ async function cardBackground() {
       background: BRAND_DARK,
     },
   })
-    .composite([{ input: overlaySvg(), top: 0, left: 0 }])
+    .composite(await shadedBackgroundLayers())
     .jpeg({ quality: 90 })
     .toBuffer();
 }
@@ -91,12 +107,13 @@ function chromeLayer(index: number, total: number) {
   const canvas = createCanvas(INSTAGRAM_SLIDE_WIDTH, INSTAGRAM_SLIDE_HEIGHT);
   const context = canvas.getContext('2d');
   context.textBaseline = 'top';
+  const wordmarkLeft = INSTAGRAM_LAYOUT.safeLeft + BRAND_MARK_SIZE + 12;
   context.font = '28px "AI Today Brief Sans Bold"';
   context.fillStyle = BRAND_TEXT;
-  context.fillText('AI Today', INSTAGRAM_LAYOUT.safeLeft, 112);
-  context.fillStyle = BRAND_TEAL;
-  context.fillText('Brief', INSTAGRAM_LAYOUT.safeLeft + context.measureText('AI Today ').width, 112);
-  context.fillStyle = BRAND_TEAL;
+  context.fillText('AI Today', wordmarkLeft, 112);
+  context.fillStyle = BRAND_MARK_RENDER_ACCENT;
+  context.fillText('Brief', wordmarkLeft + context.measureText('AI Today ').width, 112);
+  context.fillStyle = BRAND_MARK_RENDER_ACCENT;
   context.font = '22px "AI Today Brief Sans Bold"';
   const counter = `${index} / ${total}`;
   context.fillText(

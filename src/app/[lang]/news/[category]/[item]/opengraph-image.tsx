@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { brandMarkDataUri } from '@/lib/brand-mark';
 import { duotoneDataUri, paletteFromCategory } from '@/lib/card/duotone';
 import { toSupabaseRenderUrl } from '@/lib/image-loader';
 import { getNewsItem } from '@/lib/items';
@@ -143,11 +144,14 @@ export default async function OgImage({
                 <span>AI Today</span>
                 <span style={{ color: '#f0c040', marginLeft: 8 }}>Brief</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, paddingBottom: 6 }}>
-                {[6, 11, 15, 21].map((h) => (
-                  <div key={h} style={{ width: 4, height: h, borderRadius: 2, background: '#f0c040' }} />
-                ))}
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={brandMarkDataUri({ palette: 'yellow', size: 64 })}
+                alt=""
+                width={36}
+                height={36}
+                style={{ marginBottom: 2 }}
+              />
             </div>
             <div style={{ fontSize: 23, color: '#c4cbd6' }}>aitodaybrief.com</div>
           </div>

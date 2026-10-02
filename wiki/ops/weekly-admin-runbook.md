@@ -8,9 +8,16 @@ revision Stage 0, OpenRouter catalog, YouTube 120s, ElevenLabs TTS,
 LinkedIn PDF skip on public promote 2026-09-03,
 social URLs follow the published slug 2026-09-03, two-phase release (Ship / Publish video)
 2026-09-03
-Last updated: 2026-09-03
+Last updated: 2026-10-02
 
 ---
+
+## Бренд-знак на PDF і соц-слайдах (2026-10-02)
+
+PDF, LinkedIn document, Instagram carousel і jpeg-ассети з Content Studio тепер несуть
+After Hours mark з `src/lib/brand-mark.ts` (AH-3.7, [PR #402](https://github.com/sanchahous/ai-today-brief/pull/402)).
+Перегенеруй зразки локально: `npm run weekly:pdf:sample`, `npm run social:asset:sample`.
+(source: `src/lib/weekly-digest/pdf.ts`; `src/lib/social/assets.ts`)
 
 ## Головне правило (прочитай один раз)
 
