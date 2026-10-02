@@ -27,6 +27,7 @@ export function NewsletterBand({
   const t = getStrings(lang).landing;
   const outer = embedded ? 'w-full' : 'mx-auto w-full max-w-[1160px] px-6 py-6';
   const innerPadding = compact ? 'p-4' : 'p-6 sm:p-10';
+
   return (
     <section aria-labelledby={showHeader ? 'newsletter-title' : undefined} className={outer}>
       <Reveal>
@@ -36,12 +37,14 @@ export function NewsletterBand({
           {showHeader ? (
             <>
               <p className="text-accent eyebrow">{t.subEyebrow}</p>
-              <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">{t.subTitle}</h2>
+              <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">
+                {t.subTitle}
+              </h2>
               <p className="text-muted mt-2 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
               <ul className="text-muted mt-4 mb-5 flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm">
                 {t.subProofItems.map((item) => (
                   <li key={item} className="flex items-center gap-1.5">
-                    <span aria-hidden className="text-accent">
+                    <span aria-hidden="true" className="text-accent">
                       ✓
                     </span>
                     {item}
@@ -52,14 +55,9 @@ export function NewsletterBand({
           ) : null}
           <NewsletterForm
             lang={lang}
-            placeholder={t.subPlaceholder}
-            button={t.subButton}
-            done={t.subDone}
-            notConfigured={getStrings(lang).subscribeForm.notConfigured}
-            failed={getStrings(lang).subscribeForm.failed}
+            variant="band"
             placement={placement ?? (embedded ? 'subscribe-page' : 'home-band')}
           />
-          <p className={`text-faint text-xs ${showHeader ? 'mt-4' : 'mt-3'}`}>{t.subPrivacy}</p>
         </div>
       </Reveal>
     </section>
