@@ -4,7 +4,7 @@ Summary: виконуваний епік переносу дизайн-сист�
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
 live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30; дозвіл власника ATB-64 2026-10-02 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
-Last updated: 2026-10-02
+Last updated: 2026-10-02 (AH-3.8 PR #403)
 
 ---
 
@@ -219,7 +219,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | B8 | Статичний «Recent highlights» на `/news` | ✅ закрито hotfix-ом 2026-09-29 | до hotfix-у рендерився захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії; блок і ключі `news.summaryTitle` / `news.weekSummary` прибрано в EN і UK в одному PR з епіком | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
 | B9 | Хардкод-статистика на головній | відкрито | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
 | B10 | Нескінченні анімації | відкрито | 11 правил `infinite` у `globals.css` (орби 13–17 с, `pulse`, сцена 404, shimmer); Tension v3 забороняє нескінченні цикли, крім loading-shimmer | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
-| B11 | Бренд-знак | частково (AH-3.7): сайт + OG/PDF/соц-рендери — After Hours mark; платформи — AH-3.8 | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
+| B11 | Бренд-знак | частково (AH-3.1 сайт, AH-3.7 рендери [#402](https://github.com/sanchahous/ai-today-brief/pull/402), AH-3.8 brand-kit [#403](https://github.com/sanchahous/ai-today-brief/pull/403)): завантаження на платформи — власник | `src/lib/brand-mark.ts`; `artifacts/brand-kit/` |
 | B12 | Контракт теми | відкрито | Day-токени вже приймають `.theme-light` і `html[data-theme='day']`, але pre-paint скрипт виставляє лише клас `.theme-light` + `localStorage.theme`; атрибута `data-theme` немає | `src/app/layout.tsx`, `src/components/theme-toggle.tsx`, `e2e/theme.spec.ts`, `src/app/globals.css` |
 | B13 | Брейкпоінти | частково (AH-1.6): токени `--breakpoint-*` і контракт 959 / 960 у `viewports.ts` є; перемикання header — AH-3.3, discovery — AH-4.3 | header і news-layout досі перемикаються на Tailwind `lg` (64rem); за D5 обидва мають перемикатися на 60rem ≈ 960 px | `e2e/helpers/viewports.ts`; `src/app/globals.css`; `tokens.json` `breakpoints` |
 | B14 | Шрифти | ◐ (D3, D4 прийнято) | Шкала в rem і мінімум 12 px — з #369; шрифти досі `@fontsource-variable` через `globals.css`, UK-заголовки — Inter 700; за D3/D4 — `next/font/local` і Georgia для UK display | `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
@@ -370,7 +370,7 @@ flowchart TD
 | AH-3.5 | ✅ Footer ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404)) | S | агент | AH-3.1, AH-3.4 | — |
 | AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; ⚠️ conflict wiki §11 pending Tag Assistant | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | ✅ Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone ([#402](https://github.com/sanchahous/ai-today-brief/pull/402)) | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
-| AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
+| AH-3.8 | ◐ Brand-kit: аватар і банери соцмереж у [#403](https://github.com/sanchahous/ai-today-brief/pull/403); завантаження на платформи — власник у день релізу | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
 | AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #380](https://github.com/sanchahous/ai-today-brief/pull/380)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
 | AH-4.2 | StoryCard, StoryRow, CategoryBanner | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
 | AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
@@ -1287,10 +1287,12 @@ consent-картку), LinkedIn CTA, копірайт; фон `bg-deep`.
 налаштувань акаунтів не змінює.
 
 **AC:**
-- [ ] SVG і PNG-експорт кожного ассета відповідають розмірам із README (X 1500×500, LinkedIn
+- [x] SVG і PNG-експорт кожного ассета відповідають розмірам із README (X 1500×500, LinkedIn
   4200×700, YouTube 2560×1440, Facebook 851×315, аватар 1024×1024).
-- [ ] Знак читабельний на аватарі 48 px (найменший показ у стрічках).
+- [x] Знак читабельний на аватарі 48 px (найменший показ у стрічках).
 - [ ] Власник підтвердив заміну на платформах у день релізу знака; запис у `wiki/log.md`.
+
+**Стан 2026-10-02:** реалізовано в [PR #403](https://github.com/sanchahous/ai-today-brief/pull/403) на гілці `feat/ah-3.8-brand-kit`. Усі SVG перемальовано з After Hours mark (`brand-mark.ts` геометрія, Night-палітра); `npm run brand-kit:export` генерує PNG; README — таблиця розмірів і чекліст завантаження для X/Telegram/LinkedIn/YouTube (+ опційні платформи). `launch-card-independent.html` оновлено. Завантаження на платформи — власник у день релізу D7 (разом з AH-3.1/AH-3.7).
 
 **Гейт G3:** новий chrome на всіх маршрутах; e2e header / mobile-menu / mobile-search /
 footer-newsletter / cookie-overlay / theme зелені в трьох браузерах; SEO-diff 0; новий знак — на
