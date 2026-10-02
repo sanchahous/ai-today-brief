@@ -367,7 +367,7 @@ flowchart TD
 | AH-3.2 | ◐ SearchDialog (Ctrl/Cmd+K): [#394](https://github.com/sanchahous/ai-today-brief/pull/394) на `feat/ah-3.2-search-dialog` — один `SearchDialog`, trending idle, Ctrl/Cmd+K, aria-live, keyboard nav; G16 частково | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | ✅ NewsletterForm і стани ([PR #395](https://github.com/sanchahous/ai-today-brief/pull/395)) | — | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
-| AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
+| AH-3.5 | ✅ Footer ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404)) | S | агент | AH-3.1, AH-3.4 | — |
 | AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; ⚠️ conflict wiki §11 pending Tag Assistant | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | ✅ Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone ([#402](https://github.com/sanchahous/ai-today-brief/pull/402)) | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
 | AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
@@ -1212,9 +1212,18 @@ privacy); стани empty → invalid → pending (disabled, `aria-busy`) → s
 consent-картку), LinkedIn CTA, копірайт; фон `bg-deep`.
 
 **AC:**
-- [ ] `social_profile_click {network, placement}` спрацьовує як раніше; з футера доступні всі 4
+- [x] `social_profile_click {network, placement}` спрацьовує як раніше; з футера доступні всі 4
   політики, about, author, subscribe, advertise.
-- [ ] Текст на `bg-deep` ≥ 4,5:1 (гейт AH-1.2); `wiki/now.md` оновлено.
+- [x] Текст на `bg-deep` ≥ 4,5:1 (гейт AH-1.2); `wiki/now.md` оновлено.
+
+**Реалізація й доставка ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404)):**
+- Оновлено `src/components/site-footer.tsx`: застосовано фон `bg-bg-soft` (`--bg-soft`), токени After Hours v2, бренд-посилання на головну з `BrandMark(28)` та назвою видання, двомовний слоган.
+- Соцмережі з `SOCIALS` оновлено на пігулки з touch target floor ≥ 44px, додано доступний атрибут `aria-label` із приміткою «(opens in a new tab)» / «(відкриється в новій вкладці)» для зовнішніх посилань; кліки фіксуються через `SocialLinkTracker` (`network`, `placement: 'footer'`).
+- LinkedIn CTA збережено з `placement: 'footer-cta'` та доступним `aria-label`.
+- Навігаційні колонки: Explore (News, Digests, Concepts, Guides, Tools), Company (About, Editor profile / Профіль редактора, Subscribe, Advertise), Legal (Editorial policy, AI disclosure, Privacy, Terms, CookieSettingsButton). Усі 4 політики, about, author, subscribe та advertise доступні з футера.
+- Кнопку «Налаштування cookie» (`CookieSettingsButton` у `src/components/cookie-consent.tsx`) узгоджено за стилями з посиланнями футера (`text-muted hover:text-accent`, min-h/min-w 44px).
+- Контраст тексту на `bgSoft` перевищує 4,5:1 у Night (текст 16.57:1, muted 9.38:1, faint 8.78:1) і Day (текст 12.10:1, muted 6.02:1, faint 4.92:1), пройдено `tokens:check`.
+- Розширено `e2e/footer-newsletter.spec.ts` на перевірку 4 політик, посилань видання/огляду, доступності й розмірів social-посилань, бренд-блоку.
 
 ### AH-3.6 · Consent-картка
 
