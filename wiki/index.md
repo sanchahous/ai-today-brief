@@ -88,7 +88,7 @@ Last updated: 2026-10-01
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
-| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Property 540206735; GSC link, key event, retention 14 місяців і Tag Assistant підтверджено; звернення на три destinations, приймання акаунтами в кошику не доведено | повідомлення й скриншоти власника + витяг доказів / HYPD 2026-09-30 |
+| ⚠️ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Property 540206735; Admin 2026-09-30 підтверджено; ⚠️ conflict Consent Mode: production opt-out vs код PR #396 opt-in — pending Preview Tag Assistant | повідомлення й скриншоти власника 2026-09-30; PR #396 / wiki §11 open-questions |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
 | ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: всі докази й AC прийнято; інтеграція через #376; GA4 Admin підтверджено, CWV home/news/article прийнято власником, daily/weekly виключено; підпис G0 2026-09-30 | GA4 Data API + повідомлення, скриншоти й HTML-звіти власника + JSON-витяги 2026-09-29…30 |
 

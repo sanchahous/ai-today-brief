@@ -1212,7 +1212,7 @@ consent-картку), LinkedIn CTA, копірайт; фон `bg-deep`.
 - [x] `cookie-overlay.spec.ts` зелений; картка не перекриває основний CTA на 360 px.
 - [x] Фокус переходить у картку при відкритті з футера й повертається після закриття.
 
-**Стан 2026-10-02:** PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`: `cookie-consent.tsx` на Button/Switch, opt-in (`analytics_storage: denied`, `hasAnalyticsConsent` без збереженого вибору), focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts`. (source: PR #396; `npm run pr:check` 2026-10-02)
+**Стан 2026-10-02:** PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`: `cookie-consent.tsx` на Button/Switch, opt-in (`analytics_storage: denied`, `hasAnalyticsConsent` без збереженого вибору), focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts`. Wiki: [ga4-gsc](../analytics/ga4-gsc.md) — ⚠️ conflict opt-out→opt-in задокументовано; [open-questions](../open-questions.md) §11 — pending Preview Tag Assistant. (source: PR #396; `npm run pr:check` 2026-10-02)
 
 ### AH-3.7 · Знак у генераторах зображень і PDF
 

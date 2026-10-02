@@ -6,6 +6,12 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-02
 
+## 2026-10-02 — AH-3.6 review fix: Consent Mode conflict у wiki (PR #396)
+
+- `wiki/analytics/ga4-gsc.md`: ⚠️ conflict між production Tag Assistant 2026-09-30 (opt-out, analytics granted) і кодом PR #396 (opt-in, analytics denied); checklist pending Preview re-verify.
+- `wiki/open-questions.md` §11, `wiki/index.md`, `wiki/analytics/event-taxonomy.md`, картка AH-3.6 — посилання на conflict і stop point.
+(source: review T1-f1; PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396))
+
 ## 2026-10-02 — AH-3.6 Consent-картка (PR #396)
 
 - `src/components/cookie-consent.tsx`: After Hours UI на `Button`/`Switch`, рівноцінні «Accept all» / «Essential only», manage-panel, focus-trap при reopen з футера, `--radius-card`, `data-testid="cookie-consent"`.

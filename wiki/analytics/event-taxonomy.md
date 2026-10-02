@@ -2,7 +2,7 @@
 
 Summary: єдиний каталог усіх аналітичних подій сайту: що рахуємо, звідки стреляє кожна подія, які параметри несе, куди тече (GA4 і/або first-party бікон `/api/ev`).
 Sources: `src/lib/analytics-client.ts`, `src/lib/analytics-events.ts`, `src/lib/tool-telemetry.ts`, `src/components/analytics/*`, `src/hooks/use-engaged-dwell.ts`, код-ревʼю 2026-08-21
-Last updated: 2026-08-21
+Last updated: 2026-10-02
 
 ---
 
@@ -11,7 +11,9 @@ key events), а ця — **подієву таксономію коду**. До�
 
 ## Принципи
 
-1. **Один вхід** — `trackEvent(name, params)` з `src/lib/analytics-client.ts`: consent-gated,
+1. **Один вхід** — `trackEvent(name, params)` з `src/lib/analytics-client.ts`: consent-gated
+   (opt-in з AH-3.6 / PR #396 — без збереженого вибору `hasAnalyticsConsent()` → false;
+   ⚠️ conflict із production opt-out 2026-09-30 — [ga4-gsc](ga4-gsc.md), [open-questions](../open-questions.md) §11),
    надсилає в GA4 (`gtag`) і, для item-подій, у first-party бікон `/api/ev` (reward-сигнал
    для пайплайну, PII-free session hash).
 2. **Нові імена подій** оголошуються в `src/lib/analytics-events.ts` (`ANALYTICS_EVENTS` +

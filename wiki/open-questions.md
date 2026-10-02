@@ -6,7 +6,7 @@ Summary: усе, що не має відповіді, суперечить са�
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
 `wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`, `wiki/product/after-hours-redesign-epic.md` (live check коду 2026-09-29)
-Last updated: 2026-09-30
+Last updated: 2026-10-02
 
 ---
 
@@ -204,6 +204,19 @@ G11–G16. Оновлення gap-plan від #369 не згадує G05–G07 �
 **Наслідок:** хто читає лише `now.md`, вважатиме дизайн-систему завершеною і пропустить залишок
 фаз 1–2 епіку. **Закривається:** задача AH-0.1 епіку — таблиця статусів із доказами в gap-plan і
 виправлене формулювання в `now.md`. **Власник рішення:** агент готує звірку, власник підтверджує.
+
+## 11. ⚠️ Consent Mode: opt-in на Preview vs production opt-out (2026-09-30)
+
+> ⚠️ Conflict: [ga4-gsc](analytics/ga4-gsc.md) документує production Tag Assistant власника
+> **2026-09-30** з `analytics_storage=granted` за замовчуванням (opt-out CMP). PR
+> [#396](https://github.com/sanchahous/ai-today-brief/pull/396) / AH-3.6 змінює код на
+> `analytics_storage: denied` (opt-in) у `consent-mode-snippet.ts` і `analytics-client.ts` —
+> це AC епіку («до вибору — жодного GA collect»), але суперечить верифікованому production-стану.
+
+**Закривається:** власник підтверджує на Vercel Preview Tag Assistant після push PR #396:
+Config показує `analytics_storage=denied` до вибору, GA collect лише після «Accept all»;
+«Essential only» лишає analytics denied. **Власник рішення:** власник продукту.
+(source: [ga4-gsc](analytics/ga4-gsc.md); PR #396; `e2e/cookie-overlay.spec.ts` 2026-10-02)
 
 ## Related pages
 
