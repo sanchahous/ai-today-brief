@@ -51,6 +51,20 @@ export function newsletterFunnelParams(placement: string, lang: string): Params 
   return { placement, lang };
 }
 
+export function newsletterSubmitErrorParams(
+  placement: string,
+  lang: string,
+  reason: string,
+  httpStatus?: number,
+): Params {
+  return {
+    placement,
+    lang,
+    reason,
+    ...(httpStatus !== undefined ? { http_status: httpStatus } : {}),
+  };
+}
+
 const IMPRESSION_KEY = 'atb-nl-imp';
 
 /**

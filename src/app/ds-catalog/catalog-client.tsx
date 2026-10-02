@@ -5,6 +5,7 @@ import { ActionCatalog } from './action-catalog';
 import { FeedbackCatalog } from './feedback-catalog';
 import { FieldCatalog } from './field-catalog';
 import { NavigationCatalog } from './navigation-catalog';
+import { NewsletterCatalog } from './newsletter-catalog';
 import { OverlayCatalog } from './overlay-catalog';
 import {
   Accordion,
@@ -159,6 +160,10 @@ export function CatalogClient() {
         <OverlayCatalog />
 
         <NavigationCatalog />
+
+        <Section title="Newsletter form">
+          <NewsletterCatalog />
+        </Section>
 
         <Section title="Dialog">
           <button

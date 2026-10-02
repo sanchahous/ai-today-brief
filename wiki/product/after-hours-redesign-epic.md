@@ -359,7 +359,7 @@ flowchart TD
 | AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
-| AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
+| AH-3.4 | ✅ NewsletterForm і стани ([PR #395](https://github.com/sanchahous/ai-today-brief/pull/395)) | — | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
 | AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
@@ -1171,12 +1171,20 @@ privacy); стани empty → invalid → pending (disabled, `aria-busy`) → s
 налаштуванням Beehiiv; жодних модалок підписки.
 
 **AC:**
-- [ ] E2E з перехопленням `/api/subscribe` відтворює invalid / pending / success / already /
+- [x] E2E з перехопленням `/api/subscribe` відтворює invalid / pending / success / already /
   network error; подвійний клік дає 1 запит.
-- [ ] Success ніколи не показується без 2xx від бекенду.
-- [ ] `newsletter_impression` (1 на сесію й placement), `newsletter_form_start`,
+- [x] Success ніколи не показується без 2xx від бекенду.
+- [x] `newsletter_impression` (1 на сесію й placement), `newsletter_form_start`,
   `newsletter_submit_error` — як у [event-taxonomy](../analytics/event-taxonomy.md).
-- [ ] `e2e/footer-newsletter.spec.ts` зелений.
+- [x] `e2e/footer-newsletter.spec.ts` зелений (39/39 passing across chromium, firefox, webkit).
+
+**Реалізація й доставка ([PR #395](https://github.com/sanchahous/ai-today-brief/pull/395)):**
+- Компонент `NewsletterForm` (`src/components/home/newsletter-form.tsx`, реекспорт через `src/components/ui/newsletter-form.tsx` та `src/components/ui/index.ts`) підтримує варіанти `band`, `inline`, `full`, захист від double-submit через `isSubmittingRef`, повну матрицю станів (`idle`, `invalid`, `pending`, `success`, `already_subscribed`, `error`, `not_configured`), збереження введеного email при помилках.
+- Чесні Beehiiv-обіцянки (double opt-in, джерела в кожній новині, 1 лист/день, відписка в 1 клік) без фейкових цифр; жодних модалок підписки.
+- Каталог компонентів: нова вкладка «Newsletter Form» у `/ds-catalog` (`src/app/ds-catalog/newsletter-catalog.tsx`) демонструє всі 3 варіанти й 8 станів.
+- Сторінка підписки: `src/app/[lang]/subscribe/page.tsx` мігрована на `variant="full"`.
+- Чиста валідація та логіка: `src/lib/ui/newsletter.ts` + 11 unit-тестів у `src/lib/ui/newsletter.test.ts` (100% покриття, включено до `LOGIC_INCLUDE`).
+- E2E-тести: `e2e/footer-newsletter.spec.ts` розширено до 13 тестів (39 перевірок на трьох рушіях). Всі перевірки `npm run pr:check` пройшли успішно.
 
 ### AH-3.5 · Footer
 

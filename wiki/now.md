@@ -10,12 +10,14 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392)
-Last updated: 2026-10-01
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392); AH-3.4 newsletter form and states 2026-10-02 (#395)
+Last updated: 2026-10-02
 
 ---
 
 ## Стан репозиторію
+
+- **AH-3.4 відкрито в [#395](https://github.com/sanchahous/ai-today-brief/pull/395)** на `feat/ah-3.4-newsletter-form`: спільний компонент `NewsletterForm` (варіанти `band`, `inline`, `full`), реекспорт через `src/components/ui/newsletter-form.tsx` та `src/components/ui/index.ts`, повна матриця станів (`idle`, `invalid`, `pending` з `aria-busy` та блокуванням подвійного сабміту через `isSubmittingRef`, `success` лише при 2xx бекенду, `already_subscribed` без розкриття PII, `error` зі збереженням введеного email, `not_configured`), чесні Beehiiv-обіцянки без фейкових цифр і без модалок, воронка подій `newsletter_impression` (1 на сесію на placement), `newsletter_form_start`, `newsletter_submit_error`, секція `NewsletterCatalog` у `/ds-catalog`, міграція сторінки `/[lang]/subscribe` на `variant="full"`. Unit-тести `src/lib/ui/newsletter.test.ts` (11 passing, 100% logic coverage) та розширений E2E-набір `e2e/footer-newsletter.spec.ts` (13 тестів, 39 passing across chromium/firefox/webkit). Наступна після інтеграції — AH-3.5 (Footer). (source: PR #395; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 

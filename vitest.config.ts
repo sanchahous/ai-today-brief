@@ -28,6 +28,7 @@ const LOGIC_INCLUDE = [
   'src/lib/ui/action-styles.ts',
   'src/lib/ui/field-a11y.ts',
   'src/lib/ui/feedback-copy.ts',
+  'src/lib/ui/newsletter.ts',
   'src/lib/public-content-tag.ts',
   'src/lib/public-content-cache.ts',
   'src/lib/public-content-build-memo.ts',
