@@ -219,7 +219,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | B8 | Статичний «Recent highlights» на `/news` | ✅ закрито hotfix-ом 2026-09-29 | до hotfix-у рендерився захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії; блок і ключі `news.summaryTitle` / `news.weekSummary` прибрано в EN і UK в одному PR з епіком | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
 | B9 | Хардкод-статистика на головній | відкрито | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
 | B10 | Нескінченні анімації | відкрито | 11 правил `infinite` у `globals.css` (орби 13–17 с, `pulse`, сцена 404, shimmer); Tension v3 забороняє нескінченні цикли, крім loading-shimmer | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
-| B11 | Бренд-знак | частково (AH-3.1): сайт — After Hours mark; рендери OG/PDF/соц — AH-3.7, платформи — AH-3.8 | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
+| B11 | Бренд-знак | частково (AH-3.7): сайт + OG/PDF/соц-рендери — After Hours mark; платформи — AH-3.8 | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
 | B12 | Контракт теми | відкрито | Day-токени вже приймають `.theme-light` і `html[data-theme='day']`, але pre-paint скрипт виставляє лише клас `.theme-light` + `localStorage.theme`; атрибута `data-theme` немає | `src/app/layout.tsx`, `src/components/theme-toggle.tsx`, `e2e/theme.spec.ts`, `src/app/globals.css` |
 | B13 | Брейкпоінти | частково (AH-1.6): токени `--breakpoint-*` і контракт 959 / 960 у `viewports.ts` є; перемикання header — AH-3.3, discovery — AH-4.3 | header і news-layout досі перемикаються на Tailwind `lg` (64rem); за D5 обидва мають перемикатися на 60rem ≈ 960 px | `e2e/helpers/viewports.ts`; `src/app/globals.css`; `tokens.json` `breakpoints` |
 | B14 | Шрифти | ◐ (D3, D4 прийнято) | Шкала в rem і мінімум 12 px — з #369; шрифти досі `@fontsource-variable` через `globals.css`, UK-заголовки — Inter 700; за D3/D4 — `next/font/local` і Georgia для UK display | `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
@@ -368,7 +368,7 @@ flowchart TD
 | AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
 | AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
-| AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
+| AH-3.7 | ✅ Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone ([#402](https://github.com/sanchahous/ai-today-brief/pull/402)) | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
 | AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
 | AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #380](https://github.com/sanchahous/ai-today-brief/pull/380)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
 | AH-4.2 | StoryCard, StoryRow, CategoryBanner | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
@@ -1242,11 +1242,13 @@ consent-картку), LinkedIn CTA, копірайт; фон `bg-deep`.
 `site.ts`, якщо ними більше ніхто не користується.
 
 **AC:**
-- [ ] Знімки до/після в PR: OG home і item (EN/UK), сторінки weekly PDF, LinkedIn document,
+- [x] Знімки до/після в PR: OG home і item (EN/UK), сторінки weekly PDF, LinkedIn document,
   Instagram carousel, соц-ассет; палітра жовта, новий знак читабельний і не перекриває текст.
-- [ ] Кирилиця в OG і PDF без «тофу»; заголовки не обрізаються.
-- [ ] Наявні тести рендерів зелені; weekly-сторінки wiki з watcher-а оновлені (`wiki:sync` зелений).
-- [ ] Старого знака «bloom» немає в жодному рендері (grep).
+- [x] Кирилиця в OG і PDF без «тофу»; заголовки не обрізаються.
+- [x] Наявні тести рендерів зелені; weekly-сторінки wiki з watcher-а оновлені (`wiki:sync` зелений).
+- [x] Старого знака «bloom» немає в жодному рендері (grep).
+
+**Стан 2026-10-02:** реалізовано в [PR #402](https://github.com/sanchahous/ai-today-brief/pull/402) на `feat/ah-3.7-mark-in-generators`. `brand-mark.ts` — спільна геометрія + палітра `yellow` для OG/PDF/соц; `brand-mark-raster.ts` для PDFKit/sharp; legacy сигнальні смужки й `MARK_COLOR*` видалено. Знімки: `artifacts/_local/ah-3.7-mark/`. (source: PR #402; `src/lib/brand-mark.ts`)
 
 ### AH-3.8 · Brand-kit: аватар і банери соцмереж
 

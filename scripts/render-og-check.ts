@@ -10,6 +10,7 @@ import React from 'react';
 import { ImageResponse } from 'next/og';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { brandMarkDataUri } from '../src/lib/brand-mark';
 import { duotoneDataUri, paletteFromCategory } from '../src/lib/card/duotone';
 
 const ROOT = process.cwd();
@@ -53,7 +54,7 @@ function Card(props: {
           'div',
           { style: { display: 'flex', alignItems: 'flex-end', gap: 16 } },
           h('div', { style: { display: 'flex', alignItems: 'baseline', fontSize: 31, fontWeight: 600, fontFamily: 'Fraunces', color: '#ffffff' } }, h('span', null, 'AI Today'), h('span', { style: { color: '#f0c040', marginLeft: 8 } }, 'Brief')),
-          h('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 3, paddingBottom: 6 } }, [6, 11, 15, 21].map((bar) => h('div', { key: bar, style: { width: 4, height: bar, borderRadius: 2, background: '#f0c040' } }))),
+          h('img', { src: brandMarkDataUri({ palette: 'yellow', size: 64 }), width: 36, height: 36, style: { marginBottom: 2 } }),
         ),
         h('div', { style: { fontSize: 23, color: '#c4cbd6' } }, 'aitodaybrief.com'),
       ),

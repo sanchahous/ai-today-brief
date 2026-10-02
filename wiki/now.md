@@ -11,7 +11,7 @@ weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
 desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392); AH-3.1 brand mark PR #393; per-PR owner signature removed 2026-10-02 (ATB-64, #397); Singapore bot diagnosis + Fast Origin Transfer check 2026-10-02
-Last updated: 2026-10-02 (AH-3.1 PR #393)
+Last updated: 2026-10-02 (AH-3.7 PR #402, review fix T1-f1)
 
 ---
 
@@ -27,7 +27,7 @@ Last updated: 2026-10-02 (AH-3.1 PR #393)
 
 - **Локальна mock-БД лежить у цьому checkout, не в окремому worktree.** Рушій `scripts/mock-db/`, знімок `raw/_local/mock-db/` і зібрана база `artifacts/_local/mock-db/` gitignored. Запуск: `npm run dev:mock`. (source: [local-mock-database](ops/local-mock-database.md); копія 2026-10-01)
 
-- **AH-3.1 відкрито в [#393](https://github.com/sanchahous/ai-today-brief/pull/393)** на `feat/ah-3.1-brand-mark`: After Hours brand mark (пластина + вкладені A-лінії + celadon-крапка) у `src/lib/brand-mark.ts`; `BrandMark` у header і footer на токенах; `BrandBloom` видалено; `npm run icons:generate` оновлює `icon.svg`, `favicon.ico`, `apple-icon.png`; `logo.png` 512×512 на тому ж SVG; аватар редактора в byline і author — `bg-accent-fill`. Підпис на PR не потрібен (ATB-64). Наступна після інтеграції — AH-3.2; AH-3.7/AH-3.8 — паралельно за D7. (source: PR #393; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-3.7 відкрито в [#402](https://github.com/sanchahous/ai-today-brief/pull/402)** на `feat/ah-3.7-mark-in-generators`: After Hours mark у OG, weekly PDF, LinkedIn document, Instagram carousel і соц-ассетах через `brand-mark.ts` + `brand-mark-raster.ts`; `MARK_COLOR*` видалено; палітра OG/PDF/duotone — жовта (I-12). **Review fix T1-f1:** PDF cover малює mark після opaque JPEG; соц-ассети зміщують eyebrow праворуч від mark (gap 12px); палітра `yellow` — `plateRadius: 3`. Підпис на PR не потрібен (ATB-64). Наступна — AH-3.8. (source: PR #402; review T1-f1; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 
 - **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації, `LinkTabs`, рестайл `Breadcrumbs`, `NavigationCatalog` у `/ds-catalog`. (source: PR #392)
 
