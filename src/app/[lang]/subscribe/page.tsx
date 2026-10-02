@@ -5,7 +5,7 @@ import { getStrings } from '@/lib/i18n';
 import { getSubscribeSampleItems } from '@/lib/subscribe-page';
 import { socialMeta } from '@/lib/seo';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
-import { NewsletterBand } from '@/components/home/newsletter-band';
+import { NewsletterForm } from '@/components/home/newsletter-form';
 import { FaqSection } from '@/components/home/faq-section';
 import { SubscribeBenefitsGrid } from '@/components/subscribe-benefits-grid';
 import { SubscribeSampleList } from '@/components/subscribe-sample-list';
@@ -81,8 +81,8 @@ export default async function SubscribePage({ params }: { params: Promise<Params
               {p.lead}
             </p>
           </Reveal>
-          <div className="mt-8 text-left">
-            <NewsletterBand lang={lang} embedded showHeader={false} placement="subscribe-page" />
+          <div className="mt-8 text-left flex justify-center">
+            <NewsletterForm lang={lang} variant="full" placement="subscribe-page" />
           </div>
         </section>
 

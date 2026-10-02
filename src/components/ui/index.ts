@@ -29,3 +29,4 @@ export * from './toast';
 export * from './combobox';
 export * from './dialog';
 export * from './disclosure-nav';
+export * from './newsletter-form';
