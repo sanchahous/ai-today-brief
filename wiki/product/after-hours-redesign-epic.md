@@ -361,13 +361,14 @@ flowchart TD
 | AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
 | AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
+| AH-2.5 | ◐ Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у [#391](https://github.com/sanchahous/ai-today-brief/pull/391); Toast і Skeleton не дубльовано; підпис очікується ([докази](after-hours-ah-2-5-validation.md)) | S | агент | AH-1.6 | G13 (data-стани) |
 | AH-2.6 | ◐ Навігація: Pagination (консолідація), Tabs, Breadcrumbs у [#392](https://github.com/sanchahous/ai-today-brief/pull/392); legacy `pagination.tsx` видалено, `post-feed.tsx` мігровано, `LinkTabs` додано, `Breadcrumbs` рестайлено, G2 очікує підпису | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | ◐ Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` у [#393](https://github.com/sanchahous/ai-today-brief/pull/393) | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
-| AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
+| AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; ⚠️ conflict wiki §11 pending Tag Assistant | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | ✅ Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone ([#402](https://github.com/sanchahous/ai-today-brief/pull/402)) | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
 | AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
 | AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #380](https://github.com/sanchahous/ai-today-brief/pull/380)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
@@ -1216,9 +1217,11 @@ consent-картку), LinkedIn CTA, копірайт; фон `bg-deep`.
 за замовчуванням); збереження вибору; повторне відкриття з футера.
 
 **AC:**
-- [ ] До вибору — жодного GA collect-запиту (consent mode default denied; network-assertion).
-- [ ] `cookie-overlay.spec.ts` зелений; картка не перекриває основний CTA на 360 px.
-- [ ] Фокус переходить у картку при відкритті з футера й повертається після закриття.
+- [x] До вибору — жодного GA collect-запиту (consent mode default denied; network-assertion).
+- [x] `cookie-overlay.spec.ts` зелений; картка не перекриває основний CTA на 360 px.
+- [x] Фокус переходить у картку при відкритті з футера й повертається після закриття.
+
+**Стан 2026-10-02:** PR [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`: `cookie-consent.tsx` на Button/Switch, opt-in (`analytics_storage: denied`, `hasAnalyticsConsent` без збереженого вибору), focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts`. Wiki: [ga4-gsc](../analytics/ga4-gsc.md) — ⚠️ conflict opt-out→opt-in задокументовано; [open-questions](../open-questions.md) §11 — pending Preview Tag Assistant. (source: PR #396; `npm run pr:check` 2026-10-02)
 
 ### AH-3.7 · Знак у генераторах зображень і PDF
 

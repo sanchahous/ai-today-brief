@@ -214,7 +214,20 @@ G11–G16. Оновлення gap-plan від #369 не згадує G05–G07 �
 фаз 1–2 епіку. **Закривається:** задача AH-0.1 епіку — таблиця статусів із доказами в gap-plan і
 виправлене формулювання в `now.md`. **Власник рішення:** агент готує звірку, власник підтверджує.
 
-## 11. Fast Origin Transfer над лімітом Hobby (12,97 / 10 ГБ за 30 днів)
+## 11. ⚠️ Consent Mode: opt-in на Preview vs production opt-out (2026-09-30)
+
+> ⚠️ Conflict: [ga4-gsc](analytics/ga4-gsc.md) документує production Tag Assistant власника
+> **2026-09-30** з `analytics_storage=granted` за замовчуванням (opt-out CMP). PR
+> [#396](https://github.com/sanchahous/ai-today-brief/pull/396) / AH-3.6 змінює код на
+> `analytics_storage: denied` (opt-in) у `consent-mode-snippet.ts` і `analytics-client.ts` —
+> це AC епіку («до вибору — жодного GA collect»), але суперечить верифікованому production-стану.
+
+**Закривається:** власник підтверджує на Vercel Preview Tag Assistant після push PR #396:
+Config показує `analytics_storage=denied` до вибору, GA collect лише після «Accept all»;
+«Essential only» лишає analytics denied. **Власник рішення:** власник продукту.
+(source: [ga4-gsc](analytics/ga4-gsc.md); PR #396; `e2e/cookie-overlay.spec.ts` 2026-10-02)
+
+## 12. Fast Origin Transfer над лімітом Hobby (12,97 / 10 ГБ за 30 днів)
 
 Проєкт на Hobby, FOT за останні 30 днів 12,97 ГБ при ліміті 10 ГБ; листи Vercel 24.08
 грозили авто-паузою, але минулий цикл перейшов ліміт без блокування. Поточний цикл

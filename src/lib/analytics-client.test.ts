@@ -44,9 +44,9 @@ describe('analytics-client', () => {
     expect(mod.hasAnalyticsConsent()).toBe(true);
   });
 
-  it('hasAnalyticsConsent is true without stored consent (opt-out default)', async () => {
+  it('hasAnalyticsConsent is false without stored consent (opt-in default)', async () => {
     const mod = await import('@/lib/analytics-client');
-    expect(mod.hasAnalyticsConsent()).toBe(true);
+    expect(mod.hasAnalyticsConsent()).toBe(false);
   });
 
   it('hasAnalyticsConsent is false after explicit analytics opt-out', async () => {
@@ -68,7 +68,15 @@ describe('analytics-client', () => {
     expect(gtag).not.toHaveBeenCalled();
   });
 
-  it('merges global params into trackEvent without stored consent', async () => {
+  it('does not call gtag without stored consent', async () => {
+    const mod = await import('@/lib/analytics-client');
+    mod.setGlobalParams({ lang: 'en', page_path: '/en/news' });
+    mod.trackEvent('test_event', { foo: 'bar' });
+    expect(gtag).not.toHaveBeenCalled();
+  });
+
+  it('merges global params into trackEvent after consent is granted', async () => {
+    grantAnalytics(storage);
     const mod = await import('@/lib/analytics-client');
     mod.setGlobalParams({ lang: 'en', page_path: '/en/news' });
     mod.trackEvent('test_event', { foo: 'bar' });
@@ -79,7 +87,8 @@ describe('analytics-client', () => {
     });
   });
 
-  it('setUserProperties calls gtag set without stored consent', async () => {
+  it('setUserProperties calls gtag set after consent is granted', async () => {
+    grantAnalytics(storage);
     const mod = await import('@/lib/analytics-client');
     mod.setUserProperties({ lang: 'uk', theme: 'dark' });
     expect(gtag).toHaveBeenCalledWith('set', 'user_properties', { lang: 'uk', theme: 'dark' });
@@ -95,6 +104,7 @@ describe('analytics-client', () => {
   });
 
   it('does not treat webdriver false or a missing flag as automation', async () => {
+    grantAnalytics(storage);
     vi.stubGlobal('navigator', { webdriver: false });
     const mod = await import('@/lib/analytics-client');
     expect(mod.isAutomatedBrowser()).toBe(false);
@@ -124,6 +134,7 @@ describe('trackItemEvent', () => {
     vi.resetModules();
     vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', 'G-TEST123');
     storage.clear();
+    grantAnalytics(storage);
     gtag.mockClear();
     sendBeacon.mockClear();
 
