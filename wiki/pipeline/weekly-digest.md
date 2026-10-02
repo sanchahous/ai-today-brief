@@ -7,7 +7,7 @@ editorial-voice, PDF/Social/Video, Prompt-as-Code v6, daily visual, topic slug, 
 OpenRouter catalog, YouTube 120s, ElevenLabs TTS, LinkedIn PDF skip 2026-09-03,
 social URLs follow the published slug 2026-09-03, two-phase release (Ship / Publish video)
 2026-09-03
-Last updated: 2026-09-03
+Last updated: 2026-10-02
 
 ---
 
@@ -2027,6 +2027,20 @@ standfirst, 3×4200 + 4×850 body) — 7 сторінок, обидві лока
 (source: `src/lib/weekly-digest/pdf.ts`, `src/lib/weekly-digest/pdf.test.ts`,
 `src/lib/weekly-digest/generation-worker.ts`, `scripts/render-weekly-pdf-sample.ts`,
 гілка `claude/pdf-weekly-digest-layout-1f3ba4`)
+
+## After Hours brand mark у PDF і соц-рендерах (AH-3.7, 2026-10-02)
+
+Weekly PDF (`src/lib/weekly-digest/pdf.ts`), LinkedIn document (`linkedin-document.ts`),
+Instagram carousel (`instagram-carousel-render.ts`) і daily/weekly соц-ассети
+(`src/lib/social/assets.ts`) тепер малюють After Hours mark з єдиної геометрії
+`src/lib/brand-mark.ts` (палітра `yellow` для жовтих поверхонь I-12, `plateRadius: 3`).
+Растеризація для PDFKit/sharp — `src/lib/brand-mark-raster.ts`. Legacy сигнальні смужки й
+`MARK_COLOR*` у `site.ts` видалено.
+
+**Review fix T1-f1 (2026-10-02):** cover PDF малює mark *після* opaque cover JPEG, інакше art
+перекриває знак; соц-ассети ставлять eyebrow праворуч від mark (12px gap), без вертикального
+перетину. (source: [PR #402](https://github.com/sanchahous/ai-today-brief/pull/402);
+`src/lib/brand-mark.ts`; review T1-f1)
 
 ## Related pages
 

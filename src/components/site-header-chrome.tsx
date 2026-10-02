@@ -14,7 +14,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { IconButton } from '@/components/ui/icon-button';
 import {
-  BrandBloom,
+  BrandMark,
   CategoryGlyph,
   CloseIcon,
   MenuIcon,
@@ -103,7 +103,7 @@ export function SiteHeaderChrome({
             aria-label={SITE_NAME}
             className="flex shrink-0 items-center no-underline"
           >
-            <BrandBloom size={34} />
+            <BrandMark size={34} />
           </Link>
 
           <div className="mx-1 hidden min-w-[10rem] flex-1 basis-[10rem] md:flex lg:mx-2">

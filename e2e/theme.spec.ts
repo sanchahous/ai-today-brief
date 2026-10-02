@@ -77,22 +77,23 @@ test.describe('Theme toggle', () => {
     );
     const calls: unknown[][] = [];
     await page.exposeFunction('captureThemeGtag', (...args: unknown[]) => calls.push(args));
-    await page.evaluate(() => {
-      // Playwright sets navigator.webdriver; analytics-client blocks all sends when it is true.
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => false,
-        configurable: true,
-      });
-      // Test transport: prevent network writes while capturing the actual client calls.
-      window.gtag = (...args: unknown[]) => {
-        // The exposed binding exists only in this test page.
-        const capture = Reflect.get(window, 'captureThemeGtag');
-        void capture(...args);
-      };
+    // Playwright sets navigator.webdriver; analytics-client skips sends (PR #399). Reload with
+    // the flag cleared and analytics consent granted — storageState seeds opt-out by default.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false, configurable: true });
       localStorage.setItem(
         'atb-consent-v1',
         JSON.stringify({ analytics: true, ads: false, updatedAt: '2026-09-30' }),
       );
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(themeToggle(page)).toBeEnabled();
+    await page.evaluate(() => {
+      // Test transport: prevent network writes while capturing the actual client calls.
+      window.gtag = (...args: unknown[]) => {
+        const capture = Reflect.get(window, 'captureThemeGtag');
+        void capture(...args);
+      };
     });
     const wasLight = await page
       .locator('html')
