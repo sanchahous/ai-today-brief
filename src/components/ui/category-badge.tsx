@@ -4,9 +4,9 @@ import { categoryColor, categoryMeta } from '@/lib/category-meta';
 import styles from './actions.module.css';
 
 export interface CategoryBadgeProps {
-  name: string | null;
-  slug: string | null;
-  color: string | null;
+  name: string | null | undefined;
+  slug: string | null | undefined;
+  color: string | null | undefined;
   size?: 'sm' | 'md';
   variant?: 'default' | 'plain' | 'dot';
   className?: string;
