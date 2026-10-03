@@ -147,13 +147,13 @@ export function SiteHeaderChrome({
   }
 
   return (
-    <header className="site-header-shell w-full max-w-[100vw] overflow-hidden sticky top-0 tablet:-top-[4.75rem] z-50 border-b border-border bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]" style={{ height: 'var(--header-h)' }}>
-      <div className="mx-auto w-full flex h-[74px] max-w-page items-center gap-2 tablet:gap-6 px-4 tablet:px-gutter">
-        <Link href={`/${lang}`} aria-label={`${SITE_NAME} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] items-center gap-2 tablet:gap-3 whitespace-nowrap text-[1.0625rem] compact:text-[1.1875rem] tablet:text-[1.4375rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text">
-          <BrandMark size={40} className="w-[30px] h-[30px] compact:w-[34px] compact:h-[34px] tablet:w-[40px] tablet:h-[40px]" />
-          <span className="hidden compact:block">
+    <header className="site-header-shell sticky top-0 tablet:-top-[4.75rem] z-50 border-b border-border bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]">
+      <div className="mx-auto flex h-[4.75rem] max-w-page items-center gap-6 px-gutter">
+        <Link href={`/${lang}`} aria-label={`${SITE_NAME} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] items-center gap-3 whitespace-nowrap text-[1.4375rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text">
+          <BrandMark size={40} />
+          <span>
             AI Today Brief
-            <small className="hidden tablet:block mt-[6px] font-mono text-[0.75rem] uppercase tracking-[0.14em] text-faint">
+            <small className="mt-[6px] block font-mono text-[0.75rem] uppercase tracking-[0.14em] text-faint">
               {t.header.intelligenceEdit}
             </small>
           </span>
@@ -168,9 +168,7 @@ export function SiteHeaderChrome({
           </p>
         ) : null}
 
-        <div className="flex items-center gap-0 tablet:gap-2 shrink-0">
-            <ThemeToggle dayLabel={t.themeDay} nightLabel={t.themeNight} />
-          
+        <div className="flex items-center gap-2 shrink-0">
           <IconButton
             type="button"
             data-testid="header-search-icon"
@@ -200,6 +198,8 @@ export function SiteHeaderChrome({
             {lang === 'uk' ? 'EN' : 'UA'}
           </Link>
           
+          <ThemeToggle dayLabel={t.themeDay} nightLabel={t.themeNight} />
+          
           <Link
             href={`/${lang}/subscribe`}
             className="hidden tablet:inline-flex rounded-sm bg-accent text-on-accent px-4 py-2 text-[0.875rem] font-semibold no-underline transition-opacity duration-200 hover:opacity-90"
@@ -222,7 +222,7 @@ export function SiteHeaderChrome({
       </div>
 
       <div className="border-t border-line hidden tablet:block">
-        <div className="mx-auto flex h-[55px] max-w-page items-center gap-4 px-gutter">
+        <div className="mx-auto flex min-h-[56px] max-w-page items-center gap-4 px-gutter">
           <Link href={`/${lang}`} aria-label={SITE_NAME} tabIndex={-1} className={`shrink-0 transition-opacity duration-300 ${isScrolled ? 'opacity-100 flex' : 'hidden opacity-0 pointer-events-none'}`}>
              <BrandMark size={28} />
           </Link>
