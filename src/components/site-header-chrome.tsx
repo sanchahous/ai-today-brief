@@ -56,7 +56,16 @@ export function SiteHeaderChrome({
     
     // SECTION_OF mapping for digests
     if (href === `/${lang}/digests`) {
-      return pathname.startsWith(`/${lang}/weekly/`) || /^\/[a-z]{2}\/\d{4}-\d{2}-\d{2}$/.test(pathname);
+      if (pathname.startsWith(`/${lang}/weekly/`)) return true;
+      if (/^\/[a-z]{2}\/\d{4}-\d{2}-\d{2}$/.test(pathname)) return true;
+      
+      const parts = pathname.split('/').filter(Boolean);
+      if (parts.length === 2 && parts[0] === lang) {
+        const knownRoutes = ['about', 'advertise', 'ai-disclosure', 'author', 'category', 'categories', 'concepts', 'digests', 'editorial-policy', 'guides', 'news', 'privacy', 'subscribe', 'terms', 'tools', 'weekly'];
+        if (!knownRoutes.includes(parts[1])) {
+          return true; // It's a /[lang]/[brief]
+        }
+      }
     }
     // SECTION_OF mapping for news (assuming articles are under /news, wait, articles are /news/[category]/[slug])
     if (href === `/${lang}/news`) {
@@ -315,7 +324,7 @@ export function SiteHeaderChrome({
               </IconButton>
            </div>
            
-           <SearchTrigger lang={lang} source="menu" variant="field" className="rounded-pill mb-6 w-full py-3" placeholder={lang === 'uk' ? 'Пошук новин, концептів, утиліт' : 'Search stories, concepts, tools'} />
+           <SearchTrigger lang={lang} source="menu" variant="field" className="rounded-pill mb-6 w-full py-3" placeholder={t.header.searchPlaceholder} />
            
            <nav aria-label="Mobile">
               <ul className="list-none p-0 m-0 border-t border-line">

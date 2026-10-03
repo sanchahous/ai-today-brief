@@ -97,4 +97,16 @@ test.describe('Header layout', () => {
     // Focus returns to the trigger
     await expect(categoriesBtn).toBeFocused();
   });
+
+  test('digests section is active for weekly and daily briefs', async ({ page }) => {
+    // Check weekly brief
+    await page.goto('/en/weekly/ai-weekly-2026-06-29', { waitUntil: 'domcontentloaded' });
+    const digestsLink1 = page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: /Digests|Дайджести/i });
+    await expect(digestsLink1).toHaveAttribute('aria-current', 'page');
+    
+    // Check daily brief
+    await page.goto('/en/reasoning-token-compression-and-efficient-agent-execution', { waitUntil: 'domcontentloaded' });
+    const digestsLink2 = page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: /Digests|Дайджести/i });
+    await expect(digestsLink2).toHaveAttribute('aria-current', 'page');
+  });
 });
