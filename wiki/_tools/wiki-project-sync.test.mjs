@@ -3,11 +3,14 @@ import { describe, it } from 'node:test';
 import {
   extractFact,
   extractIndexStatuses,
+  hasWorkingTreeChanges,
   resolveWatchedFiles,
   runProjectSync,
   toPosix,
+  wikiLatestUnix,
   wikiTimestampPaths,
 } from './lib/project-sync.mjs';
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -24,6 +27,23 @@ describe('project-sync helpers', () => {
 
   it('toPosix normalizes separators', () => {
     assert.equal(toPosix('a\\b\\c.md'), 'a/b/c.md');
+  });
+
+  it('wikiLatestUnix treats uncommitted task fragments as fresh', () => {
+    const root = mkdtempSync(join(tmpdir(), 'wiki-sync-'));
+    mkdirSync(join(root, 'wiki', 'tasks'), { recursive: true });
+    writeFileSync(join(root, 'header.tsx'), 'export const x = 1;\n');
+    writeFileSync(join(root, 'wiki', 'tasks', 'ah-4.4.md'), '# AH-4.4\n');
+    execFileSync('git', ['init'], { cwd: root });
+    execFileSync('git', ['add', '.'], { cwd: root });
+    execFileSync('git', ['commit', '-m', 'code'], { cwd: root });
+    writeFileSync(join(root, 'header.tsx'), 'export const x = 2;\n');
+    execFileSync('git', ['add', 'header.tsx'], { cwd: root });
+    execFileSync('git', ['commit', '-m', 'newer code'], { cwd: root });
+    writeFileSync(join(root, 'wiki', 'tasks', 'ah-4.4.md'), '# AH-4.4\n\nupdated\n');
+    assert.ok(hasWorkingTreeChanges(root, ['wiki/tasks']));
+    const wikiTs = wikiLatestUnix(root, ['now.md'], 9_999_999_999);
+    assert.equal(wikiTs, 9_999_999_999);
   });
 
   it('extractIndexStatuses splits ✅ and 📋 rows', () => {

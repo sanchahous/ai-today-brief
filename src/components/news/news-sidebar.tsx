@@ -14,7 +14,6 @@ import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Pill } from '@/components/ui/pill';
-import { FilterChip } from '@/components/ui/chip';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 
 export type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
