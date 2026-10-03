@@ -5,7 +5,8 @@ import { BREAKPOINT_CONTRACT_WIDTHS, HORIZONTAL_OVERFLOW_WIDTHS } from './helper
 /**
  * Cross-cutting breakpoint contract: header chrome, the news filter sidebar/trigger,
  * --header-h correctness, and the absence of horizontal overflow — across the
- * unified 1024px (Tailwind lg) breakpoint. Guards the 900-1023px "dead band" regression.
+ * unified 960px (`--breakpoint-tablet`) boundary. Guards the 900–959px dead band where
+ * desktop chrome and the mobile filters trigger must not appear together.
  */
 async function goto(page: Page, path: string) {
   await page.goto(path, { waitUntil: 'domcontentloaded' });
@@ -17,7 +18,7 @@ async function goto(page: Page, path: string) {
 
 test.describe('Responsive breakpoint contract', () => {
   for (const size of BREAKPOINT_CONTRACT_WIDTHS) {
-    const isDesktop = size.width >= 1024;
+    const isDesktop = size.width >= 960;
 
     test(`header chrome lockstep + --header-h at ${size.width}px`, async ({ page }) => {
       await page.setViewportSize(size);

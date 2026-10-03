@@ -413,6 +413,12 @@ export const STRINGS = {
       sourcesCited: 'Sources cited on every story',
       trendingSidebar: 'Hot topics',
     },
+    header: {
+      intelligenceEdit: 'The Intelligence Edit',
+      dailyEdition: 'Daily edition',
+      allCategories: 'All categories',
+      searchPlaceholder: 'Search stories, concepts, tools',
+    },
   },
   uk: {
     eyebrow: 'Щоденний бриф з AI-інженерії',
@@ -824,6 +830,12 @@ export const STRINGS = {
       bylineRole: 'AI Product Engineer',
       sourcesCited: 'Джерела вказані в кожному матеріалі',
       trendingSidebar: 'Популярні теми',
+    },
+    header: {
+      intelligenceEdit: 'Редакція AI-новин',
+      dailyEdition: 'Щоденний випуск',
+      allCategories: 'Усі категорії',
+      searchPlaceholder: 'Пошук новин, концептів, утиліт',
     },
   },
 } as const;

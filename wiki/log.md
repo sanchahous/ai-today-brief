@@ -6,6 +6,12 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-03
 
+## 2026-10-03 — Виправлення рев'ю T1-f2 для AH-3.3 (EditorialHeader)
+
+- **Навігація (Digests):** оновлено логіку `isActive` для підсвічування маршрутів daily briefs (`/[lang]/[brief]`), що не належать до переліку відомих root-шляхів сайту (news, concepts, guides тощо). Додано E2E перевірку `aria-current` для тижневих та щоденних брифів.
+- **i18n:** жорстко закодований текст пошуку у мобільному sheet меню замінено на словниковий `t.header.searchPlaceholder`.
+- **Документація:** оновлено значення `header-h` у розділі дизайн-токенів (`wiki/architecture/design-system-tokens.md`), вказавши 76px (mobile) та 132px (desktop).
+
 ## 2026-10-03 — ATB-67: статусні фрагменти задач ([PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
 
 - Статус, рядок журналу і «наступна задача» пишуться лише в `wiki/tasks/<id>.md`.
@@ -5745,3 +5751,4 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 - `launch-card-independent.html` — After Hours mark і палітра замість legacy ATB wordmark.
 - AC «завантаження на платформи» — чекає власника в день релізу D7 (разом з AH-3.1/AH-3.7). Оновлено епік §2.2 (B11), §5.3, картку AH-3.8, handoff, now.md. (source: PR #403; `artifacts/brand-kit/`)
 
+2026-10-03: Реалізовано AH-3.3 (2-рівневий header, sticky на 960px, mobile menu) (ATB-24)

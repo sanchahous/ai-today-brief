@@ -20,8 +20,13 @@ test.describe('Smoke', () => {
     await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
     await gotoNewsPage(page);
 
+    // Home is the wordmark (AH-3.3). Primary starts at News and does not repeat it.
+    const header = page.locator('header').first();
+    const home = header.getByRole('link', { name: /головна/i });
+    await expect(home).toBeVisible();
+    await expect(home).toHaveAttribute('href', '/uk');
+
     const nav = page.getByRole('navigation', { name: 'Primary' });
-    await expect(nav.getByRole('link', { name: 'Головна' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Новини' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Про нас' })).toBeVisible();
   });

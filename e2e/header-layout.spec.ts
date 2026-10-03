@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-const HEADER_COLLISION_WIDTHS = [1024, 1100, 1160] as const;
+const HEADER_COLLISION_WIDTHS = [960, 1100, 1160] as const;
 
 async function gotoHeaderLayoutPage(page: import('@playwright/test').Page) {
   await page.goto('/uk/news', { waitUntil: 'domcontentloaded' });
-  // Level 1 only — story headlines containing "news" also match the name regex.
+  // Level 1 only - story headlines containing "news" also match the name regex.
   await expect(page.getByRole('heading', { level: 1, name: /news|новини/i })).toBeVisible({
     timeout: 30_000,
   });
@@ -31,7 +31,9 @@ test.describe('Header layout', () => {
         };
       });
 
-      expect(headerMetrics.renderedHeight).toBeCloseTo(headerMetrics.cssHeaderHeight, 0);
+      // Header is --header-h (132px on desktop, 76px on mobile)
+      const expectedHeight = headerMetrics.cssHeaderHeight;
+      expect(headerMetrics.renderedHeight).toBeCloseTo(expectedHeight, 0);
       expect(headerMetrics.documentOverflow).toBeLessThanOrEqual(1);
 
       const nav = page.getByRole('navigation', { name: 'Primary' });
@@ -74,4 +76,37 @@ test.describe('Header layout', () => {
       await expect(page).toHaveURL(/\/uk\/news\/search\?q=agent$/);
     });
   }
+
+  test('desktop category dropdown opens, closes on Escape and returns focus', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHeaderLayoutPage(page);
+
+    // Find the Categories button
+    const categoriesBtn = page.getByRole('button', { name: /Categories|Категорії/i });
+    await expect(categoriesBtn).toBeVisible();
+    await categoriesBtn.click();
+
+    // Verify dropdown opens
+    const listbox = page.getByRole('listbox', { name: /Categories|Категорії/i });
+    await expect(listbox).toBeVisible();
+
+    // Close with Escape
+    await page.keyboard.press('Escape');
+    await expect(listbox).toBeHidden();
+
+    // Focus returns to the trigger
+    await expect(categoriesBtn).toBeFocused();
+  });
+
+  test('digests section is active for weekly and daily briefs', async ({ page }) => {
+    // Check weekly brief
+    await page.goto('/en/weekly/ai-weekly-2026-06-29', { waitUntil: 'domcontentloaded' });
+    const digestsLink1 = page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: /Digests|Дайджести/i });
+    await expect(digestsLink1).toHaveAttribute('aria-current', 'page');
+    
+    // Check daily brief
+    await page.goto('/en/reasoning-token-compression-and-efficient-agent-execution', { waitUntil: 'domcontentloaded' });
+    const digestsLink2 = page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: /Digests|Дайджести/i });
+    await expect(digestsLink2).toHaveAttribute('aria-current', 'page');
+  });
 });

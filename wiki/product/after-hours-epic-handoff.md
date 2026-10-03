@@ -13,6 +13,7 @@ Last updated: 2026-10-03
 
 ## 1. Стан задач
 
+- **AH-3.3 відкрито в [#405](https://github.com/sanchahous/ai-today-brief/pull/405)** (placeholder PR #) на `feat/ah-3.3-header-layout`: 2-рівневий header-chrome (desktop), compact sticky навігація через IntersectionObserver, мобільний sheet. E2E тести оновлено. **Наступна після інтеграції — AH-3.4 (NewsletterForm).** (source: PR AH-3.3; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav). **Наступна після інтеграції — AH-3.3 (EditorialHeader).** (source: PR #394; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 <!-- task-status: fragments -->
 
@@ -237,7 +238,8 @@ QA-матриця працює в режимі report.
    Definition of Done §0.1, npm run pr:check перед push.
 2. Підтягни origin/main і перевір актуальний стан у §1 цього handoff та §5.3 епіку.
    На 2026-10-01 AH-3.2 реалізовано в PR #394 на `feat/ah-3.2-search-dialog`.
-   Після інтеграції наступна задача — AH-3.3 (EditorialHeader).
+   AH-3.3 реалізовано в PR #406 на `feat/ah-3.3-editorial-header`.
+   Наступна задача — AH-3.4 (NewsletterForm).
    AH-2.6 реалізовано в PR #392 на feat/ah-2.6-navigation.
    AH-2.5 реалізовано в PR #391 на feat/ah-2.5-feedback-states і очікує власного review.
    AH-3.5 реалізовано в PR #404 на feat/ah-3.5-footer; після інтеграції — AH-3.6 (Consent-картка).

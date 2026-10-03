@@ -158,9 +158,9 @@ export const PRIMITIVES = {
     reading: '42.5rem',
     /**
      * The prototype header is 72px, but `--header-h` must equal the rendered header (sticky
-     * offsets and e2e assert it) and the header only changes in AH-3.3 — so it stays 60px until then.
+     * offsets and e2e assert it) and the header only changes in AH-3.3.
      */
-    headerH: '60px',
+    headerH: '76px',
     headerHPrototype: '72px',
   },
   typography: {
@@ -245,8 +245,8 @@ export const PRIMITIVES = {
    * D5, variant A: prototype values as named `--breakpoint-*` in rem, so layouts reflow when the
    * reader enlarges the browser font size. Tailwind builds `min-width` variants from them
    * (`tablet:` >= 60rem; the prototype's `max-width` queries are `max-tablet:`). The default
-   * `sm/md/lg/xl` are NOT redefined until AH-7.3. Header and discovery move to `tablet` (60rem =
-   * 960px) with AH-3.3 / AH-4.3; today they still switch at Tailwind `lg` (1024px).
+   * `sm/md/lg/xl` are NOT redefined until AH-7.3. Header chrome and the news archive switch at
+   * `tablet` (60rem = 960px) as of AH-3.3; remaining discovery templates move in AH-4.3.
    */
   breakpoints: {
     compact: '23.75rem',

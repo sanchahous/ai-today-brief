@@ -21,7 +21,8 @@ test.describe('Theme toggle', () => {
   });
 
   function themeToggle(page: Page) {
-    return page.getByRole('navigation', { name: 'Primary' }).getByTestId('theme-toggle');
+    // The control lives in the header top row, not inside Primary nav.
+    return page.locator('header').getByTestId('theme-toggle').filter({ visible: true });
   }
 
   test('toggles light theme class on html', async ({ page }) => {

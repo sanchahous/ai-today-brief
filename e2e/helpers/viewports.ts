@@ -15,12 +15,10 @@ export const VIEWPORTS = {
 /**
  * Breakpoint contract (ADR D5, variant A; tokens `--breakpoint-*` in globals.css, docs §7.10).
  *
- * Target: header and discovery switch together at `--breakpoint-tablet` = 60rem = 960px, so
- * 959px is the last "compact" width and 960px the first "wide" one (instead of today's 1023 / 1024).
- *
- * Today NOTHING moves: header and the news layout still switch at Tailwind `lg` (1024px) and the
- * suites keep using `header1023` / `header1024`. The behaviour changes in AH-3.3 (header) and
- * AH-4.3 (discovery), and those PRs swap their specs to `NAV_COMPACT_LAST` / `NAV_WIDE_FIRST`.
+ * Header chrome and the news archive (`.news-layout`, `.desktop-only`, `.mobile-only`) switch
+ * together at `--breakpoint-tablet` = 60rem = 960px (AH-3.3). 959px is the last compact width
+ * (`NAV_COMPACT_LAST`); 960px is the first wide width (`NAV_WIDE_FIRST`). Tailwind `lg` (1024px)
+ * is no longer that boundary. `header1023` / `header1024` stay as historical sizes only.
  */
 export const NAV_BREAKPOINT_REM = 60;
 export const NAV_COMPACT_LAST = { width: 959, height: 800 } as const;
@@ -33,13 +31,13 @@ export const BREAKPOINT_CONTRACT_WIDTHS = [
   VIEWPORTS.tablet768,
   VIEWPORTS.tablet834,
   VIEWPORTS.layout900,
-  VIEWPORTS.layout960,
-  VIEWPORTS.header1023,
+  NAV_COMPACT_LAST,
+  NAV_WIDE_FIRST,
   VIEWPORTS.header1024,
 ] as const;
 
 export const HEADER_LAYOUT_WIDTHS = [
-  VIEWPORTS.header1024,
+  NAV_WIDE_FIRST,
   VIEWPORTS.desktop1280,
   VIEWPORTS.desktop1440,
 ] as const;
@@ -49,7 +47,7 @@ export const MOBILE_MENU_WIDTHS = [
   VIEWPORTS.phone375,
   VIEWPORTS.phone390,
   VIEWPORTS.tablet768,
-  VIEWPORTS.header1023,
+  NAV_COMPACT_LAST,
 ] as const;
 
 export const FILTER_DRAWER_WIDTHS = [
@@ -63,6 +61,6 @@ export const HORIZONTAL_OVERFLOW_WIDTHS = [
   VIEWPORTS.phone375,
   VIEWPORTS.phone390,
   VIEWPORTS.tablet768,
-  VIEWPORTS.header1024,
+  NAV_WIDE_FIRST,
   VIEWPORTS.desktop1440,
 ] as const;
