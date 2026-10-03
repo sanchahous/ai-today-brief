@@ -43,7 +43,7 @@ if (findings.length === 0) {
       if (f.hint) console.log(`      → ${f.hint}`);
     });
   console.log(
-    '\nОновити відповідні wiki-сторінки (і wiki/log.md), потім знову npm run wiki:sync.\n',
+    '\nОновити відповідні wiki-сторінки. Статус задачі — wiki/tasks/<id>.md, не спільні списки. Потім знову npm run wiki:sync.\n',
   );
   process.exitCode = errors.length > 0 ? 1 : 0;
 }

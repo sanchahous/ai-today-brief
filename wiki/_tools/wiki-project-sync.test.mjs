@@ -6,12 +6,22 @@ import {
   resolveWatchedFiles,
   runProjectSync,
   toPosix,
+  wikiTimestampPaths,
 } from './lib/project-sync.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 describe('project-sync helpers', () => {
+  it('wikiTimestampPaths counts task fragments instead of forcing a now.md edit', () => {
+    assert.deepEqual(wikiTimestampPaths(['pipeline/weekly-digest.md', 'now.md']), [
+      'wiki/now.md',
+      'wiki/pipeline/weekly-digest.md',
+      'wiki/tasks',
+    ]);
+    assert.deepEqual(wikiTimestampPaths(['overview.md']), ['wiki/overview.md']);
+  });
+
   it('toPosix normalizes separators', () => {
     assert.equal(toPosix('a\\b\\c.md'), 'a/b/c.md');
   });

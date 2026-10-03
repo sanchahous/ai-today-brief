@@ -2,6 +2,11 @@
 
 Summary: головний зміст усієї wiki. Кожен рядок — одна сторінка + один рядок опису. Точка входу
 для будь-якого питання: спершу читаємо цей файл, потім релевантні сторінки.
+Sources: інвентаризація репозиторію; статус задач — wiki/tasks/README.md, не цей рядок (ATB-67, PR #405)
+Last updated: 2026-10-03
+
+<!-- task-status: fragments -->
+
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery 2026-08-10,
 story-image / Visual Affordance / illustration B1-fix 2026-08-11…15, Social/PDF/Video 2026-08-17…19,
 GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
@@ -124,7 +129,8 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | AH-3.5 у PR #404 (Footer redesign); AH-3.6 у PR #396; AH-3.1 у PR #393; AH-3.7 у PR #402; ATB-64 (#397); ATB-22/23/27 waiting; G1/UK/CLS/legacy відкриті | PR #404, #396, #393, #402; дозвіл власника 2026-10-02 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Вхід для нової сесії. Живий статус задач — каталог wiki/tasks/, не ця клітинка | ATB-67, PR #405 |
+| ✅ [tasks/README](tasks/README.md) | Каталог статусних фрагментів: один файл wiki/tasks/<id>.md на задачу. PR задачі не править спільні списки | ATB-67, PR #405 |
 | ✅ [product/after-hours-ah-2-5-validation](product/after-hours-ah-2-5-validation.md) | PR #391: Notice, Spinner, ErrorState, StaleNotice; ланцюг станів у каталозі; CLS loading нижче 0,05; 12 PNG; підпис відкритий | PR #391 + e2e/feedback-states.spec.ts + catalog manifest 2026-10-01 |
 | ✅ [product/after-hours-ah-2-4-validation](product/after-hours-ah-2-4-validation.md) | #390 змерджено в 56a9cf8: sheet left/right/full, disclosure, --z-modal; окремий підпис не отримано | PR #390 + gh run list 2026-10-01 |
 | ✅ [product/after-hours-ah-2-3-validation](product/after-hours-ah-2-3-validation.md) | #388 підписано і змерджено в e75c438: Field, Textarea, Segmented, Switch, рестайл полів, локалізація SearchInput; full-page DoD відкритий | PR #388 + власник 2026-10-01 |

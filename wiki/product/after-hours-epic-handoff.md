@@ -2,20 +2,25 @@
 
 Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-10-02, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт. Підпис на кожен PR знято; мердж після перевірок.
 Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10, #11; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; live `git` / PR / HTTP checks 2026-09-30 (PR #373–#376); дозвіл власника ATB-64 2026-10-02 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
-Last updated: 2026-10-02 (AH-3.8 PR #403)
+Last updated: 2026-10-03
 
 ---
 
-> **Джерело правди про задачі — [епік](after-hours-redesign-epic.md)** (картки, AC, статуси в §5.3).
+> **Джерело правди про задачі — [епік](after-hours-redesign-epic.md)** (картки, AC, план у §5.3).
+> Живий статус — [фрагмент задачі](../tasks/README.md), не список у цьому файлі.
 > Тут лише те, що потрібно, щоб нова сесія стартувала без контексту попередньої: стан, порядок,
 > точки зупинки й пастки. Картки задач тут не дублюються.
 
-## 1. Стан на 2026-10-02
+## 1. Стан задач
 
 - **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav). **Наступна після інтеграції — AH-3.3 (EditorialHeader).** (source: PR #394; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
-- **AH-3.8 відкрито в [#403](https://github.com/sanchahous/ai-today-brief/pull/403)** на `feat/ah-3.8-brand-kit`: аватар і банери соцмереж з After Hours mark у `artifacts/brand-kit/`; `npm run brand-kit:export` → PNG; README з чеклістом завантаження для X/Telegram/LinkedIn/YouTube. Завантаження на платформи — власник у день релізу D7. **Наступна після інтеграції AH-3.1 — AH-3.2.** Підпис на PR не потрібен (ATB-64). (source: PR #403; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
-- **AH-3.5 відкрито в [#404](https://github.com/sanchahous/ai-today-brief/pull/404)** на `feat/ah-3.5-footer`: After Hours footer на токенах v2 (`bg-bg-soft`, border-soft), оновлений бренд-блок (`BrandMark(28)`, посилання на головну, двомовний слоган), доступні соцмережі з `SOCIALS` (пігулки з touch target ≥ 44px, `aria-label` «… (opens in a new tab)» / «… (відкриється в новій вкладці)» для зовнішніх посилань, збережено аналітику `social_profile_click`), LinkedIn CTA (`placement: 'footer-cta'`), 3 навігаційні колонки: Explore (News, Digests, Concepts, Guides, Tools), Company (About, Editor profile / Профіль редактора, Subscribe, Advertise), Legal (Editorial policy, AI disclosure, Privacy, Terms, CookieSettingsButton). Усі 4 політики, about, author, subscribe та advertise доступні з футера. CookieSettingsButton узгоджено за токенами. Контраст на `bgSoft` ≥ 4,5:1. E2E-тести в `e2e/footer-newsletter.spec.ts`. **Наступна після інтеграції — AH-3.6 (Consent-картка).** (source: PR #404; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+<!-- task-status: fragments -->
 
+Живий статус кожної задачі — файл `wiki/tasks/<id>.md` (один файл на задачу). Зведення друкує `npm run wiki:tasks` і нічого не комітить. PR задачі не дописує пункт у цей список і не змінює тут рядок «наступна задача»: її, якщо вона є, записано у фрагменті тієї задачі, яка її називає. Черга плану — §5.4 епіку.
+
+Історичні пункти цього розділу перенесені дослівно у фрагменти.
+
+(source: ATB-67, [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
 - **AH-3.4 відкрито в [#395](https://github.com/sanchahous/ai-today-brief/pull/395)** на `feat/ah-3.4-newsletter-form`: спільний компонент `NewsletterForm` (варіанти `band`, `inline`, `full`), реекспорт через `src/components/ui/newsletter-form.tsx` та `src/components/ui/index.ts`, повна матриця станів (`idle`, `invalid`, `pending` з `aria-busy` та блокуванням подвійного сабміту через `isSubmittingRef`, `success` лише при 2xx бекенду, `already_subscribed` без розкриття PII, `error` зі збереженням введеного email, `not_configured`), чесні Beehiiv-обіцянки без фейкових цифр і без модалок, воронка подій `newsletter_impression` (1 на сесію на placement), `newsletter_form_start`, `newsletter_submit_error`, секція `NewsletterCatalog` у `/ds-catalog`, міграція сторінки `/[lang]/subscribe` на `variant="full"`. Unit-тести `src/lib/ui/newsletter.test.ts` (11 passing, 100% logic coverage) та розширений E2E-набір `e2e/footer-newsletter.spec.ts` (13 тестів, 39 passing across chromium/firefox/webkit). (source: PR #395; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-3.7 відкрито в [#402](https://github.com/sanchahous/ai-today-brief/pull/402)** на `feat/ah-3.7-mark-in-generators`: After Hours mark у OG, weekly PDF, LinkedIn document, Instagram carousel і соц-ассетах через спільну геометрію `brand-mark.ts`; `MARK_COLOR*` видалено з `site.ts`. Підпис на PR не потрібен (ATB-64). (source: PR #402; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-3.6 відкрито в [#396](https://github.com/sanchahous/ai-today-brief/pull/396)** на `feat/ah-3.6-consent-card`: After Hours consent-картка на `Button`/`Switch`, opt-in CMP, focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts`. ⚠️ consent conflict [open-questions §11](../open-questions.md); merge після checks (ATB-64). (source: PR #396; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
@@ -79,8 +84,8 @@ PR #375; погодження власника 2026-09-30)
    - Якщо #371 не змерджено — **стоп**: попросити власника змерджити його. Без нього в `main` немає
      ADR і цієї сторінки.
    - Переглянути свіжі коміти `main` (`git log origin/main --oneline -15`) і відкриті PR. Паралельна
-     сесія вже закривала задачі епіку (PR #369). Якщо задачу закрито — оновити §5.3 епіку й картку і
-     не дублювати роботу.
+     сесія вже закривала задачі епіку (PR #369). Якщо задачу закрито — не дублювати роботу.
+     Статус писати в `wiki/tasks/<id>.md`, не в §5.3.
 4. Створити гілку від свіжого `main`: `git switch -c feat/ah-<id>-<slug> origin/main`. Одна задача —
    одна гілка — один PR (епік §0).
 5. У новій робочій копії або worktree спершу виконати `npm ci`, для локальних E2E —
@@ -178,20 +183,24 @@ QA-матриця працює в режимі report.
   `headers()` (I-2).
 - **Wiki:**
   - `Summary:`, `Sources:` і `Last updated:` мають стояти в перших 14 рядках, інакше `wiki-lint`
-    падає. Нові джерела дописувати в наявний рядок `Sources:`;
+    падає. Нові джерела дописувати в шапку тієї сторінки, яку вже редагуєте, не в рядок `Sources:` файлу `index.md`;
   - вертикальну риску в клітинках таблиць не використовувати навіть з екрануванням — перефразувати;
   - у підписах mermaid не використовувати апострофи й `#`;
-  - `log.md` лише доповнюється в кінці. Кожна зміна wiki іде разом із `index.md` і `log.md`;
+  - статус, рядок журналу і «наступна задача» — лише `wiki/tasks/<id>.md`. Не редагувати
+    список у `now.md`, рядок `Sources:` і статусну клітинку handoff в `index.md`, цей список PR,
+    таблицю §5.3 і верх `log.md`. Нова сторінка вікі й далі отримує один рядок в `index.md`.
+    `log.md` лишається журналом ingest і не переписується;
   - ⚠️ Conflict завжди містить посилання на [open-questions](../open-questions.md).
 - **Wiki-watchers** (`wiki/_meta/project-sync.json`): зміна коду під watcher-ом вимагає оновити його
   сторінки в тому ж PR, інакше `wiki:sync` падає. Для епіку важливі:
-  - `brand-chrome` (`brand-mark.ts`, `icons.tsx`, header, footer, іконки) → `now.md`; зачіпають
-    AH-3.1, AH-3.3, AH-3.5;
+  - `brand-chrome` (`brand-mark.ts`, `icons.tsx`, header, footer, іконки) → `wiki/tasks/<id>.md`;
+    зачіпають AH-3.1, AH-3.3, AH-3.5;
   - `weekly-digest` (`src/lib/weekly-digest/*`) → `pipeline/weekly-digest.md`,
-    `pipeline/weekly-editorial-selection.md`, `ops/weekly-admin-runbook.md`, `now.md`; зачіпає
-    AH-3.7 (weekly PDF, LinkedIn document, Instagram carousel).
+    `pipeline/weekly-editorial-selection.md`, `ops/weekly-admin-runbook.md` і фрагмент задачі,
+    не `now.md`; зачіпає AH-3.7 (weekly PDF, LinkedIn document, Instagram carousel).
 - **`main` рухається під час роботи:** PR #369 злили посеред сесії 2026-09-29. Перед push потрібні
-  `git fetch` і rebase. У конфліктах `log.md` і `now.md` зберігати обидві сторони.
+  `git fetch` і rebase. Фрагменти різних задач не конфліктують. Якщо спільний файл усе ж
+  розійшовся — зберігати обидві сторони.
 - **Живі перевірки клієнтського стану.** Панель Browser у десктопному застосунку може бути
   прихована (`document.visibilityState === 'hidden'`): тоді React не гідратує сторінку, стан із
   URL не відновлюється, а `onChange` не спрацьовує. Це не дефект сайту (2026-09-29 так виглядав
@@ -210,8 +219,8 @@ QA-матриця працює в режимі report.
 Сесія по задачі завершена, коли:
 
 - PR відкрито, `pr:check` зелений і CI зелений;
-- в епіку оновлено §5.3 і картку (✅ або ◐ з посиланням на PR);
-- оновлено `wiki/now.md` і `wiki/log.md`, а тут — рядок «Наступна задача» в §1.
+- статус задачі записано в `wiki/tasks/<id>.md` (спільні списки не редагувались);
+- `npm run wiki:tasks` показує цей запис.
 
 Звіт власнику — українською, коротко: що зроблено, посилання на PR, які перевірки пройшли, що
 потрібно від власника, наступна задача.
@@ -221,6 +230,11 @@ QA-матриця працює в режимі report.
 ```text
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
+2. Живий статус задач — файли wiki/tasks/<id>.md. Зведення: npm run wiki:tasks.
+   Не дописуй статус у wiki/now.md, рядок Sources у wiki/index.md, список PR у цьому handoff,
+   таблицю §5.3 епіку чи верх wiki/log.md.
+3. Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main і запис лише у wiki/tasks/<id>.md.
+   Definition of Done §0.1, npm run pr:check перед push.
 2. Підтягни origin/main і перевір актуальний стан у §1 цього handoff та §5.3 епіку.
    На 2026-10-01 AH-3.2 реалізовано в PR #394 на `feat/ah-3.2-search-dialog`.
    Після інтеграції наступна задача — AH-3.3 (EditorialHeader).
@@ -252,3 +266,4 @@ CWV baseline прийнято власником із зафіксованим �
 - [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) — розриви G01–G20 (AH-0.1)
 - [open-questions](../open-questions.md) — #1 GA4-property, #10 статус G01–G20
 - [now](../now.md) — поточний операційний стан
+- [tasks](../tasks/README.md) — статус кожної задачі окремим файлом
