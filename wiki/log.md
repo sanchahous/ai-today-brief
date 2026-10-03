@@ -12,6 +12,13 @@ Last updated: 2026-10-03
 - **i18n:** жорстко закодований текст пошуку у мобільному sheet меню замінено на словниковий `t.header.searchPlaceholder`.
 - **Документація:** оновлено значення `header-h` у розділі дизайн-токенів (`wiki/architecture/design-system-tokens.md`), вказавши 76px (mobile) та 132px (desktop).
 
+## 2026-10-03 — ATB-67: статусні фрагменти задач ([PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
+
+- Статус, рядок журналу і «наступна задача» пишуться лише в `wiki/tasks/<id>.md`.
+- `now.md`, рядок Sources і статусна клітинка handoff в `index.md`, список PR у handoff і таблиця §5.3 більше не правляться в PR задач.
+- Історичні пункти перенесені дослівно; зведення друкує `npm run wiki:tasks` і не комітиться.
+- Цей запис журналу — разовий слід зміни устрою. Наступні задачі не дописують сюди статус.
+(source: вибір власника A, 2026-10-03; [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405); [каталог](tasks/README.md))
 
 ## 2026-10-02 — AH-3.5: редизайн Footer After Hours ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404))
 

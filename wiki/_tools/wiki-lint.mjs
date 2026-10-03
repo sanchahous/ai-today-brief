@@ -30,6 +30,8 @@ const ORPHAN_EXEMPT_DIRS = new Set(['_meta']);
 const TEMPLATE_PAGES = new Set(['_meta/page-template.md']);
 // Структурні сторінки: їхній вміст — посилання й журнал, а не фактичні твердження.
 const CITATION_EXEMPT = new Set(['index.md', 'log.md']);
+// One file per task. Listing each in index.md would recreate the merge conflict.
+const TASK_FRAGMENT = /^tasks\/(?!README\.md$).+\.md$/;
 const STALE_DAYS = 90;
 
 const exists = async (p) => {
@@ -61,6 +63,20 @@ async function collectPages(dir = WIKI_ROOT, acc = []) {
     }
   }
   return acc;
+}
+
+/** Verbatim status blocks keep historical relative links that were valid in the old file. */
+function withoutFences(body) {
+  const kept = [];
+  let open = false;
+  for (const line of body.split('\n')) {
+    if (line.startsWith('```')) {
+      open = !open;
+      continue;
+    }
+    if (!open) kept.push(line);
+  }
+  return kept.join('\n');
 }
 
 /** Відносні markdown-посилання: [text](path.md#anchor). Зовнішні та якорі — пропускаємо. */
@@ -137,7 +153,8 @@ async function main() {
 
     const targets = new Set();
     if (isTemplate) continue;
-    for (const link of extractLinks(body)) {
+    const linkBody = page.startsWith('tasks/') ? withoutFences(body) : body;
+    for (const link of extractLinks(linkBody)) {
       const [pathPart] = link.split('#');
       if (!pathPart) continue;
       const absolute = resolve(dirname(join(WIKI_ROOT, page)), pathPart);
@@ -161,7 +178,7 @@ async function main() {
 
   for (const page of pages) {
     const dir = page.includes('/') ? page.split('/')[0] : '';
-    if (ROOT_PAGES.has(page) || ORPHAN_EXEMPT_DIRS.has(dir)) continue;
+    if (ROOT_PAGES.has(page) || ORPHAN_EXEMPT_DIRS.has(dir) || TASK_FRAGMENT.test(page)) continue;
     if ((incoming.get(page) ?? 0) === 0) {
       add('warn', page, 'сирітська сторінка — жодного вхідного посилання', 'залінкувати з index.md або з тематичної сторінки');
     }

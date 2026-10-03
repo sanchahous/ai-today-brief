@@ -1,0 +1,1361 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "task": "ah-3.5",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "6e7d861f2161a5f78633080e2b3f31a9f62b7a07662d771f420e86077bbb9599"
+    },
+    {
+      "task": "ah-3.4",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ee2d2a2a36e325a607e2eb7a345998fb055fbf0d21371c9ebf217cc8d39308d8"
+    },
+    {
+      "task": "ah-3.6",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "369e429a7ec8f5c477f720f65c4cc8445925be6f9e44626f28a7ef518de67907"
+    },
+    {
+      "task": "atb-66",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "d42de53375b1b1419396181756ccf3654a1fd16c6f58487ca8bbaa997de18659"
+    },
+    {
+      "task": "pr-399",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "0215f27db7c643a793381ffd10e750e0acd7db436f9711299b866281ea4161f2"
+    },
+    {
+      "task": "atb-64",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "74575ac8f34110ebe910609e46b032c30664f9e9a96e268b9b865b236647af2c"
+    },
+    {
+      "task": "ah-3.1",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "d789317c09448421ec0d82c400a71ec2d0df59a06a5a97eee3c8b002209b32a4"
+    },
+    {
+      "task": "mock-checkout-worktree-scripts-mock-db-raw-local",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "7bb3a3b93d7d4364fe4a1e6572c266107527cc41bf5782e311247aaf6e492666"
+    },
+    {
+      "task": "ah-3.8",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "8c2f560df38a405f3254e01232593a76f4f853c10b94f54227ef776242b7cb83"
+    },
+    {
+      "task": "ah-3.7",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "9bd98bf6cc894671ceec81989fe7f9160c00d5c7ed329b315379e50d987a1947"
+    },
+    {
+      "task": "ah-3.1",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "df21c3638c06e77d360073be54a04147dd68bd41ea5c9697ac5233b0c5045cf9"
+    },
+    {
+      "task": "ah-2.6",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "a7fba6cb6d8a1f102a28e2da33eb557e24b79f40047414bed41c80b76ccfe8fb"
+    },
+    {
+      "task": "ah-2.5",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ec72a1a27ad0438cf421b4cd960472898c1d752f280575c98b06238d971512b9"
+    },
+    {
+      "task": "ah-2.4",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "55ebcbb0de807df3575de8353ddd3705b6bda4441c49c095bf1ae4095e812b97"
+    },
+    {
+      "task": "pr-389",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "e59c2fe25311fff5031b5050ca8340e0293be1eac7c5eaff8ce3edf76f6101b0"
+    },
+    {
+      "task": "ah-2.3",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "56d2569b0fec0bc4afc5b5f4da721262ed466b01e7b05fbae5a61fe25541b671"
+    },
+    {
+      "task": "ah-2.2",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "f3defac4fbd1bd9954dcadfeec84496b418d12d7d4025894085972ade9e53cc9"
+    },
+    {
+      "task": "ah-1.5",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "4c70b66f9bb5e8b773587a4b911fcb4ba3f72ea987047c82b1278000b8168cd2"
+    },
+    {
+      "task": "ah-1.2",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "1ea5da1a0a6da302c3ef922367cdfae8a6a2bb10a587b4c1eeed8af17a300554"
+    },
+    {
+      "task": "ah-1.6",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "36de50b44732043c54c47caeae0ef2cacc8f5f8f2caaf4a85f41118b4a155634"
+    },
+    {
+      "task": "ah-1.5",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "783c1e3822d649d508ee467fd9655e768b4074e940e886703fc5ec392d10efd9"
+    },
+    {
+      "task": "ah-4.1",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ca172bce8a26d01aedb1e626b8d43410b0cb244594d13abc327c9d1870db6c59"
+    },
+    {
+      "task": "ah-1.3",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "95b8a371089c77c112de213ce2e42264f4378c6ec327a1ecb313b6a69b254426"
+    },
+    {
+      "task": "ah-0.6",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "19d3444a5a0d2a8567d0178fcfef21c94647a7391e2c7e7ba5360334ebf64f9e"
+    },
+    {
+      "task": "ah-1.4",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "c91e15ad3fe1f40edb4e6645a49d6ec605c749399b799fdc152d0b46014f39dc"
+    },
+    {
+      "task": "ah-1.7",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "d899971a0244c4707471a052f8dd3dc882888d0f94ca210087e28795203e7042"
+    },
+    {
+      "task": "ah-0.1",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "7f2bcb763336976077b61fbd1f8070574d0d234f44d89a87a0697f9280122ef9"
+    },
+    {
+      "task": "ah-0.2",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "7e47e57f825b7e67c42f42bebee88200b3193704ce42c484d57926cac5930c28"
+    },
+    {
+      "task": "ah-1.1",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "e116521ce0108fa4274ea1055aab4850ef4b5ad7638a043884e912632b58080b"
+    },
+    {
+      "task": "2026-09-29-claude-redesign-epic-blockers-00e7df-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "dcb9697a5e5d8eaafb2b3eb48404b4fcf9c653ce85777be47463a9e136f264e3"
+    },
+    {
+      "task": "ah-0.1",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "e6139bf6f396491778a9454769b8a0b461eedc258cd0ce5b55543ff21a5ebdfb"
+    },
+    {
+      "task": "weekly-digest-2026-09-03-claude-weekly-digest-sp",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "3d1af2949d740400d7588fcfe8c74f46afbbc19a8eb3759b8cc0dcd2254b4266"
+    },
+    {
+      "task": "pr-348",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "c661606d9705cf85b52dc3d8e8dbb2a70bfb50404eb58eb8ef48ece6efd8c727"
+    },
+    {
+      "task": "pr-331",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "5359373648a58a317d0a03bd809c6e1e217fbb4c776b2b26e922b841e16c4fa9"
+    },
+    {
+      "task": "pr-346",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "4bf0b2bd3e1b3ad5950c91ec7c4552853ffb390f5f1e973056ac5c7cf07897b4"
+    },
+    {
+      "task": "pr-343",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "266184ef0a62bd9ca45d925ecb12823fe0e032434eb180cca33015e582319914"
+    },
+    {
+      "task": "openrouter-2026-08-30-get-api-v1-credits-60-50-1",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "998b1be71dde5520ba26b18a8de3c68462630fb18b96e68ba1e83a281a0370ad"
+    },
+    {
+      "task": "openrouter-spend-leak-2026-08-29-claude-openrout",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "9acbd52cc0f6d3e0a712c6394d4954096a667b76f58d725d9c0e1472ae42db71"
+    },
+    {
+      "task": "pr-441",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "8bd4a03d15233a26459fdea29f48cd67524bac68ea0ee99d1d4c77a36676075a"
+    },
+    {
+      "task": "pr-341",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "711f66dfe9c9f1986f09f0b71bde81db59d78d53c55b67db025c708e3fd9e907"
+    },
+    {
+      "task": "social-copy-bounded-repair-quality-2026-08-28-fe",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "44a8a6a8f96ca9d32cd4f1ad4178f9526f6cb99b8b8b0930b2e01816d0071a9c"
+    },
+    {
+      "task": "weekly-fixes-blockers-warnings-socials-2026-08-2",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "f84f45ed95fe989780e3c3248c2f43e8e6f505663044358c8c2c19b6b25bae80"
+    },
+    {
+      "task": "pr-335",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "bff4ebecb0a77dfd97494d9e6bc8cfaed40de03e7f363cbfb17111627cf0f421"
+    },
+    {
+      "task": "pr-335",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "61235edccb44804f5bf9ec850d2f1a9d414b44d29c2c767248373b46bdcac38d"
+    },
+    {
+      "task": "2026-08-28-e-atbvideobrief-git-e-domains-ai-toda",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "8cc2c5477155ee862a291480d34a33ec3073810b91bdc0fde635a3045f16abd8"
+    },
+    {
+      "task": "weekly-digest-2026-08-28-admin-login-claude-in-c",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "bef9908ff2abdd0861c5732bb69211f131ffd9d76286cedc5fffcdaca8d228bd"
+    },
+    {
+      "task": "pr-329",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "9a3277ef40399fb0ec7e31202ef19817e29279fb739075088c994ac456b870a4"
+    },
+    {
+      "task": "pr-329",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "a69d02da048566f6b49bc4e2584379db165cc66596dfedce8cdc3d7540b1c3c2"
+    },
+    {
+      "task": "pr-327",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "97ff6683a52b758f89e30c59c1f81987bc8d39805cd6647b58d9934462553517"
+    },
+    {
+      "task": "pr-441",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "2103af3ca002031eea5d4ce5cb0f8597877fed3cc89440fc5327d1079b7d36c8"
+    },
+    {
+      "task": "pr-320",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "a7a8623680688376cfde217bcc0c66884cd33c4ee226a84621875445eeb0c89d"
+    },
+    {
+      "task": "review-weekly-experience-2026-08-23-claude-gpt-i",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "031cb58c4f5f32c259dce68c8eb03bb42af8faec3739183c9f709b9bba0301c8"
+    },
+    {
+      "task": "pr-318",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "827916a6d1d2c9b2f826e6e432f7f955873705d8c58ffd303dc0ee6f712f9520"
+    },
+    {
+      "task": "pr-318",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "8bbca9c185ae18bae844adcabcc923c427cbe0ac371112fb336c9699626b3710"
+    },
+    {
+      "task": "pr-317",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "b5fddd7ffc995344e6cab2e9a304b308aec522867b05626b81c5918e812d03cf"
+    },
+    {
+      "task": "pr-317",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ff728523d77f4776079fdbbec85602aeaeddde7506da23b4e6ff6b7c5983fe95"
+    },
+    {
+      "task": "pr-316",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "542c453a85b91106dfc1f877e9f940c0e053d79ad209c9478ffddffcb7616fea"
+    },
+    {
+      "task": "pr-315",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "50789678512366aa2a0b28c0024710a0de5c972f6b8591d13b8259091b8082cc"
+    },
+    {
+      "task": "editorial-master-create-linked-retry-resume-2026",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "b8f24110d436af1ec93cf94b2fa783c64329ee3368cdc29f92226cbc77599dd4"
+    },
+    {
+      "task": "weekly-release-autopilot-2026-08-21-backtest-ai-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "181bd89b250807acf46e16755703b06dc976483fe02c058b13c400b2e163c618"
+    },
+    {
+      "task": "pr-312",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "7e82c1906d04d515101888fcc873eb64d42b734c18cdc63ce6b703dff6f7337e"
+    },
+    {
+      "task": "telegram-linkedin-1-2026-08-21-ai-weekly-2026-08",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "c5d2eb40041116e58a723ee981f26d11e7a582590bcf00f3a01adda7092ce952"
+    },
+    {
+      "task": "cancel-future-posts-today-multi-select-2026-08-2",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "04db317d5323ea3544cfb9c8e6ad738c72bc2a7aef6f13304abbeecb7ee88a8a"
+    },
+    {
+      "task": "pr-305",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "397d5ffcfba51d0777aa393609a6f134e1004a76664e4f5d5a17244d60d01bf3"
+    },
+    {
+      "task": "pr-162",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "113f3d073c61462d17b1160dc475797370fe0e41e8c10a311cb69bafb403c77e"
+    },
+    {
+      "task": "video-shooting-package-is-the-video-tab-2026-08-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "79ece3405281ca7097bbd53b7ca4214a8906836921a5701f0bc0430f1014975f"
+    },
+    {
+      "task": "video4-l0-2026-08-19-ai-weekly-2026-08-09-rev-3e",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "61a5d4da6afb36e5d8ed5c6db127d279ec65496284c13e1cc5f67ff3b74fec4a"
+    },
+    {
+      "task": "pr-298",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ddc9266c8b009788f1bf61276b7b2f85fd8ea40267fada2c7e77708ae7a5ed3d"
+    },
+    {
+      "task": "pr-297",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "15035f6710d5368f8ab42d79336258a221e54238274cf7644b499eeb8da404f2"
+    },
+    {
+      "task": "pr-296",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ea092157481e4ffdcadaead38013d10bfa37bad003e761bfb6947cceacdbcb4a"
+    },
+    {
+      "task": "pr-294",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "0615ac17bb51909e10d763cf79f4b7f20b48c7bc0740b969b52bc9b116080626"
+    },
+    {
+      "task": "pr-293",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "532d8a0bd85dba940333d11b7708553b66036710f9c13d69edda757b57aa95d9"
+    },
+    {
+      "task": "social-package-clean-owner-approval-2026-08-17-c",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "dba0039bd38125138503bea84e4d64933e0b922de4ac1941102bc95d14da8029"
+    },
+    {
+      "task": "malformed-social-writer-response-falls-through-i",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "5280e27105f89fadecbf29d60f745a5bcb3bb927ead32a5373557fc46b24cb71"
+    },
+    {
+      "task": "social-router-reliability-follow-up-2026-08-17-c",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "a6fe7ff38298c8e59ae8a90478e6fc6c4765bcbeb5b9aa3cf59d4fcdc200dc4e"
+    },
+    {
+      "task": "social-provider-ladder-bounded-end-to-end-2026-0",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "1f0165b9ddf7fc8ea6cf31d81897c9791edbfc74a42907294a89204dfc7809a3"
+    },
+    {
+      "task": "social-provider-budget-follow-up-2026-08-17-code",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "2f6bc3bca56ce905089b0f13afb19f8501702dd33f1d4fbe34a8e0fd9598cd52"
+    },
+    {
+      "task": "social-critic-flags-score-boundary-2026-08-17-co",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "5e99bdfe216b87119c2190df689bce33896c14eab604ed81f45893c2c554745d"
+    },
+    {
+      "task": "legacy-social-posts-repair-guard-2026-08-17-code",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "53226fc8ea612b4e6e6e8eb0a65af0ba3cf77ca3ad8e36d238a2f2bd678b65c2"
+    },
+    {
+      "task": "social-approval-boundary-owner-review-2026-08-17",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "235011d1daa1e1d49b09501a3ed55be6daeb6b1bc029b6c1efb028ff3a4c86dc"
+    },
+    {
+      "task": "social-copy-linked-retry-2026-08-17-codex-social",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "506fc72d97d1ba24231b273a54686794c0e0034fd59de9eeab8ae1b67dca6493"
+    },
+    {
+      "task": "pr-441",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "acec510ac31674a4b5c4cb4b04115b4efe9fd52f9f71120e6c75e41b5423a90d"
+    },
+    {
+      "task": "social-package-2026-08-17-codex-fix-social-linke",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "2e9434aeaa48b596653fdf1555fef3a006063e5dd44ef1efb2fb7a2335d49399"
+    },
+    {
+      "task": "site-images-webp-2026-08-17-feat-site-webp-origi",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "350dfd3e0b5048e9c9520d0fd9ebbd01ef8999d9709fc7675b90a88b59e0444a"
+    },
+    {
+      "task": "start-retry-content-studio-succeeded-2026-08-16-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "c2dd3caad2e98f0fea628b726f95cfa9f4c91bc25537385d569e616dc184dc31"
+    },
+    {
+      "task": "pr-270",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "054b043f0fce058ebf9fc5f0b9e062a1872df85eefb0cb36f5e1bc96e69380be"
+    },
+    {
+      "task": "pr-269",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "848779ef08bdf011a779ab834d18c3c99c4992cd5af828a3621e582856052baf"
+    },
+    {
+      "task": "ai-weekly-2026-08-09-radar-2026-08-16-13-10-kyiv",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "fba1420d33614d70100d0ce839ba9a4769664d27205228831684c55f35d2b457"
+    },
+    {
+      "task": "8-2026-08-16-fix-auto-publish-silent-judge-pipel",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "bcfc0bafce0888508ea2cd8ca7dba85bfbebc85fd7eaa34256354b57c20b751f"
+    },
+    {
+      "task": "rebuild-selection-2026-08-16-overview-owner-only",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "db33e7a26a0ee941c15b8072696a932a2e843399de6b045aa16e647ba6da7f3a"
+    },
+    {
+      "task": "weekly-weekly-editorial-v3-seed-fix-weekly-selec",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "0bfe2c34354957263dfaaaf5a5be9a05126def86961f1e9aae7a8a5881937883"
+    },
+    {
+      "task": "pr-241",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "8e4bfc146f1f55a18ec9e7c87105fe51c34d431cd2013dc6b7614bf97327cf25"
+    },
+    {
+      "task": "pr-265",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "7633e5f41873e9ebf714ab0be644698adb46e2e3d10327e59eac202b0eadbf77"
+    },
+    {
+      "task": "pr-241",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "2c8fa7548246eb6e62025e9512a9d8f51156d2fd37a8fd86c6c04e115d1760f8"
+    },
+    {
+      "task": "origin-jpeg-2026-08-15-brief-items-card-image-ur",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "626e844ff1ada279fe620c6618d8f7d0c174360014495d60a42ad1a3b20025a1"
+    },
+    {
+      "task": "f5-2026-08-15-pipeline-src-sonnet-5-gpt-5-gemini",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ccc7311d85008ab563fc1faed35b853ce24b1bbe388a16c9c0c7482627dc5c65"
+    },
+    {
+      "task": "a2-bake-off-vision-2026-08-15-actions-3187958807",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "0799b2acc8da7d808e124eefffac67da262324e21abbf8f5cf1490973caf64b0"
+    },
+    {
+      "task": "g-ledger-2026-08-15-admin-costs-weekly-api-qa-ge",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "9144201b2e6b5b38afb02c5ff80540707a1fd79ec1553ec90c6c0f484c2fbec7"
+    },
+    {
+      "task": "f3-rerank-openrouter-2026-08-15-job-llm-model-ra",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "744a556639d721c239c4644cd8e514f48efa8cd510ae3f150c4024101da17184"
+    },
+    {
+      "task": "f2-scoremodelforrole-2026-08-15-quality-m-floor-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "47603bdd24cfd8fcb0b0b11aeb08563b33098230352c0ceaddbeabff631905df"
+    },
+    {
+      "task": "e3-promotion-gate-2026-08-15-visuals-60-1-2-used",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "1fb0f5ff82cd7512d587007a7ca6da93c9bca2ec062ca180fb18552513443cea"
+    },
+    {
+      "task": "e2-2026-08-15-image-only-headline-story-aware-m2",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "f7428fbc9926f59a8738c142f9e09911231355cded3e3bbc84fcce03a740277d"
+    },
+    {
+      "task": "e1-owner-feedback-contract-2026-08-15-visuals-re",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "80f47e3291a5e11cc26199862ff488618c82deb6f14c1695869b3c40b87d2b3f"
+    },
+    {
+      "task": "d3-human-dignity-risk-2026-08-15-fail-upload-wee",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "df40c9654adcd19a678b8ebea4da3e116ea7e6d62772bc02b858a13bb9a4568a"
+    },
+    {
+      "task": "d2-qa-2026-08-15-upload-visuals-do-dont-inpaint-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "02be1acddad1a1935c83e15c045c6722aad8c64d312f1dd1ad638c64094d54ac"
+    },
+    {
+      "task": "c3-mapping-gate-2026-08-15-source-visible-object",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "0719386bef1fd1774e3c717cee76f5a4d4a6eec4454a1b8d14efed755687f65e"
+    },
+    {
+      "task": "c2-essence-2026-08-15-title-summary-claim-essenc",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "05c9c2d1e3d5e1e3fcc5a37b70bba7a2a8deb54241902ea09d0876b022d37f55"
+    },
+    {
+      "task": "c1-grammar-2026-08-15-cinematic-domain-scene-fal",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "603f94cb574ec0f606cf40fe1fa9939ba6ce8d1aea1ff47d072726377c6d2b55"
+    },
+    {
+      "task": "p3-daily-review-2026-08-15-publish-briefs-cover-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "fd2a72391fd18e06a75b404cb8a00d89adcee89ea9f47511644c308ec996fdd8"
+    },
+    {
+      "task": "b3-prompt-readiness-visuals-superseded-2026-08-2",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "b5c489173a40585e5892335aa54ca70c5012ac76bcab0a54acd387f08f562ed4"
+    },
+    {
+      "task": "m3-preflight-regenerate-2026-08-15-story-image-c",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "f8d4babc5b134d94b91651c617461fbd51a0aae8dc8c04e5c8184cf610cdd5e2"
+    },
+    {
+      "task": "m2-post-upload-qa-2026-08-15-upload-story-cover-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "e483c49c08b00bcced2011bbf2fdb50d557bd9771a7864e359614b124f1a96fc"
+    },
+    {
+      "task": "m1-weekly-story-cover-flux-2026-08-15-weekly-sto",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "214295b716e7b0670edc273c06404e41300439d079023f9b01c91dda1eb0927d"
+    },
+    {
+      "task": "p2-story-prompt-set-visuals-copy-upload-2026-08-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "695084ca9d847012596ec4346407821146b95a2d1d7d9419b04a48f50b08f594"
+    },
+    {
+      "task": "p1-2026-08-15-pipeline-prompt-export-ts-midjourn",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "3a31ae3b1fea2de6e37a7800fd73d84e18cbe3e82319598f0023efa8a0853c02"
+    },
+    {
+      "task": "b2-essence-2026-08-15-1-2-1-2-fallback-essence-s",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "92a832d02ff4cac26c751fd2415691d272c0ad7bbae7a3ecebd7b8ae9731b995"
+    },
+    {
+      "task": "b1-fix-craft-ban-literal-exception-2026-08-15-va",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "8963b9e2b5d17f2c1b4298dca00404fcca7915cc1c250dd891d5782e733598e8"
+    },
+    {
+      "task": "v10-2026-08-13-google-gemini-2-5-flash-v10-hard-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "c0de841433d4281a4e60957625b7010186c4b6dd8d3809dbdd8ea779b30d7639"
+    },
+    {
+      "task": "pr-229",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "2d5c90c9ef492ab037be0b341fd096568faac31d8e954503e07ae4c66320a470"
+    },
+    {
+      "task": "pr-229",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "8187209ea553294f6cc620b57300d1d16ed27a30ad18720b2bb222155db7028a"
+    },
+    {
+      "task": "visual-affordance-v10-owner-local-repairs-2026-0",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "b031920b346447635c9a2d32bf58ec97c022a572b75b938dd114b0dc43069c68"
+    },
+    {
+      "task": "weekly-illustration-cost-quality-loop-hardening-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "5e3ced0567a57b0cf9e1e50f50e7ca2268818d8c7340107cdea07beac8afa5e2"
+    },
+    {
+      "task": "three-independent-illustration-concepts-2026-08-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "48c4bb15a3e9fda45389bd8d5c0eb5e6d88325adf7efb8fb06fef782641dbb24"
+    },
+    {
+      "task": "v5-1-concept-collapse-repair-2026-08-12-producti",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "eaf63236dbf4e129b1820ce567dfd5fc8add8c94a01f074799fbc1114070cd63"
+    },
+    {
+      "task": "reviewable-illustration-history-2026-08-12-repai",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "94ad6b2ac336aaad4a71671963adcacdf537771b39f1a45df12f9f46c04e62c9"
+    },
+    {
+      "task": "async-story-image-recovery-2026-08-11-production",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "1e8cf0551eb15fabe006645dd36dd7641c2d498ee4e7a1f3d98b49877ecd1749"
+    },
+    {
+      "task": "manual-retry-idempotency-2026-08-11-composite-sq",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "b651a40a3446a63ca04b968fb396b7d9166e6db5f2098e65449b91d701e01483"
+    },
+    {
+      "task": "weekly-semantic-illustration-v4-foundation-2026-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "c6349c74a5533eeed5374d059c0dad1e6e4118b332736df98ce3eb780f467db7"
+    },
+    {
+      "task": "vision-critic-json-soft-fail-2026-08-11-prose-em",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "130dd9c27bcf6a299edc9b74099d462cd23c6ef079eee5ce79ff136d7e430932"
+    },
+    {
+      "task": "weekly-illustration-fidelity-v3-2026-08-11-polic",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "bdcf64f22e1a5eb9c38fa0e0dfff448c961fa3cfc0cb6a71a4c5ef673efd5bb7"
+    },
+    {
+      "task": "weekly-illustration-overhaul-v2-2026-08-11-polic",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "cf9b5d76d3ae1242c2ddfbc43b62580de12639f1ad2560fd2eeed635cfceb93c"
+    },
+    {
+      "task": "content-sim-backtest-2026-08-11-harness-src-lib-",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "ac8e1ff1cb3fd63db0ba59cd6940ffb122b61f4b49c0f5e9ecbaa8803c523409"
+    },
+    {
+      "task": "pr-199",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "587aea196059b9cae500982467f2c12b090d9075f92cb6d0947e33c6ab56b9c8"
+    },
+    {
+      "task": "pr-200",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "db6e6d4f76f538c0deb06de830e53e75b2dafedad323c272d08c21e21cfabf24"
+    },
+    {
+      "task": "pr-189",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "027fbdf0e60b7f38819747ef8ae0f6ec75000974169e199639f3a33cf8bdd2a0"
+    },
+    {
+      "task": "pr-192",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "1120f28b5a7f38ac3e8ae72b4252974f01586f6d451ef91de02121f738a8855d"
+    },
+    {
+      "task": "feat-llm-registry-phase-7-2026-08-07-main-7-code",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "b0bdd81a4bc10698733e75da390c2f27459092535c96637ba3baab556c9d3f59"
+    },
+    {
+      "task": "pr-190",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "2bac9bf5e6e244817ef1632719ae8e8e817603a50c84112935001ad65d255ba2"
+    },
+    {
+      "task": "pr-189",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "16c4ef0737b842c1830b1e27ac355ba6811dd392bfece773cee5aa232447e119"
+    },
+    {
+      "task": "pr-189",
+      "group": "now-status",
+      "source": "now.md",
+      "sha256": "eb91bf071bf9b20df44d040fa47fc1ae6e3b58a8b38ae2b5750e403ea45ced89"
+    },
+    {
+      "task": "archive-shared-lines",
+      "group": "now-preamble",
+      "source": "now-preamble",
+      "sha256": "a9f868d45ae71ce03ca487810f57046b9bb501799c6c0d1a267854b0a80917ed"
+    },
+    {
+      "task": "archive-shared-lines",
+      "group": "handoff-heading",
+      "source": "handoff-heading",
+      "sha256": "423e830b31207058cc93ddff0313aab363e902b5bac995200aeae0a8cb1319c6"
+    },
+    {
+      "task": "ah-3.8",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "0ae265832e8b8d4d4ada9d6a8d72c65d01470875eb40f991c1d4b350c8089913"
+    },
+    {
+      "task": "ah-3.5",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "75f2bee27f0d8ea4f4b25cb71bfe8595e1ceeec7315c82d9c5adbcb80bea9e40"
+    },
+    {
+      "task": "ah-3.4",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "e0dc5eaf6bdef6bc600156d678c6429851fecef1802a79866f4a2aae5a32a0ff"
+    },
+    {
+      "task": "ah-3.7",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "b6555c843d1e0944dee46f36a14c7813421f3efc90ddd078a87369d3f3c22ffc"
+    },
+    {
+      "task": "ah-3.6",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "0554e2d0ee8ace2ea62b91b2af88722e0731d9ffebba643c781ac95b236100c9"
+    },
+    {
+      "task": "ah-3.1",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "864f47e08f1ef77ac142e266905cded8c1138e1e81590f8f4f4c8b098136d4c3"
+    },
+    {
+      "task": "ah-2.6",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "1288cb303e7f9a95e1c3c87925c88a1670e391fba9c4712efd4263ad6decb830"
+    },
+    {
+      "task": "ah-2.5",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "b72648680029df076193f953d9d32d3eab4892e1663c498c5e6c9be1e8bb7030"
+    },
+    {
+      "task": "ah-2.4",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "827d8649d795096e38181b34c9f7f1c2196ca050bfb08ee84f1334e5b69da7be"
+    },
+    {
+      "task": "pr-388",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "d5c18ccf84523fba13cb114f7732f785188e58a95a6870783522f6c43177fc1b"
+    },
+    {
+      "task": "pr-387",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "c490b7f32c3be9f517db8e29ce83937e3e3ef13664a357acd4da5a274e1101f8"
+    },
+    {
+      "task": "ah-1.5",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "84c7ada9394cce3ff8935f4af8ab0ad1f83e4750d5aad5a7e06ae31c405e63f5"
+    },
+    {
+      "task": "ah-1.1",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "df4d2c219ba16b120d4e0a26430a506ff94b324b8d80d49d06ae35865333a84a"
+    },
+    {
+      "task": "ah-4.1",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "e66b7e6d41f7b88824fa7a092a899ceab9c61f7c0ef9b32f1de82c91e50b89ef"
+    },
+    {
+      "task": "atb-64",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "6c800d0e8234d24ba888a4e9c2454124223e41e410037c0a1b8e2ff129cc8e26"
+    },
+    {
+      "task": "ah-3.1",
+      "group": "handoff-status",
+      "source": "handoff",
+      "sha256": "053f3d16f085d888fdbb15ab107e6b8721aceb242aea9899d3f5eb82c13d2240"
+    },
+    {
+      "task": "archive-shared-lines",
+      "group": "handoff-prompt",
+      "source": "handoff-prompt",
+      "sha256": "a7f3d3ce8d7fa75faea90df1e823c8adca069be818076101be12c5b88d81d8ca"
+    },
+    {
+      "task": "archive-shared-lines",
+      "group": "index-preamble",
+      "source": "index-preamble",
+      "sha256": "3bf8d144e42ec4d41be53effd4e6b3fc0e69e61e69e3f5ea869b317393f1e8fc"
+    },
+    {
+      "task": "archive-shared-lines",
+      "group": "index-handoff-row",
+      "source": "index-handoff-row",
+      "sha256": "0951dbcce084630e4fbe4ea5f744892108530d3b682a1719f0dc0625fb388670"
+    },
+    {
+      "task": "archive-shared-lines",
+      "group": "epic-last-updated",
+      "source": "epic-last-updated",
+      "sha256": "87e5de6694539708c75791ff09ed9efd939b3d70449128183667be91c6846845"
+    },
+    {
+      "task": "ah-0.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "75d31e0fa81e2ce8bc71c73cd759a26e540f94cc40a4b31c353918f7c385b131"
+    },
+    {
+      "task": "ah-0.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "690288f8585f5103699008a4e7cee893f5a4a3f841811d4b39897e900e0be4ce"
+    },
+    {
+      "task": "ah-0.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "52a0ca201e24e782cff4e8538ceddd810b8d82357ecee4ad1ecbe986c31b7a65"
+    },
+    {
+      "task": "ah-0.4",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "cede36e5e74532f01d9dec84a9a6bd49cf4de482362766fb675f5a7682d2b336"
+    },
+    {
+      "task": "ah-0.5",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "ff9f3c2bad2777ccd6305fca525e90b98338b726b70bcb200e15d5986b3cce21"
+    },
+    {
+      "task": "ah-0.6",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "d93cc2b3aa8d1b1258b2232aec4f9bd5dacc8164bb0ed5c200763c36aa3aa7ce"
+    },
+    {
+      "task": "ah-1.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "1a9ac1525359ca4e172243ec81e862579bdcc8d98fabbe7770b98b9607c19f31"
+    },
+    {
+      "task": "ah-1.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "cae77f9f9ad4339572f935d16b6630c11d70f8c0c2d10a28c84ed3b64ff8e590"
+    },
+    {
+      "task": "ah-1.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "405ca457faddf7dc1f24a29d30d4f499f229d4e5e3552bea81fd63f9ca5b0105"
+    },
+    {
+      "task": "ah-1.4",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "7167248bbc8f80dbf7926bb6e78a981a4e0d1ecebe99317029692c009d3c9bf2"
+    },
+    {
+      "task": "ah-1.5",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "54de5125a44b89a9b313088806ca8f5ddc3897f48a709c9e00336f45493bb685"
+    },
+    {
+      "task": "ah-1.6",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "5b0d680ef44c931b93dd6d7c3d3809cb6ef25a1aeb3ef9d3192c535aa5713540"
+    },
+    {
+      "task": "ah-1.7",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "7425af09a216db4ff5c01d31168cbd4000d6e261c17162116f600675a0c6aa7d"
+    },
+    {
+      "task": "ah-2.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "12d367a97e18fcae1f594be1f59d8cb3ec96113fa0019144795482d59095d12e"
+    },
+    {
+      "task": "ah-2.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "ed526606d47951e11fe4aecb9538c1f11a349f51d33c0a03439719ee11bbeed7"
+    },
+    {
+      "task": "ah-2.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "67c381ef3ef736e418503fb81048dd4693921d4e02c62e41ea79e06088a26a01"
+    },
+    {
+      "task": "ah-2.4",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "0845514cfbcd59ad4e2144ecbf6dd3db8f071cf43a941e75e15f26876c339c97"
+    },
+    {
+      "task": "ah-2.5",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "58de2f44039ebbe293764124f64742139a79eea13ae274650613a03acec0e1a4"
+    },
+    {
+      "task": "ah-2.6",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "fbb9354754bb948e18631f13a92344027f667a0bf18d272192039172cdce46f2"
+    },
+    {
+      "task": "ah-3.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "a781f7c99a4917a780dd78d583b4de72a3316c8e1578566ae7e00e73dd598d82"
+    },
+    {
+      "task": "ah-3.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "5817e68cc918e44b088284b894e3eca0dda354a2dbc261d3d330ad0a32165659"
+    },
+    {
+      "task": "ah-3.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "7e1106fc464c4c26e6b6c94fa07897fe4ef460098e8997d5c672ebe70716a175"
+    },
+    {
+      "task": "ah-3.4",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "3cea7e6dc3d882131fa62201730bfc5a9cddd1b077b03c83cde32360e665ac61"
+    },
+    {
+      "task": "ah-3.5",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "42ebc06930176eabef00f4e5db066aedb6dff49c2bf7f3f24e1dc14555e79e00"
+    },
+    {
+      "task": "ah-3.6",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "a1ecd458e83971ab283a7c2cd3b7d304f5ac80f0676643e69a2c5ae1aa36973e"
+    },
+    {
+      "task": "ah-3.7",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "30a041329b4dace52000ecf01438f6f00ef795676a23fc60938958ec036edab1"
+    },
+    {
+      "task": "ah-3.8",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "2dad08e8d9fbd8ff22dafdd978b92c03943e2da7552942c771a5348fa8844bd7"
+    },
+    {
+      "task": "ah-4.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "e1283e67aa1b411a822b0b51d9579ec44f9e3cff44521ca8371b6e2c0bf42972"
+    },
+    {
+      "task": "ah-4.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "3d88886fddf7e511bf57b0e6a311967653e5808cb764547e9b97771d154a00b5"
+    },
+    {
+      "task": "ah-4.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "ab99bb32581cfde464ac2e3a1cdb3381ea65dd451923f176f61379e20b2ef4c3"
+    },
+    {
+      "task": "ah-4.4",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "a3033767c0272de3424d4dd2b0ad8be0d4611633c270c57eeaa4336d7f1870b1"
+    },
+    {
+      "task": "ah-4.5",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "69d68419177477d5792adc7a02c5df93ee5cd70d3cf086b3f9695819f9570c0c"
+    },
+    {
+      "task": "ah-5.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "b8742ce4a6fbc97bdb351100d8ce3fdc2459fd6b77c418fd5ed0a714a92996d4"
+    },
+    {
+      "task": "ah-5.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "09723fbac098ce90bc0838e4d347aeba6a7d7ba4eaf226302159000c79a509ce"
+    },
+    {
+      "task": "ah-5.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "9c657356bb3648de624828435f2d14f278fbcf2c658d7854141541c9a103eeee"
+    },
+    {
+      "task": "ah-5.4",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "c6f6a115e9386113f3ec604462b3a0095d44ac5c7818edd5b072788810f4d29a"
+    },
+    {
+      "task": "ah-5.5",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "069c7adbf363fcb362f882e1390fb27a45340825ec06312edb8a301bf86d1c49"
+    },
+    {
+      "task": "ah-5.6",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "32acb10acf5754d58d5343b270ce28378cc8caaa57fd20a91dd815c521a6ed65"
+    },
+    {
+      "task": "ah-5.7",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "67546c67dfcda4912336e9c991ee6bab5c3c6c6ac174bfafa28e33a60e575331"
+    },
+    {
+      "task": "ah-5.8",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "ff26a475db83604313df53c9353e6acacbdf8f3721ec1679c1f16e2ebd5f8431"
+    },
+    {
+      "task": "ah-5.9",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "f67f7dd5131bdf4b81e98fa2e1c0cade98a399f6a022d827be22623275c17406"
+    },
+    {
+      "task": "ah-5.10",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "a371ec10fb2a262a75d8a3063801d42a37b90557945b137cd881b8fd03fe9485"
+    },
+    {
+      "task": "ah-5.11",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "acdfc95f3e95f41b55694df13296b9dd280c5306f1554fd5a7e7d3a934f3a845"
+    },
+    {
+      "task": "ah-5.12",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "c6df905ea24514816a12c400d756af02c1c532a2b577d4a98f303efd40d7c102"
+    },
+    {
+      "task": "ah-5.13",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "58c6ddb65b3d563a51ffe34a4495ad24030c09e688fa8e01eea2fd2c8420ff28"
+    },
+    {
+      "task": "ah-5.14",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "5e40d73fa0d05fb279d34b9f4a595f457a4204b09db1ade9a0c5da93e0b97382"
+    },
+    {
+      "task": "ah-5.15",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "c9895e9050b97111e8adfcc65925bfdebde3de4d99fe6d223e3a4b43e4b23eff"
+    },
+    {
+      "task": "ah-5.16",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "7cc5f106f96d7a4d68d5e2565d12b44d46ce392286ca81731cc627a8d91b5cf5"
+    },
+    {
+      "task": "ah-6.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "f801361227b7105c943e2bcf8ae33792d342d546455d1aec313c2bcf9562009e"
+    },
+    {
+      "task": "ah-6.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "15ac6b978ef73998ab3d3bfd521ea53a5ac287cdf9df4d1f79de83a1d2d2de5a"
+    },
+    {
+      "task": "ah-6.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "302111d8aa7b81fde853f9a11c88122c9cd7e64ed9af794880ca08b09fa1bafb"
+    },
+    {
+      "task": "ah-7.1",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "934c14e9731bbf6bd2b95e6ca345967961f4dce9f4759ad16c602fffaa2f94b6"
+    },
+    {
+      "task": "ah-7.2",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "09c469399cf01c8ecfd8b1c42ba50593f6924169b379be4e6e4cc868ef7df6f0"
+    },
+    {
+      "task": "ah-7.3",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "37651fb9748fd9f08f8226e45fd5f1602dd1448f16751182a17797912e5f43f8"
+    },
+    {
+      "task": "ah-7.4",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "5c5bd9640673c1b820a3a431855cfc01eb7ffdf282dddbc35ce2f144fb2217f4"
+    },
+    {
+      "task": "ah-7.5",
+      "group": "epic-5.3",
+      "source": "epic-5.3",
+      "sha256": "6077055f877bf6915a9d80e31421929d04699402b0d42ac11dd7f3cbcc4f2381"
+    },
+    {
+      "task": "archive-shared-lines",
+      "group": "handoff-last-updated",
+      "source": "handoff-last-updated",
+      "sha256": "87e5de6694539708c75791ff09ed9efd939b3d70449128183667be91c6846845"
+    }
+  ],
+  "groups": [
+    {
+      "id": "now-status",
+      "sha256": "2635376986421b89f5fa301f36116219f423131c1c7cc76861e59b87170586e2"
+    },
+    {
+      "id": "now-preamble",
+      "sha256": "a9f868d45ae71ce03ca487810f57046b9bb501799c6c0d1a267854b0a80917ed"
+    },
+    {
+      "id": "handoff-heading",
+      "sha256": "423e830b31207058cc93ddff0313aab363e902b5bac995200aeae0a8cb1319c6"
+    },
+    {
+      "id": "handoff-status",
+      "sha256": "ec661a1c557fc73ed63efa24bb1c112b3e6aa50ea09780107f4514040d4780bf"
+    },
+    {
+      "id": "handoff-prompt",
+      "sha256": "a7f3d3ce8d7fa75faea90df1e823c8adca069be818076101be12c5b88d81d8ca"
+    },
+    {
+      "id": "index-preamble",
+      "sha256": "3bf8d144e42ec4d41be53effd4e6b3fc0e69e61e69e3f5ea869b317393f1e8fc"
+    },
+    {
+      "id": "index-handoff-row",
+      "sha256": "0951dbcce084630e4fbe4ea5f744892108530d3b682a1719f0dc0625fb388670"
+    },
+    {
+      "id": "epic-last-updated",
+      "sha256": "87e5de6694539708c75791ff09ed9efd939b3d70449128183667be91c6846845"
+    },
+    {
+      "id": "epic-5.3",
+      "sha256": "be473f9daf692f661bcbf032cd1ee7263948a7946eb14d5ad8c645ea0759a910"
+    },
+    {
+      "id": "handoff-last-updated",
+      "sha256": "87e5de6694539708c75791ff09ed9efd939b3d70449128183667be91c6846845"
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Summary: виконуваний епік переносу дизайн-сист�
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
 live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30; дозвіл власника ATB-64 2026-10-02 ([PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
-Last updated: 2026-10-02 (AH-3.8 PR #403)
+Last updated: 2026-10-03
 
 ---
 
@@ -64,10 +64,13 @@ Last updated: 2026-10-02 (AH-3.8 PR #403)
 - **Картка задачі:** Тип · Розмір · Виконавець · Залежить від · Закриває (G-ID аудиту / B-ID з
   §2.2) · Зони коду · Джерела · Що зробити · Acceptance criteria (AC) · Не входить.
 - Якщо рішення D* (§4) ухвалене інакше, ніж рекомендовано, спершу оновити картки, яких воно
-  стосується, і додати рядок у [log](../log.md).
-- **Статус задачі** (✅ виконано / ◐ частково) у §5.3 оновлює PR цієї задачі з посиланням на себе.
-  Перед стартом задачі звірити її рядок і картку з актуальним `main`: паралельні сесії вже
-  закривали задачі епіку (PR #369), і дублювати роботу не можна.
+  стосується, і записати рядок у розділ Log файлу `wiki/tasks/<id>.md`, не у верх [log](../log.md).
+- **Статус задачі** пишеться лише в `wiki/tasks/<id>.md` (id малими літерами: `ah-3.5.md`).
+  PR задачі не редагує таблицю §5.3, список у [now](../now.md), рядок Sources і статусну
+  клітинку handoff в [index](../index.md), список відкритих PR у handoff і верх [log](../log.md).
+  Навіть якщо картка задачі ще каже оновити `now.md`, статус іде у фрагмент.
+  Зведення: `npm run wiki:tasks` (друкує, не комітить). Перед стартом прочитати фрагмент
+  задачі й картку на актуальному `main`: паралельні сесії вже закривали задачі (PR #369).
 
 ### 0.1 Definition of Done — для кожного PR епіку
 
@@ -92,9 +95,11 @@ Last updated: 2026-10-02 (AH-3.8 PR #403)
    параметри; будь-яка зміна — разом з оновленням сторінки таксономії.
 8. Жодного нового hex / px / z-index поза токенами (ratchet AH-1.7); жодної нової залежності без
    запису в ADR AH-0.2.
-9. Код під wiki-watcher-ом оновлює вказані сторінки в тому ж PR (`brand-chrome` → `wiki/now.md`);
-   будь-яка зміна wiki — разом з [index](../index.md) і [log](../log.md).
-   (source: `wiki/_meta/project-sync.json`)
+9. Код під wiki-watcher-ом оновлює вказані сторінки в тому ж PR. Якщо watcher спирається на
+   `now.md` (`brand-chrome`, `weekly-digest`, `content-sim`, `env-feature-flags`), статус задачі
+   — це файл `wiki/tasks/<id>.md`, не правка `now.md`. Нова сторінка вікі отримує один рядок в
+   [index](../index.md). Статус, рядок журналу і «наступна задача» не дописуються в спільні списки.
+   (source: `wiki/_meta/project-sync.json`; ATB-67, [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
 10. В описі PR — посилання на Vercel Preview і знімки до/після (Night/Day, 1440/390) з інструмента
     AH-0.3. Окремий підпис власника на PR не потрібен, зокрема для ризику high/critical і
     виконавця «агент + власник»: після зелених перевірок оркестратор мерджить сам
@@ -112,6 +117,7 @@ AH-<id> · <назва>
 Preview: <url>   Знімки до/після: artifacts/_local/<label>/ (manifest SHA …)
 SEO compare: 0 regressions (routes: …)   QA-матриця (gating): 0 / 0 / 0 / 0
 Аналітика: події без змін | оновлено event-taxonomy
+Статус задачі: wiki/tasks/<id>.md (спільні списки не редагувались)
 Test plan:
 - [x] npm run pr:check passed locally before push
 ```
@@ -339,67 +345,71 @@ flowchart TD
 
 ### 5.3 Зведена таблиця задач
 
-Позначки: ✅ — виконано (PR у дужках), ◐ — виконано частково; для ◐ розмір — це залишок роботи,
+Таблиця нижче — стабільний план (назва, розмір, залежності). Її не правлять у PR задач.
+Живий статус, включно з історичним текстом клітинки, — у `wiki/tasks/<id>.md`.
+Позначки ✅ / ◐ лишаються в тих фрагментах. Для ◐ розмір у таблиці — це залишок роботи,
 а сам залишок описано в рядку «Стан після #369» картки.
+
+<!-- task-status: fragments -->
 
 | ID | Задача | Розмір | Хто | Залежить від | Закриває |
 |---|---|---|---|---|---|
-| AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([#372](https://github.com/sanchahous/ai-today-brief/pull/372), [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
-| AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
-| AH-0.3 | ✅ Baseline-знімки й інструмент до/після ([#373](https://github.com/sanchahous/ai-today-brief/pull/373)) | — | — | — | передумова visual review |
-| AH-0.4 | ✅ SEO-контракт: знімок і compare-гейт ([#374](https://github.com/sanchahous/ai-today-brief/pull/374)) | — | — | — | «SEO diff» (redesign §9) |
-| AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
-| AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
-| AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
-| AH-1.2 | ✅ Контраст-гейт 2.0: 222 пари, 0 провалів, мінімум категорій 6,41 / 5,22; реалізовано в [PR #384](https://github.com/sanchahous/ai-today-brief/pull/384), без видимих змін | — | — | AH-1.4 ✅ | G09 (UI-пари) |
-| AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
-| AH-1.4 | ✅ Кольори й гліфи категорій: змерджено в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), `5af8d56` ([докази](after-hours-ah-1-4-validation.md)) | — | — | — | B5 |
-| AH-1.5 | ◐ Типографіка — [merged PR #385](https://github.com/sanchahous/ai-today-brief/pull/385): local fonts, Georgia UK, шкала, eyebrow; [follow-up tracking #386](https://github.com/sanchahous/ai-today-brief/pull/386), merged і підтверджено власником; UK/CLS/H1/legacy AC відкриті ([докази](after-hours-ah-1-5-validation.md)) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
-| AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: змерджено в [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) (`55b78dc`, підпис власника отримано 2026-09-30); `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
-| AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
-| AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
-| AH-2.2 | ◐ Дії й вибір змерджено в [#387](https://github.com/sanchahous/ai-today-brief/pull/387) (`c03a4dd`); Playwright success; окремий visual review і full-page legacy DoD відкриті ([докази](after-hours-ah-2-2-validation.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
-| AH-2.3 | ✅ Поля підписано й змерджено в [#388](https://github.com/sanchahous/ai-today-brief/pull/388) (`e75c438`); full-page legacy DoD і G1 лишаються відкритими ([докази](after-hours-ah-2-3-validation.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
-| AH-2.4 | ◐ Оверлеї змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390) (`56a9cf8`); окремий підпис не отримано; міграції споживачів ще попереду ([докази](after-hours-ah-2-4-validation.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
-| AH-2.5 | ◐ Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у [#391](https://github.com/sanchahous/ai-today-brief/pull/391); Toast і Skeleton не дубльовано; підпис очікується ([докази](after-hours-ah-2-5-validation.md)) | S | агент | AH-1.6 | G13 (data-стани) |
-| AH-2.6 | ◐ Навігація: Pagination (консолідація), Tabs, Breadcrumbs у [#392](https://github.com/sanchahous/ai-today-brief/pull/392); legacy `pagination.tsx` видалено, `post-feed.tsx` мігровано, `LinkTabs` додано, `Breadcrumbs` рестайлено, G2 очікує підпису | M | агент | AH-2.2 | B6, G11 |
-| AH-3.1 | ◐ Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` у [#393](https://github.com/sanchahous/ai-today-brief/pull/393) | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
-| AH-3.2 | ◐ SearchDialog (Ctrl/Cmd+K): [#394](https://github.com/sanchahous/ai-today-brief/pull/394) на `feat/ah-3.2-search-dialog` — один `SearchDialog`, trending idle, Ctrl/Cmd+K, aria-live, keyboard nav; G16 частково | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
-| AH-3.3 | ✅ EditorialHeader: desktop, compact sticky, mobile sheet ([#405](https://github.com/sanchahous/ai-today-brief/pull/405)) | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
-| AH-3.4 | ✅ NewsletterForm і стани ([PR #395](https://github.com/sanchahous/ai-today-brief/pull/395)) | — | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
-| AH-3.5 | ✅ Footer ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404)) | S | агент | AH-3.1, AH-3.4 | — |
-| AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; ⚠️ conflict wiki §11 pending Tag Assistant | S | агент | AH-2.2, AH-2.3 | — |
-| AH-3.7 | ✅ Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone ([#402](https://github.com/sanchahous/ai-today-brief/pull/402)) | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
-| AH-3.8 | ◐ Brand-kit: аватар і банери соцмереж у [#403](https://github.com/sanchahous/ai-today-brief/pull/403); завантаження на платформи — власник у день релізу | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
-| AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #380](https://github.com/sanchahous/ai-today-brief/pull/380)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
-| AH-4.2 | StoryCard, StoryRow, CategoryBanner | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
-| AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
-| AH-4.4 | Сторінка `/[lang]/news/search` | S | агент | AH-4.3, AH-3.2 | — |
-| AH-4.5 | Гейт News vertical slice (без usability-сесій, D12) | S | власник + агент | AH-4.3, AH-4.4, AH-0.5 | G14 |
-| AH-5.1 | Родина editorial-патернів | L | агент | AH-4.5 | G17 |
-| AH-5.2 | Стаття | L | агент | AH-5.1 | route `article` |
-| AH-5.3 | Головна | L | агент + власник | AH-5.1, AH-4.2 | route `home`, B9, B10 |
-| AH-5.4 | Daily | L | агент | AH-5.1 | route `daily` |
-| AH-5.5 | Weekly | L | агент + власник | AH-5.1 | route `weekly` |
-| AH-5.6 | Архів Digests | M | агент | AH-5.1, AH-2.6 | route `digests` |
-| AH-5.7 | Хаб категорії | M | агент | AH-5.1, AH-4.3 | route `category` |
-| AH-5.8 | Concepts: хаб і сторінка | L | агент | AH-5.1, AH-2.6 | routes `concepts`, `concept` |
-| AH-5.9 | Guides: бібліотека і гайд | M | агент | AH-5.1 | routes `guides`, `guide` |
-| AH-5.10 | Toolbox-хаб і ToolWorkspaceTemplate | M | агент | AH-5.1, AH-2.3 | route `tools` |
-| AH-5.11 | Три робочі простори утиліт | M | агент | AH-5.10 | routes `tool`, `settings`, `instructions` |
-| AH-5.12 | About і Author | M | агент | AH-5.1, AH-3.4 | routes `about`, `author` |
-| AH-5.13 | Subscribe і Advertise | M | агент + власник | AH-5.1, AH-3.4 | routes `subscribe`, `advertise` |
-| AH-5.14 | Чотири політики | S | агент | AH-5.1 | route `policy` |
-| AH-5.15 | 404 і loading-стани | S | агент | AH-3.3, AH-2.5 | route `404`, B10 |
-| AH-5.16 | (опц.) Saved / індекс категорій — **не виконується** (D6 = ні) | — | — | — | — |
-| AH-6.1 | Motion runtime і жести | M | агент | G5 | Tension v3 |
-| AH-6.2 | The Resolve і «акорд» знака | M | агент | AH-6.1, AH-5.3, AH-3.1 | бренд-сцена |
-| AH-6.3 | View Transitions | S | агент | AH-6.1 | переходи маршрутів |
-| AH-7.1 | Повний acceptance-прогін | M | агент + власник | AH-6.2, AH-6.3 | G14 |
-| AH-7.2 | CWV на production-like preview | S | агент | AH-7.1 | бюджети CWV |
-| AH-7.3 | Прибирання legacy | M | агент | AH-7.1 | G10, G15, B15 |
-| AH-7.4 | Реліз, моніторинг, оцінка після запуску | S (+28 днів) | власник + агент | AH-7.3, AH-0.6 | оцінка §9 redesign |
-| AH-7.5 | Документація й статуси wiki | S | агент | AH-7.3 | G01 (фінал) |
+| AH-0.1 | Звірити статус G01–G20 і вихідну точку ([статус](../tasks/ah-0.1.md)) | — | — | — | G01, конфлікт §2.3 |
+| AH-0.2 | ADR: rollout і foundations, D1–D13 ([статус](../tasks/ah-0.2.md)) | — | — | — | передумова G12 |
+| AH-0.3 | Baseline-знімки й інструмент до/після ([статус](../tasks/ah-0.3.md)) | — | — | — | передумова visual review |
+| AH-0.4 | SEO-контракт: знімок і compare-гейт ([статус](../tasks/ah-0.4.md)) | — | — | — | «SEO diff» (redesign §9) |
+| AH-0.5 | QA-матриця a11y і верстки для сторінок ([статус](../tasks/ah-0.5.md)) | — | — | D10 ✅ | G14 (частк.) |
+| AH-0.6 | На main після merge: продуктовий і CWV baseline, всі AC прийнято власником ([статус](../tasks/ah-0.6.md)) | — | — | open-questions #1 закрито | передумова оцінки |
+| AH-1.1 | Токени 2.0 — одне джерело правди ([статус](../tasks/ah-1.1.md)) | — | — | — | G09, G10, B1, B2 |
+| AH-1.2 | Контраст-гейт 2.0: 222 пари, 0 провалів, мінімум категорій 6,41 / 5,22; реалізовано, без видимих змін ([статус](../tasks/ah-1.2.md)) | — | — | AH-1.4 ✅ | G09 (UI-пари) |
+| AH-1.3 | Контракт Night/Day інтегровано в main; legacy no-JS/full-page QA AC лишаються задокументованими ([статус](../tasks/ah-1.3.md)) | S | агент | D2 ✅ | B12 |
+| AH-1.4 | Кольори й гліфи категорій: змерджено, 5af8d56 ([статус](../tasks/ah-1.4.md)) | — | — | — | B5 |
+| AH-1.5 | Типографіка: local fonts, Georgia UK, шкала, eyebrow, merged і підтверджено власником; UK/CLS/H1/legacy AC відкриті ([статус](../tasks/ah-1.5.md)) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
+| AH-1.6 | Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: змерджено; --header-h лишається 60px до AH-3.3 ([статус](../tasks/ah-1.6.md)) | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
+| AH-1.7 | Ratchet-звіт «сирих» значень: інтегровано, main e470105 ([статус](../tasks/ah-1.7.md)) | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
+| AH-2.1 | Внутрішній каталог компонентів ([статус](../tasks/ah-2.1.md)) | — | — | — | G20, G13 (основа) |
+| AH-2.2 | Дії й вибір змерджено; Playwright success; окремий visual review і full-page legacy DoD відкриті ([статус](../tasks/ah-2.2.md)) | M | агент | AH-1.4, AH-1.6 | G11 |
+| AH-2.3 | Поля підписано й змерджено; full-page legacy DoD і G1 лишаються відкритими ([статус](../tasks/ah-2.3.md)) | — | — | AH-1.5, AH-1.6 | G11, G13 |
+| AH-2.4 | Оверлеї змерджено; окремий підпис не отримано; міграції споживачів ще попереду ([статус](../tasks/ah-2.4.md)) | M | агент | AH-2.2, AH-1.6 | G16 |
+| AH-2.5 | Notice, Spinner, ErrorState, StaleNotice і ланцюг станів; Toast і Skeleton не дубльовано; підпис очікується ([статус](../tasks/ah-2.5.md)) | S | агент | AH-1.6 | G13 (data-стани) |
+| AH-2.6 | Навігація: Pagination, Tabs, Breadcrumbs; legacy pagination.tsx видалено, post-feed.tsx мігровано, LinkTabs додано ([статус](../tasks/ah-2.6.md)) | M | агент | AH-2.2 | B6, G11 |
+| AH-3.1 | Бренд-знак на сайті: favicon, іконки, logo.png, manifest, BrandMark у ([статус](../tasks/ah-3.1.md)) | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
+| AH-3.2 | ◐ SearchDialog ([статус](../tasks/ah-3.2.md)): [#394](https://github.com/sanchahous/ai-today-brief/pull/394) на `feat/ah-3.2-search-dialog` — один `SearchDialog`, trending idle, Ctrl/Cmd+K, aria-live, keyboard nav; G16 частково | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
+| AH-3.3 | ✅ EditorialHeader: desktop, compact sticky, mobile sheet ([#405](https://github.com/sanchahous/ai-today-brief/pull/405)) ([статус](../tasks/ah-3.3.md)) | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
+| AH-3.4 | NewsletterForm і стани ([статус](../tasks/ah-3.4.md)) | — | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
+| AH-3.5 | Footer ([статус](../tasks/ah-3.5.md)) | S | агент | AH-3.1, AH-3.4 | — |
+| AH-3.6 | Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у на feat/ah-3.6-consent-card; ⚠️ conflict wiki §11 pend ([статус](../tasks/ah-3.6.md)) | S | агент | AH-2.2, AH-2.3 | — |
+| AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone ([статус](../tasks/ah-3.7.md)) | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
+| AH-3.8 | Brand-kit: аватар і банери соцмереж; завантаження на платформи — власник у день релізу ([статус](../tasks/ah-3.8.md)) | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
+| AH-4.1 | Taxonomy Topics / Tool: lib, URL і чіп активного фільтра; пікер фасету — AH-4.3 ([статус](../tasks/ah-4.1.md)) | — | — | D8 ✅ | G06, B7 (lib/URL) |
+| AH-4.2 | StoryCard, StoryRow, CategoryBanner ([статус](../tasks/ah-4.2.md)) | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
+| AH-4.3 | Сторінка /[lang]/news ([статус](../tasks/ah-4.3.md)) | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
+| AH-4.4 | Сторінка /[lang]/news/search ([статус](../tasks/ah-4.4.md)) | S | агент | AH-4.3, AH-3.2 | — |
+| AH-4.5 | Гейт News vertical slice ([статус](../tasks/ah-4.5.md)) | S | власник + агент | AH-4.3, AH-4.4, AH-0.5 | G14 |
+| AH-5.1 | Родина editorial-патернів ([статус](../tasks/ah-5.1.md)) | L | агент | AH-4.5 | G17 |
+| AH-5.2 | Стаття ([статус](../tasks/ah-5.2.md)) | L | агент | AH-5.1 | route `article` |
+| AH-5.3 | Головна ([статус](../tasks/ah-5.3.md)) | L | агент + власник | AH-5.1, AH-4.2 | route `home`, B9, B10 |
+| AH-5.4 | Daily ([статус](../tasks/ah-5.4.md)) | L | агент | AH-5.1 | route `daily` |
+| AH-5.5 | Weekly ([статус](../tasks/ah-5.5.md)) | L | агент + власник | AH-5.1 | route `weekly` |
+| AH-5.6 | Архів Digests ([статус](../tasks/ah-5.6.md)) | M | агент | AH-5.1, AH-2.6 | route `digests` |
+| AH-5.7 | Хаб категорії ([статус](../tasks/ah-5.7.md)) | M | агент | AH-5.1, AH-4.3 | route `category` |
+| AH-5.8 | Concepts: хаб і сторінка ([статус](../tasks/ah-5.8.md)) | L | агент | AH-5.1, AH-2.6 | routes `concepts`, `concept` |
+| AH-5.9 | Guides: бібліотека і гайд ([статус](../tasks/ah-5.9.md)) | M | агент | AH-5.1 | routes `guides`, `guide` |
+| AH-5.10 | Toolbox-хаб і ToolWorkspaceTemplate ([статус](../tasks/ah-5.10.md)) | M | агент | AH-5.1, AH-2.3 | route `tools` |
+| AH-5.11 | Три робочі простори утиліт ([статус](../tasks/ah-5.11.md)) | M | агент | AH-5.10 | routes `tool`, `settings`, `instructions` |
+| AH-5.12 | About і Author ([статус](../tasks/ah-5.12.md)) | M | агент | AH-5.1, AH-3.4 | routes `about`, `author` |
+| AH-5.13 | Subscribe і Advertise ([статус](../tasks/ah-5.13.md)) | M | агент + власник | AH-5.1, AH-3.4 | routes `subscribe`, `advertise` |
+| AH-5.14 | Чотири політики ([статус](../tasks/ah-5.14.md)) | S | агент | AH-5.1 | route `policy` |
+| AH-5.15 | 404 і loading-стани ([статус](../tasks/ah-5.15.md)) | S | агент | AH-3.3, AH-2.5 | route `404`, B10 |
+| AH-5.16 | Saved / індекс категорій — не виконується ([статус](../tasks/ah-5.16.md)) | — | — | — | — |
+| AH-6.1 | Motion runtime і жести ([статус](../tasks/ah-6.1.md)) | M | агент | G5 | Tension v3 |
+| AH-6.2 | The Resolve і «акорд» знака ([статус](../tasks/ah-6.2.md)) | M | агент | AH-6.1, AH-5.3, AH-3.1 | бренд-сцена |
+| AH-6.3 | View Transitions ([статус](../tasks/ah-6.3.md)) | S | агент | AH-6.1 | переходи маршрутів |
+| AH-7.1 | Повний acceptance-прогін ([статус](../tasks/ah-7.1.md)) | M | агент + власник | AH-6.2, AH-6.3 | G14 |
+| AH-7.2 | CWV на production-like preview ([статус](../tasks/ah-7.2.md)) | S | агент | AH-7.1 | бюджети CWV |
+| AH-7.3 | Прибирання legacy ([статус](../tasks/ah-7.3.md)) | M | агент | AH-7.1 | G10, G15, B15 |
+| AH-7.4 | Реліз, моніторинг, оцінка після запуску ([статус](../tasks/ah-7.4.md)) | S (+28 днів) | власник + агент | AH-7.3, AH-0.6 | оцінка §9 redesign |
+| AH-7.5 | Документація й статуси wiki ([статус](../tasks/ah-7.5.md)) | S | агент | AH-7.3 | G01 (фінал) |
 
 ### 5.4 Паралельні доріжки
 
