@@ -384,7 +384,7 @@ flowchart TD
 | AH-4.1 | Taxonomy Topics / Tool: lib, URL і чіп активного фільтра; пікер фасету — AH-4.3 ([статус](../tasks/ah-4.1.md)) | — | — | D8 ✅ | G06, B7 (lib/URL) |
 | AH-4.2 | StoryCard, StoryRow, CategoryBanner ([статус](../tasks/ah-4.2.md)) | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
 | AH-4.3 | Сторінка /[lang]/news ([статус](../tasks/ah-4.3.md)) | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
-| AH-4.4 | Сторінка /[lang]/news/search ([статус](../tasks/ah-4.4.md)) | S | агент | AH-4.3, AH-3.2 | — |
+| AH-4.4 | ✅ Сторінка /[lang]/news/search ([PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)) | S | агент | AH-4.3, AH-3.2 | route `search` |
 | AH-4.5 | Гейт News vertical slice ([статус](../tasks/ah-4.5.md)) | S | власник + агент | AH-4.3, AH-4.4, AH-0.5 | G14 |
 | AH-5.1 | Родина editorial-патернів ([статус](../tasks/ah-5.1.md)) | L | агент | AH-4.5 | G17 |
 | AH-5.2 | Стаття ([статус](../tasks/ah-5.2.md)) | L | агент | AH-5.1 | route `article` |
@@ -1424,9 +1424,11 @@ AH-2.4, AH-2.6, AH-3.3, AH-3.4 · **Закриває:** G02, G05, G07, B8; фі�
 canonical на `/news`.
 
 **AC:**
-- [ ] SEO-diff: robots `noindex,follow` і canonical без змін.
-- [ ] E2E: `q` з лапками, кирилицею й емодзі коректно екранується; порожній `q` → idle без запиту.
-- [ ] Маршрут у gating-режимі QA-матриці.
+- [x] SEO-diff: robots `noindex,follow` і canonical без змін.
+- [x] E2E: `q` з лапками, кирилицею й емодзі коректно екранується; порожній `q` → idle без запиту.
+- [x] Маршрут у gating-режимі QA-матриці.
+
+**Статус (2026-10-03, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)):** breadcrumb Головна › Новини › Пошук; H1 «Результати для “q”» / idle «Знайдіть зв’язок.»; велике поле `NewsSearchForm`; discovery через `NewsFeed` (`feedContext="search"`, Relevance за замовчуванням); idle — `NewsSearchIdle` з trending; empty — перехід до Concepts; `force-dynamic`, `noindex,follow`, canonical на `/news`. E2E `e2e/news-search.spec.ts`. **Наступна задача — AH-4.5.**
 
 ### AH-4.5 · Гейт News vertical slice
 

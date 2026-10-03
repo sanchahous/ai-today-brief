@@ -24,6 +24,8 @@ Last updated: 2026-10-03 (AH-3.3 review fixes)
 
 ## Стан репозиторію
 
+- **AH-4.4 відкрито в [#412](https://github.com/sanchahous/ai-today-brief/pull/412)** на `feat/ah-4.4-news-search`: сторінка `/[lang]/news/search` — breadcrumb, H1 за `q`, велике поле пошуку, discovery з Relevance, idle з популярними запитами (trending), empty → Concepts; `noindex,follow`, canonical на `/news`. E2E `news-search.spec.ts`. **Наступна задача епіку — AH-4.5.** (source: PR #412; [епік §5.3 AH-4.4](product/after-hours-redesign-epic.md#ah-44--сторінка-пошуку-langnewssearch))
+
 - **AH-5.15 відкрито в [#409](https://github.com/sanchahous/ai-today-brief/pull/409)** на `feat/ah-5.15-not-found-loading`: After Hours 404 (celadon-нуль, eyebrow, форма пошуку → `/news/search`, suggested links) без нескінченних анімацій; loading-скелетони home/news/category. E2E `not-found.spec.ts`. **Наступна задача епіку — AH-6.1.** (source: PR #409; [епік §5.3 AH-5.15](product/after-hours-redesign-epic.md#ah-515--404-і-loading-стани))
 
 - **AH-3.3 реалізовано (2026-10-03)** на `feat/ah-3.3-header-layout`: 2-рівневий header-chrome (desktop), compact sticky навігація через `IntersectionObserver`, мобільний sheet (Categories і Search) та перемикання брейкпойнтів на 960px (`@variant tablet`). E2E тести оновлено (`e2e/helpers/viewports.ts`). Виправлено review findings: `isActive` для `digests` підтримує daily briefs, пошук у mobile menu використовує i18n, додано тест активного стану. (source: PR AH-3.3; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))

@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-03
 
+## 2026-10-03 — AH-4.4: сторінка пошуку `/[lang]/news/search` ([PR #412](https://github.com/sanchahous/ai-today-brief/pull/412))
+
+- **Маршрут:** breadcrumb Головна › Новини › Пошук; H1 «Результати для “q”» / idle; велике поле `NewsSearchForm`; discovery через `NewsFeed` (`feedContext="search"`); idle — популярні запити з trending; empty — перехід до Concepts.
+- **SEO:** `force-dynamic`, `noindex,follow`, canonical на `/news` без змін.
+- **Тести:** `e2e/news-search.spec.ts` — екранування `q`, idle без стрічки, robots/canonical.
+- **Наступна задача епіку:** AH-4.5 (Гейт News vertical slice).
+(source: PR #412; [епік AH-4.4](product/after-hours-redesign-epic.md#ah-44--сторінка-пошуку-langnewssearch))
+
 ## 2026-10-03 — AH-5.15: 404 і loading-стани After Hours ([PR #409](https://github.com/sanchahous/ai-today-brief/pull/409))
 
 - **404:** перероблено `not-found-content.tsx` за прототипом `artifacts/after-hours/pages.js` — celadon-нуль у коді 404, eyebrow «Поза ефіром», H1 з курсивним акцентом, лід, inline-форма пошуку (`NotFoundSearch` → `/[lang]/news/search`), навігація рекомендованих сторінок (Home, News, Digests, Subscribe). Видалено `not-found-illustration.tsx` і CSS `nf-*` з нескінченними анімаціями; прибрано декоративні orbs.

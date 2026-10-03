@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Fragment,
@@ -44,6 +45,8 @@ import {
   SearchInput,
   NewsletterForm,
 } from '@/components/ui';
+import { actionClassName } from '@/lib/ui/action-styles';
+import styles from '@/components/ui/actions.module.css';
 
 const PAGE_SIZE = 12;
 
@@ -57,6 +60,7 @@ export function NewsFeed({
   initialPage = 1,
   error = false,
   onRetry,
+  feedContext = 'hub',
 }: {
   lang: Lang;
   items: HomeItem[];
@@ -67,6 +71,8 @@ export function NewsFeed({
   initialPage?: number;
   error?: boolean;
   onRetry?: () => void;
+  /** `search` — dedicated `/news/search` route: no toolbar search, Concepts empty CTA. */
+  feedContext?: 'hub' | 'search';
 }) {
   const core = getStrings(lang);
   const t = core.news;
@@ -203,7 +209,9 @@ export function NewsFeed({
     };
     setFilters(nextFilters);
     setPage(1);
-    if (serverSearchActive) {
+    if (feedContext === 'search') {
+      router.push(`/${lang}/news/search`);
+    } else if (serverSearchActive) {
       router.push(`/${lang}/news`);
     } else {
       syncUrl(nextFilters, 1);
@@ -217,6 +225,11 @@ export function NewsFeed({
 
   const setSearchQuery = (q: string) => {
     if (q) trackEvent('search', { query: q });
+    if (feedContext === 'search') {
+      setPage(1);
+      router.push(q ? `/${lang}/news/search?q=${encodeURIComponent(q)}` : `/${lang}/news/search`);
+      return;
+    }
     const nextFilters = { ...filters, q };
     if (!q && nextFilters.sort === 'relevance') nextFilters.sort = 'newest';
     setFilters(nextFilters);
@@ -312,21 +325,23 @@ export function NewsFeed({
 
       <section aria-label={t.title} className="min-w-0">
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex-1 min-w-[200px] max-w-md">
-            <SearchInput
-              lang={lang}
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  setSearchQuery(searchValue);
-                }
-              }}
-              onClear={() => setSearchQuery('')}
-            />
-          </div>
-          <div className="flex items-center gap-2">
+          {feedContext === 'hub' && (
+            <div className="flex-1 min-w-[200px] max-w-md">
+              <SearchInput
+                lang={lang}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setSearchQuery(searchValue);
+                  }
+                }}
+                onClear={() => setSearchQuery('')}
+              />
+            </div>
+          )}
+          <div className={`flex items-center gap-2 ${feedContext === 'search' ? 'w-full justify-between' : ''}`}>
             <p className="text-muted m-0 text-sm" aria-live="polite" role="status">
               {showingText}
             </p>
@@ -421,12 +436,21 @@ export function NewsFeed({
           />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title={t.emptyTitle}
-            description={t.emptyBody}
+            title={feedContext === 'search' ? t.searchPage.emptyTitle : t.emptyTitle}
+            description={feedContext === 'search' ? t.searchPage.emptyBody : t.emptyBody}
             action={
-              <ActionButton variant="primary" onClick={reset}>
-                {t.filterReset}
-              </ActionButton>
+              feedContext === 'search' ? (
+                <Link
+                  href={`/${lang}/concepts`}
+                  className={`${styles.control} ${actionClassName({ variant: 'outline', size: 'md' })}`}
+                >
+                  {t.searchPage.browseConcepts}
+                </Link>
+              ) : (
+                <ActionButton variant="primary" onClick={reset}>
+                  {t.filterReset}
+                </ActionButton>
+              )
             }
           />
         ) : (
