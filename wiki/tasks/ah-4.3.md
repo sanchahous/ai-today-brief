@@ -28,7 +28,7 @@ Task: ah-4.3
 - Картки новин: переведено з `PostCard` на `StoryCard`. Інтегровано `NewsletterForm` (inline).
 - Технічні вимоги: гарантовано відсутність читання `searchParams` у серверному компоненті для збереження ISR.
 - Тести: оновлено E2E тести (news-feed-interaction) для роботи з новими селекторами пошуку та фільтрів.
-(source: PR #TODO; [епік AH-4.3](product/after-hours-redesign-epic.md#ah-43--сторінка-langnews-за-контрактом-discovery))
+(source: PR #411; [епік AH-4.3](product/after-hours-redesign-epic.md#ah-43--сторінка-langnews-за-контрактом-discovery))
 ```
 
 ### handoff-next-task

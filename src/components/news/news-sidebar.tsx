@@ -30,8 +30,8 @@ interface SidebarControlsProps {
   onDate: (d: DatePreset) => void;
   onSort: (s: SortMode) => void;
   onReset: () => void;
-  activeTopics?: { slug: string; name: string }[];
-  onRemoveTopic?: (slug: string) => void;
+  topicOptions?: { slug: string; name: string; count: number; selected: boolean }[];
+  onToggleTopic?: (slug: string) => void;
   hasActive: boolean;
   compact?: boolean;
   showSort?: boolean;
@@ -71,8 +71,8 @@ function SidebarControls({
   onDate,
   onSort,
   onReset,
-  activeTopics = [],
-  onRemoveTopic,
+  topicOptions = [],
+  onToggleTopic,
   hasActive,
   compact = false,
   showSort = true,
@@ -181,20 +181,28 @@ function SidebarControls({
         </div>
       </FilterGroup>
 
-      {activeTopics.length > 0 && (
+      {topicOptions.length > 0 && (
         <FilterGroup label={t.filterTopics} compact={compact}>
-          <div className="flex flex-wrap gap-2">
-            {activeTopics.map((topic) => (
-              <FilterChip
-                lang={lang}
-                key={topic.slug}
-                label={topic.name}
-                active
-                onRemove={() => onRemoveTopic?.(topic.slug)}
-                removeAriaLabel={t.removeTopic.replace('{name}', topic.name)}
-              />
+          <ul className={`m-0 grid list-none gap-1 p-0 ${compact ? 'min-[520px]:grid-cols-2' : ''}`}>
+            {topicOptions.map((topic) => (
+              <li key={topic.slug}>
+                <label className={rowClass(topic.selected)}>
+                  <input
+                    type="checkbox"
+                    checked={topic.selected}
+                    onChange={() => onToggleTopic?.(topic.slug)}
+                    className="accent-accent size-4 shrink-0"
+                  />
+                  <span className={`min-w-0 flex-1 leading-snug ${compact ? 'break-words' : 'truncate'}`}>
+                    {topic.name}
+                  </span>
+                  <span className="text-faint ml-2 shrink-0 text-2xs tabular-nums">
+                    {topic.count}
+                  </span>
+                </label>
+              </li>
             ))}
-          </div>
+          </ul>
           <p className="text-faint mt-2 mb-0 text-xs">{t.facetLogicNote}</p>
         </FilterGroup>
       )}

@@ -27,6 +27,7 @@ import {
 } from '@/components/news/news-sidebar';
 import {
   applyNewsFilters,
+  buildTopicFacet,
   countCategories,
   normalizePage,
   parseNewsUrlParams,
@@ -37,6 +38,8 @@ import { resolveTopicNames } from '@/lib/topic-normalize';
 import {
   ActionButton,
   EmptyState,
+  ErrorState,
+  FilterChip,
   AccessiblePagination,
   Select,
   SearchInput,
@@ -62,7 +65,8 @@ export function NewsFeed({
   initialCategory?: string;
   initialPage?: number;
 }) {
-  const t = getStrings(lang).news;
+  const core = getStrings(lang);
+  const t = core.news;
   const router = useRouter();
   const serverSearchActive = initialQuery.trim().length > 0;
 
@@ -76,6 +80,7 @@ export function NewsFeed({
   const [page, setPage] = useState(initialPage);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [searchError, setSearchError] = useState(false);
   const filtersTriggerRef = useRef<HTMLButtonElement>(null);
   const noResultsTracked = useRef('');
   const isHydrated = useRef(false);
@@ -134,9 +139,13 @@ export function NewsFeed({
     [items, filters, serverSearchActive],
   );
 
-  const topicNames = useMemo(() => resolveTopicNames(items.map((p) => p.tools)), [items]);
-  // A stale link can carry topics no story has: they filter nothing, so they get no chip either.
-  const activeTopics = filters.topics.filter((slug) => topicNames.has(slug));
+  const topicOptions = useMemo(
+    () => buildTopicFacet(items, filters, { serverSearch: serverSearchActive }),
+    [items, filters, serverSearchActive],
+  );
+
+  const topicNames = useMemo(() => new Map(topicOptions.map(t => [t.slug, t.name])), [topicOptions]);
+  const activeTopics = useMemo(() => topicOptions.filter(t => t.selected).map(t => t.slug), [topicOptions]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = normalizePage(page, pageCount);
@@ -213,6 +222,19 @@ export function NewsFeed({
     syncUrl(nextFilters, 1);
   };
 
+  const toggleTopic = (slug: string) => {
+    trackEvent('filter_topic', { topic: slug });
+    const nextFilters: NewsFilters = {
+      ...filters,
+      topics: filters.topics.includes(slug)
+        ? filters.topics.filter((s) => s !== slug)
+        : [...filters.topics, slug],
+    };
+    setFilters(nextFilters);
+    setPage(1);
+    syncUrl(nextFilters, 1);
+  };
+
   const removeTopic = (slug: string) => {
     const nextFilters: NewsFilters = {
       ...filters,
@@ -277,8 +299,8 @@ export function NewsFeed({
         onDate={setDateFilter}
         onSort={setSortFilter}
         onReset={reset}
-        activeTopics={activeTopics.map((slug) => ({ slug, name: topicNames.get(slug) ?? slug }))}
-        onRemoveTopic={removeTopic}
+        topicOptions={topicOptions}
+        onToggleTopic={toggleTopic}
         hasActive={hasActive}
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
@@ -303,7 +325,7 @@ export function NewsFeed({
             />
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-muted m-0 text-sm hidden lg:block" aria-live="polite" role="status">
+            <p className="text-muted m-0 text-sm" aria-live="polite" role="status">
               {showingText}
             </p>
             <label htmlFor="news-sort-top" className="sr-only">
@@ -336,9 +358,66 @@ export function NewsFeed({
             </ActionButton>
           </div>
         </div>
+        
+        {hasActive && (
+          <div data-testid="active-filter-chips" className="mb-6 flex flex-wrap items-center gap-2">
+            {filters.q.trim() && (
+              <FilterChip
+                lang={lang}
+                label={filters.q}
+                active
+                onRemove={() => setSearchQuery('')}
+                removeAriaLabel={t.removeTopic.replace('{name}', filters.q)}
+              />
+            )}
+            {filters.categories.map(slug => {
+              const cat = categories.find(c => c.slug === slug);
+              return cat ? (
+                <FilterChip
+                  lang={lang}
+                  key={slug}
+                  label={cat.name}
+                  active
+                  onRemove={() => toggleCategory(slug)}
+                  removeAriaLabel={t.removeTopic.replace('{name}', cat.name)}
+                />
+              ) : null;
+            })}
+            {activeTopics.map(slug => (
+               <FilterChip
+                  lang={lang}
+                  key={slug}
+                  label={topicNames.get(slug) ?? slug}
+                  active
+                  onRemove={() => removeTopic(slug)}
+                  removeAriaLabel={t.removeTopic.replace('{name}', topicNames.get(slug) ?? slug)}
+               />
+            ))}
+            {filters.date !== 'all' && (
+              <FilterChip
+                lang={lang}
+                label={
+                  filters.date === 'today' ? t.dateToday :
+                  filters.date === 'week' ? t.dateWeek :
+                  filters.date === 'month' ? t.dateMonth : ''
+                }
+                active
+                onRemove={() => setDateFilter('all')}
+                removeAriaLabel={t.removeTopic.replace('{name}', filters.date)}
+              />
+            )}
+            <ActionButton variant="ghost" onClick={reset}>{t.filterReset}</ActionButton>
+          </div>
+        )}
 
-
-        {filtered.length === 0 ? (
+        {searchError ? (
+          <ErrorState
+            title={core.searchErrorTitle}
+            description={core.searchErrorDescription}
+            retryLabel={core.searchErrorRetry}
+            onRetry={() => setSearchError(false)}
+          />
+        ) : filtered.length === 0 ? (
           <EmptyState
             title={t.emptyTitle}
             description={t.emptyBody}

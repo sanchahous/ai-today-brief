@@ -27,16 +27,36 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
       await expect(resetButton).toBeVisible();
     }
 
-    // 3. Select a date preset
+    // 3. Select a topic if available
+    const topicCheckboxes = sidebar.locator('section').filter({ hasText: /topics|теми/i }).locator('input[type="checkbox"]');
+    const hasTopic = await topicCheckboxes.count().then(c => c > 0);
+    if (hasTopic) {
+      await topicCheckboxes.first().check();
+      await expect(page).toHaveURL(/topics=/);
+    }
+
+    // 4. Select a date preset
     const dateWeekButton = sidebar.getByRole('button', { name: /week/i });
     if (await dateWeekButton.isVisible()) {
       await dateWeekButton.click();
       await expect(page).toHaveURL(/date=week/);
-
-      // 4. Test browser back button restores previous state
+    }
+    
+    // 5. Test reload preserves state
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', { timeout: 30_000 });
+    if (hasCategoryCheckbox) await expect(page).toHaveURL(/categories=/);
+    if (hasTopic) await expect(page).toHaveURL(/topics=/);
+    
+    // 6. Test browser back button restores previous state
+    if (await dateWeekButton.isVisible()) {
       await page.goBack();
       // After back, date=week should be gone
       expect(page.url()).not.toContain('date=week');
+    }
+    if (hasTopic) {
+      await page.goBack();
+      expect(page.url()).not.toContain('topics=');
     }
   });
 
@@ -80,8 +100,12 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
     const searchInput = page.getByRole('searchbox');
     await expect(searchInput).toHaveValue('intelligence');
 
-    // Clear search using input clear button
-    const clearBtn = page.getByRole('button', { name: /clear|очистити/i });
+    // Active query chip should be visible
+    const activeChips = page.getByTestId('active-filter-chips');
+    await expect(activeChips).toBeVisible();
+
+    // Clear search using chip remove button
+    const clearBtn = activeChips.getByRole('button', { name: /remove|✕|x/i }).first();
     if (await clearBtn.isVisible()) {
       await clearBtn.click();
       await expect(page).not.toHaveURL(/q=intelligence/);
