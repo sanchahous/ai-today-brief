@@ -1,0 +1,779 @@
+
+> ai-today-brief@0.1.0 e2e:affected
+> tsx scripts/e2e-affected.ts
+
+e2e:affected тАФ 22 changed file(s):
+  e2e/a11y-layout-matrix.spec.ts тЖТ itself
+  e2e/fixtures/a11y-gating.json тЖТ skip (no UI impact)
+  e2e/news-search.spec.ts тЖТ itself
+  src/app/[lang]/news/search/page.tsx тЖТ news-search.spec.ts, a11y-layout-matrix.spec.ts
+  src/app/globals.css тЖТ ALL (broad)
+  src/components/news/news-feed.tsx тЖТ a11y-layout-matrix.spec.ts, news-feed-interaction.spec.ts, news-search.spec.ts
+  src/components/news/news-search-form.tsx тЖТ news-search.spec.ts, a11y-layout-matrix.spec.ts
+  src/components/news/news-search-idle.tsx тЖТ news-search.spec.ts, a11y-layout-matrix.spec.ts
+  src/components/news/news-sidebar.tsx тЖТ crossbrowser-fallbacks.spec.ts, news-feed-interaction.spec.ts, news-filters-drawer.spec.ts, news-sidebar.spec.ts, responsive-breakpoints.spec.ts, a11y-layout-matrix.spec.ts
+  src/components/site-footer.tsx тЖТ a11y-layout-matrix.spec.ts, footer-newsletter.spec.ts
+  src/components/site-header-chrome.tsx тЖТ category-colours.spec.ts, header-layout.spec.ts, mobile-search.spec.ts, search-dialog-keyboard.spec.ts, cookie-overlay.spec.ts, mobile-menu.spec.ts, a11y-layout-matrix.spec.ts
+  src/components/ui/fields.module.css тЖТ fields.spec.ts, a11y-layout-matrix.spec.ts
+  src/lib/i18n.ts тЖТ core net (smoke, layout)
+  wiki/_tools/lib/project-sync.mjs тЖТ skip (no UI impact)
+  wiki/_tools/wiki-project-sync.test.mjs тЖТ skip (no UI impact)
+  wiki/index.md тЖТ skip (no UI impact)
+  wiki/log.md тЖТ skip (no UI impact)
+  wiki/now.md тЖТ skip (no UI impact)
+  wiki/product/after-hours-epic-handoff.md тЖТ skip (no UI impact)
+  wiki/product/after-hours-redesign-epic.md тЖТ skip (no UI impact)
+  wiki/tasks/ah-4.4.md тЖТ skip (no UI impact)
+  e2e-affected-f4.log тЖТ skip (no UI impact)
+
+e2e:affected тАФ broad change detected тЖТ running the full chromium suite.
+
+e2e:affected тАФ no server on :3100; running production build firstтАж
+
+
+> ai-today-brief@0.1.0 build:ci
+> node scripts/run-minimal-prerender-build.mjs
+
+тЦ▓ Next.js 16.3.6 (Turbopack)
+- Environments: .env.local
+тЬУ Running next.config.ts took 24ms
+- Experiments (use with caution):
+  ┬╖ proxyClientMaxBodySize: "13mb"
+  ┬╖ serverActions
+
+  Creating an optimized production build ...
+тЬУ Compiled successfully in 1957ms
+  Running TypeScript ...
+  Finished TypeScript in 1797ms ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/101) ...
+  Generating static pages using 11 workers (25/101) 
+  Generating static pages using 11 workers (50/101) 
+  Generating static pages using 11 workers (75/101) 
+тЬУ Generating static pages using 11 workers (101/101) in 2.3s
+  Finalizing page optimization ...
+
+Route (app)                                                                                                Revalidate  Expire
+тФМ ╞Т /
+тФЬ тЧЛ /_not-found                                                                                                    1d      1y
+тФЬ   /[lang]
+тФВ тФЬ тЧП /en                                                                                                          1h      1y
+тФВ тФФ тЧП /uk                                                                                                          1h      1y
+тФЬ   /[lang]/[brief]
+тФВ тФЬ тЧП /en/talent-shifts-and-model-leadership                                                                       1d      1y
+тФВ тФЬ тЧП /uk/talent-shifts-and-model-leadership                                                                       1d      1y
+тФВ тФЬ тЧП /en/mastering-claude-session-limits-and-context-optimization                                                 1d      1y
+тФВ тФФ тЧП [+5 more paths]
+тФЬ ╞Т /[lang]/[brief]/[item]
+тФЬ   /[lang]/about
+тФВ тФЬ тЧП /en/about                                                                                                    1d      1y
+тФВ тФФ тЧП /uk/about                                                                                                    1d      1y
+тФЬ   /[lang]/advertise
+тФВ тФЬ тЧП /en/advertise                                                                                                1d      1y
+тФВ тФФ тЧП /uk/advertise                                                                                                1d      1y
+тФЬ   /[lang]/ai-disclosure
+тФВ тФЬ тЧП /en/ai-disclosure                                                                                            1d      1y
+тФВ тФФ тЧП /uk/ai-disclosure                                                                                            1d      1y
+тФЬ   /[lang]/author
+тФВ тФЬ тЧП /en/author                                                                                                   1d      1y
+тФВ тФФ тЧП /uk/author                                                                                                   1d      1y
+тФЬ   /[lang]/category/[slug]
+тФВ тФЬ тЧП /en/category/tools-and-releases                                                                              1d      1y
+тФВ тФЬ тЧП /uk/category/tools-and-releases                                                                              1d      1y
+тФВ тФЬ тЧП /en/category/tutorials-and-guides                                                                            1d      1y
+тФВ тФФ тЧП [+5 more paths]
+тФЬ   /[lang]/concepts
+тФВ тФЬ тЧП /en/concepts                                                                                                 1d      1y
+тФВ тФФ тЧП /uk/concepts                                                                                                 1d      1y
+тФЬ   /[lang]/concepts/[slug]
+тФВ тФЬ тЧП /en/concepts/codex                                                                                           1d      1y
+тФВ тФЬ тЧП /uk/concepts/codex                                                                                           1d      1y
+тФВ тФЬ тЧП /en/concepts/token-optimization                                                                              1d      1y
+тФВ тФФ тЧП [+5 more paths]
+тФЬ   /[lang]/digests
+тФВ тФЬ тЧП /en/digests                                                                                                  1h      1y
+тФВ тФФ тЧП /uk/digests                                                                                                  1h      1y
+тФЬ   /[lang]/editorial-policy
+тФВ тФЬ тЧП /en/editorial-policy                                                                                         1d      1y
+тФВ тФФ тЧП /uk/editorial-policy                                                                                         1d      1y
+тФЬ   /[lang]/guides
+тФВ тФЬ тЧП /en/guides                                                                                                   1d      1y
+тФВ тФФ тЧП /uk/guides                                                                                                   1d      1y
+тФЬ   /[lang]/guides/[slug]
+тФВ тФЬ тЧП /en/guides/claude-code-vs-cursor-vs-codex                                                                    1d      1y
+тФВ тФЬ тЧП /en/guides/atb-orchestration-bench                                                                           1d      1y
+тФВ тФЬ тЧП /uk/guides/claude-code-vs-cursor-vs-codex                                                                    1d      1y
+тФВ тФФ тЧП /uk/guides/atb-orchestration-bench                                                                           1d      1y
+тФЬ   /[lang]/news
+тФВ тФЬ тЧП /en/news                                                                                                     1h      1y
+тФВ тФФ тЧП /uk/news                                                                                                     1h      1y
+тФЬ   /[lang]/news/[category]/[item]
+тФВ тФЬ тЧП /en/news/agents-and-mcp/paperclip-open-sources-control-plane-for-multi-agent-workflows-and-budgets           1d      1y
+тФВ тФЬ тЧП /uk/news/agents-and-mcp/paperclip-open-sources-control-plane-for-multi-agent-workflows-and-budgets           1d      1y
+тФВ тФЬ тЧП /en/news/agents-and-mcp/inside-grok-bot-architecture-cloud-virtual-machines-sand-harness-and-cursor          1d      1y
+тФВ тФФ тЧП [+5 more paths]
+тФЬ ╞Т /[lang]/news/[category]/[item]/opengraph-image
+тФЬ ╞Т /[lang]/news/search
+тФЬ ╞Т /[lang]/opengraph-image
+тФЬ   /[lang]/privacy
+тФВ тФЬ тЧП /en/privacy                                                                                                  1d      1y
+тФВ тФФ тЧП /uk/privacy                                                                                                  1d      1y
+тФЬ   /[lang]/subscribe
+тФВ тФЬ тЧП /en/subscribe                                                                                                1d      1y
+тФВ тФФ тЧП /uk/subscribe                                                                                                1d      1y
+тФЬ   /[lang]/terms
+тФВ тФЬ тЧП /en/terms                                                                                                    1d      1y
+тФВ тФФ тЧП /uk/terms                                                                                                    1d      1y
+тФЬ   /[lang]/tools
+тФВ тФЬ тЧП /en/tools                                                                                                    1d      1y
+тФВ тФФ тЧП /uk/tools                                                                                                    1d      1y
+тФЬ   /[lang]/tools/claude-md-generator
+тФВ тФЬ тЧП /en/tools/claude-md-generator                                                                                1d      1y
+тФВ тФФ тЧП /uk/tools/claude-md-generator                                                                                1d      1y
+тФЬ   /[lang]/tools/prompt-optimizer
+тФВ тФЬ тЧП /en/tools/prompt-optimizer                                                                                   1d      1y
+тФВ тФФ тЧП /uk/tools/prompt-optimizer                                                                                   1d      1y
+тФЬ   /[lang]/tools/settings-builder
+тФВ тФЬ тЧП /en/tools/settings-builder                                                                                   1d      1y
+тФВ тФФ тЧП /uk/tools/settings-builder                                                                                   1d      1y
+тФЬ   /[lang]/weekly/[slug]
+тФВ тФЬ тЧП /en/weekly/ai-weekly-2026-06-29                                                                              1d      1y
+тФВ тФЬ тЧП /uk/weekly/ai-weekly-2026-06-29                                                                              1d      1y
+тФВ тФЬ тЧП /en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23                            1d      1y
+тФВ тФФ тЧП [+5 more paths]
+тФЬ ╞Т /[lang]/weekly/[slug]/download
+тФЬ ╞Т /admin
+тФЬ ╞Т /admin/calendar
+тФЬ ╞Т /admin/costs
+тФЬ ╞Т /admin/daily-visuals
+тФЬ ╞Т /admin/engagement
+тФЬ ╞Т /admin/login
+тФЬ ╞Т /admin/mfa
+тФЬ ╞Т /admin/packages/[id]
+тФЬ ╞Т /admin/providers
+тФЬ ╞Т /admin/results
+тФЬ ╞Т /admin/settings
+тФЬ ╞Т /admin/weekly
+тФЬ ╞Т /admin/weekly/[id]
+тФЬ ╞Т /api/admin/weekly/[id]/generation-status
+тФЬ ╞Т /api/daily/visual-engagement
+тФЬ ╞Т /api/ev
+тФЬ ╞Т /api/internal/social/compose
+тФЬ ╞Т /api/internal/social/publish-due
+тФЬ ╞Т /api/internal/weekly/generate
+тФЬ ╞Т /api/internal/weekly/release-due
+тФЬ ╞Т /api/oauth/[provider]/callback
+тФЬ ╞Т /api/oauth/[provider]/start
+тФЬ ╞Т /api/revalidate
+тФЬ ╞Т /api/search
+тФЬ ╞Т /api/social/click
+тФЬ ╞Т /api/subscribe
+тФЬ ╞Т /api/telegram
+тФЬ ╞Т /api/weekly/engagement
+тФЬ тЧЛ /apple-icon.png
+тФЬ ╞Т /auth/callback
+тФЬ ╞Т /ds-catalog
+тФЬ тЧЛ /icon.svg
+тФЬ тЧЛ /indexnow-key.txt                                                                                              1d      1y
+тФЬ тЧЛ /llms.txt                                                                                                      1d      1y
+тФЬ тЧЛ /logo.png
+тФЬ тЧЛ /manifest.webmanifest
+тФЬ тЧЛ /news-sitemap.xml                                                                                              1h      1y
+тФЬ ╞Т /r/s/[token]
+тФЬ тЧЛ /robots.txt
+тФЬ тЧЛ /rss-uk.xml                                                                                                   30m      1y
+тФЬ тЧЛ /rss.xml                                                                                                      30m      1y
+тФФ тЧЛ /sitemap.xml                                                                                                   6h      1y
+
+
+╞Т Proxy (Middleware)
+
+тЧЛ  (Static)   prerendered as static content
+тЧП  (SSG)      prerendered as static HTML (uses generateStaticParams)
+╞Т  (Dynamic)  server-rendered on demand
+
+
+Running 519 tests using 4 workers
+
+(node:33936) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:28256) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23612) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok   4 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en night 768 (2.5s)
+  ok   2 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en night 390 (2.5s)
+  ok   1 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en night 360 (2.5s)
+  ok   3 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en night 1024 (2.5s)
+  ok   8 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en day 360 (2.3s)
+  ok   7 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ ds-catalog en night reflow-320 (2.3s)
+  ok   6 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ ds-catalog en night text-200 (2.3s)
+  ok   5 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en night 1440 (2.4s)
+  ok  11 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en day 1024 (2.2s)
+  ok  10 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en day 768 (2.3s)
+  ok   9 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en day 390 (2.4s)
+  ok  12 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ ds-catalog en day 1440 (2.3s)
+  ok  15 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en night 360 (2.1s)
+  ok  16 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en night 390 (2.1s)
+  ok  13 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ ds-catalog en day text-200 (2.3s)
+  ok  14 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ ds-catalog en day reflow-320 (2.3s)
+  ok  17 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en night 768 (1.5s)
+  ok  20 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q en night text-200 (1.4s)
+  ok  18 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en night 1024 (1.7s)
+  ok  19 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en night 1440 (1.7s)
+  ok  21 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q en night reflow-320 (1.4s)
+  ok  22 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en day 360 (1.4s)
+  ok  23 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en day 390 (1.4s)
+  ok  24 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en day 768 (1.5s)
+  ok  25 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en day 1024 (1.6s)
+  ok  27 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q en day text-200 (1.4s)
+  ok  26 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q en day 1440 (1.7s)
+  ok  28 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q en day reflow-320 (1.4s)
+  ok  29 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk night 360 (1.4s)
+  ok  30 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk night 390 (1.4s)
+  ok  31 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk night 768 (1.4s)
+  ok  32 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk night 1024 (1.7s)
+  ok  34 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk night text-200 (1.4s)
+  ok  35 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk night reflow-320 (1.4s)
+  ok  33 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk night 1440 (1.6s)
+  ok  36 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk day 360 (1.5s)
+  ok  37 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk day 390 (1.5s)
+  ok  38 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk day 768 (1.5s)
+  ok  39 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk day 1024 (1.7s)
+  ok  40 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk day 1440 (1.7s)
+  ok  43 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en night 360 (782ms)
+  ok  41 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk day text-200 (1.5s)
+  ok  44 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en night 390 (871ms)
+  ok  42 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-q-uk uk day reflow-320 (1.6s)
+  ok  45 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en night 768 (896ms)
+  ok  47 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en night 1440 (890ms)
+  ok  46 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en night 1024 (929ms)
+  ok  48 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle en night text-200 (880ms)
+  ok  49 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle en night reflow-320 (860ms)
+  ok  50 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en day 360 (884ms)
+  ok  51 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en day 390 (863ms)
+  ok  52 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en day 768 (894ms)
+  ok  53 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en day 1024 (880ms)
+  ok  55 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle en day text-200 (811ms)
+  ok  54 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle en day 1440 (870ms)
+  ok  56 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle en day reflow-320 (796ms)
+  ok  57 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk night 360 (813ms)
+  ok  58 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk night 390 (818ms)
+  ok  59 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk night 768 (817ms)
+  ok  60 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk night 1024 (848ms)
+  ok  61 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk night 1440 (880ms)
+  ok  62 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk night text-200 (812ms)
+  ok  63 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk night reflow-320 (795ms)
+  ok  64 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk day 360 (815ms)
+  ok  65 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk day 390 (868ms)
+  ok  66 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk day 768 (881ms)
+  ok  67 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk day 1024 (936ms)
+  -   71 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:293:5 тА║ legacy route matrix report
+  ok  68 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:238:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk day 1440 (936ms)
+  ok  69 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk day text-200 (827ms)
+  ok  70 [chromium] тА║ e2e\a11y-layout-matrix.spec.ts:254:15 тА║ A11y and layout matrix gating тА║ news-search-idle-uk uk day reflow-320 (803ms)
+  ok  72 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en night тА║ state matrix, axe and reflow 320 (1.3s)
+  ok  73 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en night тА║ state matrix, axe and reflow 360 (1.3s)
+  ok  74 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en night тА║ state matrix, axe and reflow 390 (1.3s)
+  ok  75 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en night тА║ state matrix, axe and reflow 768 (1.3s)
+  ok  78 [chromium] тА║ e2e\actions-selection.spec.ts:37:9 тА║ actions en night тА║ native keyboard, toggle announcement, independent removal and pending submission (597ms)
+  ok  76 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en night тА║ state matrix, axe and reflow 1024 (1.2s)
+  ok  77 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en night тА║ state matrix, axe and reflow 1440 (1.3s)
+  ok  79 [chromium] тА║ e2e\actions-selection.spec.ts:65:9 тА║ actions en night тА║ computed focus and fine-pointer hover use theme tokens; reduced motion keeps colour only (621ms)
+  ok  80 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en day тА║ state matrix, axe and reflow 320 (1.2s)
+  ok  81 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en day тА║ state matrix, axe and reflow 360 (1.1s)
+  ok  82 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en day тА║ state matrix, axe and reflow 390 (1.1s)
+  ok  83 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en day тА║ state matrix, axe and reflow 768 (1.2s)
+  ok  86 [chromium] тА║ e2e\actions-selection.spec.ts:37:9 тА║ actions en day тА║ native keyboard, toggle announcement, independent removal and pending submission (548ms)
+  ok  87 [chromium] тА║ e2e\actions-selection.spec.ts:65:9 тА║ actions en day тА║ computed focus and fine-pointer hover use theme tokens; reduced motion keeps colour only (604ms)
+  ok  84 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en day тА║ state matrix, axe and reflow 1024 (1.2s)
+  ok  85 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions en day тА║ state matrix, axe and reflow 1440 (1.3s)
+  ok  88 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk night тА║ state matrix, axe and reflow 320 (1.4s)
+  ok  89 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk night тА║ state matrix, axe and reflow 360 (1.5s)
+  ok  90 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk night тА║ state matrix, axe and reflow 390 (1.5s)
+  ok  91 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk night тА║ state matrix, axe and reflow 768 (1.3s)
+  ok  94 [chromium] тА║ e2e\actions-selection.spec.ts:37:9 тА║ actions uk night тА║ native keyboard, toggle announcement, independent removal and pending submission (750ms)
+  ok  95 [chromium] тА║ e2e\actions-selection.spec.ts:65:9 тА║ actions uk night тА║ computed focus and fine-pointer hover use theme tokens; reduced motion keeps colour only (723ms)
+  ok  92 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk night тА║ state matrix, axe and reflow 1024 (1.5s)
+  ok  93 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk night тА║ state matrix, axe and reflow 1440 (1.5s)
+  ok  96 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk day тА║ state matrix, axe and reflow 320 (1.5s)
+  ok  97 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk day тА║ state matrix, axe and reflow 360 (1.5s)
+  ok  98 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk day тА║ state matrix, axe and reflow 390 (1.6s)
+  ok  99 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk day тА║ state matrix, axe and reflow 768 (1.5s)
+  ok 102 [chromium] тА║ e2e\actions-selection.spec.ts:37:9 тА║ actions uk day тА║ native keyboard, toggle announcement, independent removal and pending submission (745ms)
+  ok 103 [chromium] тА║ e2e\actions-selection.spec.ts:65:9 тА║ actions uk day тА║ computed focus and fine-pointer hover use theme tokens; reduced motion keeps colour only (654ms)
+  ok 100 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk day тА║ state matrix, axe and reflow 1024 (1.5s)
+  ok 101 [chromium] тА║ e2e\actions-selection.spec.ts:20:11 тА║ actions uk day тА║ state matrix, axe and reflow 1440 (1.4s)
+  ok 105 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover night 390 (623ms)
+  ok 104 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover night 360 (653ms)
+  ok 106 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover night 768 (664ms)
+  ok 107 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover night 1440 (665ms)
+  ok 108 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover day 360 (705ms)
+  ok 109 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover day 390 (723ms)
+  ok 113 [chromium] тА║ e2e\admin-mobile.spec.ts:9:9 тА║ Mobile social CMS entry тА║ iPhone-sized login and PWA shell stay usable (305ms)
+  ok 110 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover day 768 (676ms)
+  ok 111 [chromium] тА║ e2e\actions-selection.spec.ts:101:9 тА║ coarse pointer тА║ all actions have 44px targets and no sticky hover day 1440 (666ms)
+  ok 114 [chromium] тА║ e2e\admin-mobile.spec.ts:9:9 тА║ Mobile social CMS entry тА║ Android-small login and PWA shell stay usable (259ms)
+  ok 112 [chromium] тА║ e2e\actions-selection.spec.ts:119:5 тА║ 200% text reflow (693ms)
+  ok 116 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en night 390 (965ms)
+  ok 115 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en night 360 (989ms)
+  ok 117 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en night 768 (1.0s)
+  ok 118 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en night 1024 (1.0s)
+  ok 120 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en night 320 (872ms)
+  ok 119 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en night 1440 (958ms)
+  ok 121 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en night 1280 (926ms)
+  ok 122 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en day 360 (874ms)
+  ok 123 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en day 390 (868ms)
+  ok 124 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en day 768 (916ms)
+  ok 125 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en day 1024 (942ms)
+  ok 126 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en day 1440 (983ms)
+  ok 127 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en day 320 (858ms)
+  ok 128 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home en day 1280 (923ms)
+  ok 129 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk night 360 (872ms)
+  ok 130 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk night 390 (896ms)
+  ok 131 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk night 768 (940ms)
+  ok 132 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk night 1024 (950ms)
+  ok 134 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk night 320 (872ms)
+  ok 133 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk night 1440 (986ms)
+  ok 135 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk night 1280 (959ms)
+  ok 136 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk day 360 (873ms)
+  ok 137 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk day 390 (864ms)
+  ok 138 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk day 768 (910ms)
+  ok 139 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk day 1024 (958ms)
+  ok 140 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk day 1440 (985ms)
+  ok 141 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk day 320 (876ms)
+  ok 142 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ home uk day 1280 (957ms)
+  ok 143 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en night 360 (1.0s)
+  ok 144 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en night 390 (1.0s)
+  ok 145 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en night 768 (1.1s)
+  ok 146 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en night 1024 (1.1s)
+  ok 147 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en night 1440 (1.0s)
+  ok 148 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en night 320 (914ms)
+  ok 149 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en night 1280 (935ms)
+  ok 150 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en day 360 (935ms)
+  ok 151 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en day 390 (951ms)
+  ok 152 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en day 768 (996ms)
+  ok 153 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en day 1024 (982ms)
+  ok 154 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en day 1440 (1.0s)
+  ok 155 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en day 320 (895ms)
+  ok 156 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news en day 1280 (919ms)
+  ok 157 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk night 360 (912ms)
+  ok 158 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk night 390 (895ms)
+  ok 159 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk night 768 (1.0s)
+  ok 160 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk night 1024 (1.0s)
+  ok 161 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk night 1440 (1.0s)
+  ok 162 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk night 320 (951ms)
+  ok 163 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk night 1280 (926ms)
+  ok 164 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk day 360 (912ms)
+  ok 165 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk day 390 (927ms)
+  ok 166 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk day 768 (979ms)
+  ok 167 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk day 1024 (959ms)
+  ok 168 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk day 1440 (978ms)
+  ok 169 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk day 320 (916ms)
+  ok 170 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news uk day 1280 (974ms)
+  ok 171 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en night 360 (812ms)
+  ok 172 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en night 390 (795ms)
+  ok 173 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en night 768 (864ms)
+  ok 174 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en night 1024 (821ms)
+  ok 175 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en night 1440 (806ms)
+  ok 176 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en night 320 (780ms)
+  ok 177 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en night 1280 (778ms)
+  ok 178 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en day 360 (795ms)
+  ok 179 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en day 390 (751ms)
+  ok 180 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en day 768 (779ms)
+  ok 181 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en day 1024 (780ms)
+  ok 182 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en day 1440 (798ms)
+  ok 183 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en day 320 (744ms)
+  ok 184 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme en day 1280 (797ms)
+  ok 185 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk night 360 (757ms)
+  ok 186 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk night 390 (757ms)
+  ok 187 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk night 768 (841ms)
+  ok 188 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk night 1024 (828ms)
+  ok 189 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk night 1440 (827ms)
+  ok 190 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk night 320 (783ms)
+  ok 191 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk night 1280 (827ms)
+  ok 192 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk day 360 (794ms)
+  ok 193 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk day 390 (825ms)
+  ok 194 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk day 768 (841ms)
+  ok 195 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk day 1024 (815ms)
+  ok 196 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk day 1440 (825ms)
+  ok 197 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk day 320 (763ms)
+  ok 198 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme uk day 1280 (831ms)
+  ok 199 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en night 360 (923ms)
+  ok 200 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en night 390 (865ms)
+  ok 201 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en night 768 (897ms)
+  ok 202 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en night 1024 (938ms)
+  ok 204 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en night 320 (804ms)
+  ok 203 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en night 1440 (867ms)
+  ok 205 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en night 1280 (857ms)
+  ok 206 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en day 360 (834ms)
+  ok 207 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en day 390 (856ms)
+  ok 208 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en day 768 (853ms)
+  ok 209 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en day 1024 (908ms)
+  ok 210 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en day 1440 (904ms)
+  ok 211 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en day 320 (867ms)
+  ok 212 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp en day 1280 (914ms)
+  ok 213 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk night 360 (856ms)
+  ok 214 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk night 390 (847ms)
+  ok 215 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk night 768 (915ms)
+  ok 216 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk night 1024 (961ms)
+  ok 217 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk night 1440 (957ms)
+  ok 218 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk night 320 (945ms)
+  ok 219 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk night 1280 (889ms)
+  ok 220 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk day 360 (862ms)
+  ok 221 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk day 390 (863ms)
+  ok 222 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk day 768 (904ms)
+  ok 223 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk day 1024 (912ms)
+  ok 224 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk day 1440 (928ms)
+  ok 225 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk day 320 (844ms)
+  ok 226 [chromium] тА║ e2e\category-colours.spec.ts:16:11 тА║ category colour gate тА║ /category/agents-and-mcp uk day 1280 (844ms)
+  ok 228 [chromium] тА║ e2e\cookie-overlay.spec.ts:35:7 тА║ Cookie banner vs overlays (no consent seeded) тА║ the cookie banner is shown and intercepts the bottom before any overlay (343ms)
+  ok 229 [chromium] тА║ e2e\cookie-overlay.spec.ts:44:7 тА║ Cookie banner vs overlays (no consent seeded) тА║ search modal renders above the cookie banner (472ms)
+  ok 230 [chromium] тА║ e2e\cookie-overlay.spec.ts:54:7 тА║ Cookie banner vs overlays (no consent seeded) тА║ mobile menu renders above the cookie banner (474ms)
+  ok 232 [chromium] тА║ e2e\cookie-overlay.spec.ts:111:7 тА║ Cookie banner vs overlays (no consent seeded) тА║ does not cover the homepage primary CTA at 360px (470ms)
+  ok 233 [chromium] тА║ e2e\cookie-overlay.spec.ts:124:7 тА║ Cookie banner vs overlays (no consent seeded) тА║ moves focus into the card from the footer and returns after closing (482ms)
+  ok 234 [chromium] тА║ e2e\crossbrowser-fallbacks.spec.ts:18:7 тА║ Cross-browser fallbacks тА║ sticky header background stays effectively opaque (439ms)
+  ok 227 [chromium] тА║ e2e\category-colours.spec.ts:52:7 тА║ category colour gate тА║ search API carries the category slug and preview badges use tokens (1.6s)
+  ok 235 [chromium] тА║ e2e\crossbrowser-fallbacks.spec.ts:31:7 тА║ Cross-browser fallbacks тА║ desktop filter sidebar has a finite, bounded max-height (492ms)
+  ok 236 [chromium] тА║ e2e\feedback-states.spec.ts:19:7 тА║ feedback catalog тА║ shows the data-state chain and announces a success toast (643ms)
+  ok 231 [chromium] тА║ e2e\cookie-overlay.spec.ts:64:7 тА║ Cookie banner vs overlays (no consent seeded) тА║ does not send GA collect requests before a consent choice (1.9s)
+  ok 238 [chromium] тА║ e2e\feedback-states.spec.ts:46:7 тА║ feedback catalog тА║ replacing the skeleton keeps the reserved box (523ms)
+  ok 239 [chromium] тА║ e2e\feedback-states.spec.ts:59:7 тА║ feedback catalog тА║ focused retry uses the focus token with transitions disabled (471ms)
+  ok 242 [chromium] тА║ e2e\feedback-states.spec.ts:110:7 тА║ feedback spinner reduced motion тА║ the loading ring does not keep spinning (480ms)
+  ok 240 [chromium] тА║ e2e\feedback-states.spec.ts:82:7 тА║ feedback catalog тА║ Ukrainian copy and a scoped axe pass (911ms)
+  ok 241 [chromium] тА║ e2e\feedback-states.spec.ts:97:7 тА║ feedback catalog тА║ day theme axe on the feedback section (871ms)
+  ok 237 [chromium] тА║ e2e\feedback-states.spec.ts:36:7 тА║ feedback catalog тА║ retry sets aria-busy and then a polite status (2.5s)
+  ok 243 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en night тА║ labels, axe and reflow 320 (1.2s)
+  ok 244 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en night тА║ labels, axe and reflow 390 (1.2s)
+  ok 245 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en night тА║ labels, axe and reflow 768 (1.2s)
+  ok 249 [chromium] тА║ e2e\fields.spec.ts:88:9 тА║ fields en night тА║ computed focus uses the focus token (507ms)
+  ok 248 [chromium] тА║ e2e\fields.spec.ts:60:9 тА║ fields en night тА║ arrows move radios and segments; space toggles checkbox and switch (604ms)
+  ok 247 [chromium] тА║ e2e\fields.spec.ts:41:9 тА║ fields en night тА║ hint stays with the error, and submit focuses the first invalid field (668ms)
+  ok 246 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en night тА║ labels, axe and reflow 1440 (1.3s)
+  ok 251 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en day тА║ labels, axe and reflow 390 (1.2s)
+  ok 250 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en day тА║ labels, axe and reflow 320 (1.3s)
+  ok 252 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en day тА║ labels, axe and reflow 768 (1.3s)
+  ok 253 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields en day тА║ labels, axe and reflow 1440 (1.2s)
+  ok 254 [chromium] тА║ e2e\fields.spec.ts:41:9 тА║ fields en day тА║ hint stays with the error, and submit focuses the first invalid field (612ms)
+  ok 256 [chromium] тА║ e2e\fields.spec.ts:88:9 тА║ fields en day тА║ computed focus uses the focus token (552ms)
+  ok 255 [chromium] тА║ e2e\fields.spec.ts:60:9 тА║ fields en day тА║ arrows move radios and segments; space toggles checkbox and switch (636ms)
+  ok 257 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk night тА║ labels, axe and reflow 320 (1.3s)
+  ok 258 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk night тА║ labels, axe and reflow 390 (1.3s)
+  ok 260 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk night тА║ labels, axe and reflow 1440 (1.3s)
+  ok 259 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk night тА║ labels, axe and reflow 768 (1.3s)
+  ok 261 [chromium] тА║ e2e\fields.spec.ts:41:9 тА║ fields uk night тА║ hint stays with the error, and submit focuses the first invalid field (757ms)
+  ok 263 [chromium] тА║ e2e\fields.spec.ts:88:9 тА║ fields uk night тА║ computed focus uses the focus token (587ms)
+  ok 262 [chromium] тА║ e2e\fields.spec.ts:60:9 тА║ fields uk night тА║ arrows move radios and segments; space toggles checkbox and switch (695ms)
+  ok 264 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk day тА║ labels, axe and reflow 320 (1.3s)
+  ok 265 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk day тА║ labels, axe and reflow 390 (1.4s)
+  ok 267 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk day тА║ labels, axe and reflow 1440 (1.3s)
+  ok 266 [chromium] тА║ e2e\fields.spec.ts:26:11 тА║ fields uk day тА║ labels, axe and reflow 768 (1.4s)
+  ok 268 [chromium] тА║ e2e\fields.spec.ts:41:9 тА║ fields uk day тА║ hint stays with the error, and submit focuses the first invalid field (671ms)
+  ok 270 [chromium] тА║ e2e\fields.spec.ts:88:9 тА║ fields uk day тА║ computed focus uses the focus token (599ms)
+  ok 271 [chromium] тА║ e2e\fields.spec.ts:111:9 тА║ field coarse pointer тА║ touch targets are at least 44px at 390 (623ms)
+  ok 269 [chromium] тА║ e2e\fields.spec.ts:60:9 тА║ fields uk day тА║ arrows move radios and segments; space toggles checkbox and switch (752ms)
+  ok 272 [chromium] тА║ e2e\fields.spec.ts:111:9 тА║ field coarse pointer тА║ touch targets are at least 44px at 1440 (671ms)
+  ok 274 [chromium] тА║ e2e\focus-visible.spec.ts:63:11 тА║ Focus ring contract (AH-1.6) тА║ button shows a 2px --focus ring 3px away in dark (573ms)
+  ok 273 [chromium] тА║ e2e\focus-visible.spec.ts:63:11 тА║ Focus ring contract (AH-1.6) тА║ link shows a 2px --focus ring 3px away in dark (700ms)
+  ok 275 [chromium] тА║ e2e\focus-visible.spec.ts:63:11 тА║ Focus ring contract (AH-1.6) тА║ field shows a 2px --focus ring 3px away in dark (611ms)
+  ok 276 [chromium] тА║ e2e\focus-visible.spec.ts:63:11 тА║ Focus ring contract (AH-1.6) тА║ link shows a 2px --focus ring 3px away in light (702ms)
+  ok 277 [chromium] тА║ e2e\focus-visible.spec.ts:63:11 тА║ Focus ring contract (AH-1.6) тА║ button shows a 2px --focus ring 3px away in light (691ms)
+  ok 278 [chromium] тА║ e2e\focus-visible.spec.ts:63:11 тА║ Focus ring contract (AH-1.6) тА║ field shows a 2px --focus ring 3px away in light (713ms)
+  ok 280 [chromium] тА║ e2e\focus-visible.spec.ts:79:9 тА║ Focus ring contract (AH-1.6) тА║ button keeps a visible ring in forced-colors mode (608ms)
+  ok 279 [chromium] тА║ e2e\focus-visible.spec.ts:79:9 тА║ Focus ring contract (AH-1.6) тА║ link keeps a visible ring in forced-colors mode (713ms)
+  ok 282 [chromium] тА║ e2e\footer-newsletter.spec.ts:20:9 тА║ Footer and newsletter band layout тА║ newsletter email input and submit button fit within 320px (411ms)
+  ok 284 [chromium] тА║ e2e\footer-newsletter.spec.ts:20:9 тА║ Footer and newsletter band layout тА║ newsletter email input and submit button fit within 390px (423ms)
+  ok 283 [chromium] тА║ e2e\footer-newsletter.spec.ts:53:9 тА║ Footer and newsletter band layout тА║ footer nav link tap targets are >= 40px tall at 320px (501ms)
+  ok 281 [chromium] тА║ e2e\focus-visible.spec.ts:79:9 тА║ Focus ring contract (AH-1.6) тА║ field keeps a visible ring in forced-colors mode (672ms)
+  ok 286 [chromium] тА║ e2e\footer-newsletter.spec.ts:77:7 тА║ Footer and newsletter band layout тА║ footer renders columns side-by-side at 1280px without overflow (587ms)
+  ok 285 [chromium] тА║ e2e\footer-newsletter.spec.ts:53:9 тА║ Footer and newsletter band layout тА║ footer nav link tap targets are >= 40px tall at 390px (613ms)
+  ok 290 [chromium] тА║ e2e\footer-newsletter.spec.ts:202:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ never shows success state on non-2xx backend error and preserves typed email (588ms)
+  ok 287 [chromium] тА║ e2e\footer-newsletter.spec.ts:112:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ reproduces invalid state on empty or malformed email without network call (1.6s)
+  ok 289 [chromium] тА║ e2e\footer-newsletter.spec.ts:179:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ reproduces success state on 2xx response with confirmation copy (1.5s)
+  ok 288 [chromium] тА║ e2e\footer-newsletter.spec.ts:146:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ reproduces pending state and guarantees double click sends only 1 request (2.0s)
+  ok 293 [chromium] тА║ e2e\footer-newsletter.spec.ts:285:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ fires newsletter_impression and newsletter_form_start funnels (417ms)
+  ok 291 [chromium] тА║ e2e\footer-newsletter.spec.ts:237:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ reproduces already-subscribed state without leaking user data (1.4s)
+  ok 294 [chromium] тА║ e2e\footer-newsletter.spec.ts:300:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ full variant on subscribe page validates consent and language edition (532ms)
+  ok 292 [chromium] тА║ e2e\footer-newsletter.spec.ts:259:7 тА║ NewsletterForm state machine and interaction contract (AH-3.4) тА║ reproduces network error and preserves typed input (1.4s)
+  ok 295 [chromium] тА║ e2e\footer-newsletter.spec.ts:339:7 тА║ After Hours Footer layout, links and contracts (AH-3.5) тА║ renders all 4 policy links, company links (about, author, subscribe, advertise), and explore links (553ms)
+  ok 296 [chromium] тА║ e2e\footer-newsletter.spec.ts:370:7 тА║ After Hours Footer layout, links and contracts (AH-3.5) тА║ social links have opens in new tab aria-labels and touch floor >= 40px (626ms)
+  ok 297 [chromium] тА║ e2e\footer-newsletter.spec.ts:392:7 тА║ After Hours Footer layout, links and contracts (AH-3.5) тА║ brand block links to home and contains BrandMark (545ms)
+  ok 298 [chromium] тА║ e2e\header-layout.spec.ts:15:9 тА║ Header layout тА║ desktop header keeps search and nav usable at 960px (758ms)
+[WebServer] тип Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '1997443275'
+[WebServer] }
+  ok 299 [chromium] тА║ e2e\header-layout.spec.ts:15:9 тА║ Header layout тА║ desktop header keeps search and nav usable at 1100px (752ms)
+[WebServer] тип Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '1997443275'
+[WebServer] }
+  ok 301 [chromium] тА║ e2e\header-layout.spec.ts:80:7 тА║ Header layout тА║ desktop category dropdown opens, closes on Escape and returns focus (577ms)
+[WebServer] тип Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '1997443275'
+[WebServer] }
+  ok 300 [chromium] тА║ e2e\header-layout.spec.ts:15:9 тА║ Header layout тА║ desktop header keeps search and nav usable at 1160px (708ms)
+  ok 303 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en at 320px (454ms)
+  ok 304 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en at 390px (444ms)
+  ok 305 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en at 768px (509ms)
+  ok 302 [chromium] тА║ e2e\header-layout.spec.ts:101:7 тА║ Header layout тА║ digests section is active for weekly and daily briefs (1.0s)
+  ok 306 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en at 1024px (548ms)
+  ok 307 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en at 1440px (549ms)
+  ok 308 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/news at 320px (484ms)
+  ok 309 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/news at 390px (529ms)
+  ok 310 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/news at 768px (574ms)
+  ok 311 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/news at 1024px (568ms)
+  ok 312 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/news at 1440px (640ms)
+  ok 313 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/about at 320px (376ms)
+  ok 314 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/about at 390px (400ms)
+  ok 315 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/about at 768px (402ms)
+  ok 316 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/about at 1024px (443ms)
+  ok 317 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/about at 1440px (414ms)
+  ok 318 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/subscribe at 320px (390ms)
+  ok 319 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/subscribe at 390px (409ms)
+  ok 320 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/subscribe at 768px (417ms)
+  ok 321 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/subscribe at 1024px (433ms)
+  ok 323 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/concepts at 320px (389ms)
+  ok 322 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/subscribe at 1440px (437ms)
+  ok 324 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/concepts at 390px (426ms)
+  ok 325 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/concepts at 768px (436ms)
+  ok 326 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/concepts at 1024px (455ms)
+  ok 327 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/concepts at 1440px (459ms)
+  ok 328 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/guides at 320px (413ms)
+  ok 329 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/guides at 390px (423ms)
+  ok 330 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/guides at 768px (458ms)
+  ok 331 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/guides at 1024px (466ms)
+  ok 332 [chromium] тА║ e2e\layout-regression.spec.ts:64:11 тА║ Layout regression тАУ static routes тА║ /en/guides at 1440px (456ms)
+  ok 334 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-news-article at 390px (808ms)
+  ok 333 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-news-article at 320px (929ms)
+  ok 336 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-news-article at 1024px (606ms)
+  ok 335 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-news-article at 768px (820ms)
+  ok 338 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-concept at 320px (478ms)
+  ok 339 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-concept at 390px (468ms)
+  ok 340 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-concept at 768px (506ms)
+  ok 337 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-news-article at 1440px (634ms)
+  ok 343 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-guide at 320px (448ms)
+  ok 342 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-concept at 1440px (531ms)
+  ok 341 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-concept at 1024px (541ms)
+  ok 344 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-guide at 390px (535ms)
+  ok 345 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-guide at 768px (463ms)
+  ok 347 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-guide at 1440px (473ms)
+  ok 346 [chromium] тА║ e2e\layout-regression.spec.ts:76:11 тА║ Layout regression тАУ dynamic routes тА║ first-guide at 1024px (502ms)
+  ok 348 [chromium] тА║ e2e\mobile-menu.spec.ts:25:9 тА║ Mobile menu overlay тА║ uses accessible fullscreen drawer at 320px (672ms)
+  ok 349 [chromium] тА║ e2e\mobile-menu.spec.ts:25:9 тА║ Mobile menu overlay тА║ uses accessible fullscreen drawer at 375px (674ms)
+  ok 350 [chromium] тА║ e2e\mobile-menu.spec.ts:25:9 тА║ Mobile menu overlay тА║ uses accessible fullscreen drawer at 390px (699ms)
+  ok 351 [chromium] тА║ e2e\mobile-menu.spec.ts:25:9 тА║ Mobile menu overlay тА║ uses accessible fullscreen drawer at 768px (709ms)
+  ok 352 [chromium] тА║ e2e\mobile-menu.spec.ts:25:9 тА║ Mobile menu overlay тА║ uses accessible fullscreen drawer at 959px (741ms)
+  ok 354 [chromium] тА║ e2e\mobile-search.spec.ts:22:7 тА║ Mobile search тА║ hero shows a full-width trigger at phone width (463ms)
+  ok 355 [chromium] тА║ e2e\mobile-search.spec.ts:32:7 тА║ Mobile search тА║ tap opens a fullscreen modal: scroll-lock, >=16px input, focus, Escape returns focus (538ms)
+  ok 353 [chromium] тА║ e2e\mobile-menu.spec.ts:85:7 тА║ Mobile menu overlay тА║ closes on route change and leaves a single Subscribe action visible while open (892ms)
+  ok 357 [chromium] тА║ e2e\mobile-search.spec.ts:73:7 тА║ Mobile search тА║ close button dismisses and releases the scroll lock (701ms)
+  ok 359 [chromium] тА║ e2e\mobile-search.spec.ts:99:7 тА║ Mobile search тА║ header icon opens the same modal; on /news it is available without scrolling (371ms)
+  ok 358 [chromium] тА║ e2e\mobile-search.spec.ts:84:7 тА║ Mobile search тА║ header icon: inert on home until scrolled past the hero, then back (two-way) (661ms)
+  ok 356 [chromium] тА║ e2e\mobile-search.spec.ts:57:7 тА║ Mobile search тА║ results render in-flow and are never clipped horizontally (862ms)
+  ok 360 [chromium] тА║ e2e\mobile-search.spec.ts:111:7 тА║ Mobile search тА║ desktop opens SearchDialog from header trigger and Ctrl+K (724ms)
+  ok 361 [chromium] тА║ e2e\news-feed-interaction.spec.ts:6:7 тА║ News feed interaction, URL state and pagination (G14) тА║ synchronizes filter selection with URL query params and preserves back/forward history (1.2s)
+  ok 362 [chromium] тА║ e2e\news-feed-interaction.spec.ts:64:7 тА║ News feed interaction, URL state and pagination (G14) тА║ hydrates state directly from URL query parameters and preserves result set across copied URLs (1.2s)
+  ok 364 [chromium] тА║ e2e\news-feed-interaction.spec.ts:140:7 тА║ News feed interaction, URL state and pagination (G14) тА║ pagination renders semantic links and supports client navigation (718ms)
+  ok 366 [chromium] тА║ e2e\news-filters-drawer.spec.ts:46:9 тА║ News filters drawer тА║ opens as a fullscreen compact multi-column drawer at 390px (545ms)
+  ok 367 [chromium] тА║ e2e\news-filters-drawer.spec.ts:46:9 тА║ News filters drawer тА║ opens as a fullscreen compact multi-column drawer at 768px (617ms)
+  ok 365 [chromium] тА║ e2e\news-feed-interaction.spec.ts:171:7 тА║ News feed interaction, URL state and pagination (G14) тА║ mobile drawer controls satisfy touch target floor (min 44px) (857ms)
+  ok 369 [chromium] тА║ e2e\news-filters-drawer.spec.ts:94:9 тА║ News filters drawer тА║ keeps filters trigger and desktop sidebar mutually exclusive at 959px (414ms)
+  ok 370 [chromium] тА║ e2e\news-filters-drawer.spec.ts:94:9 тА║ News filters drawer тА║ keeps filters trigger and desktop sidebar mutually exclusive at 960px (459ms)
+  ok 372 [chromium] тА║ e2e\news-search.spec.ts:4:7 тА║ News search page (/[lang]/news/search) тА║ empty q shows idle state without results feed (274ms)
+  ok 371 [chromium] тА║ e2e\news-filters-drawer.spec.ts:94:9 тА║ News filters drawer тА║ keeps filters trigger and desktop sidebar mutually exclusive at 1024px (419ms)
+  ok 368 [chromium] тА║ e2e\news-filters-drawer.spec.ts:62:7 тА║ News filters drawer тА║ locks body scroll and closes via Escape, close button, and Apply (1.2s)
+  ok 373 [chromium] тА║ e2e\news-search.spec.ts:12:7 тА║ News search page (/[lang]/news/search) тА║ bare search route shows idle state (264ms)
+  ok 376 [chromium] тА║ e2e\news-search.spec.ts:37:7 тА║ News search page (/[lang]/news/search) тА║ UK idle heading and form (327ms)
+  ok 374 [chromium] тА║ e2e\news-search.spec.ts:18:7 тА║ News search page (/[lang]/news/search) тА║ encodes quotes, Cyrillic and emoji in q (570ms)
+  ok 375 [chromium] тА║ e2e\news-search.spec.ts:27:7 тА║ News search page (/[lang]/news/search) тА║ breadcrumb includes Search and robots stay noindex (622ms)
+  ok 378 [chromium] тА║ e2e\news-sidebar.spec.ts:10:7 тА║ News sidebar (desktop) тА║ sidebar is configured as an internal scroll container (516ms)
+  ok 377 [chromium] тА║ e2e\news-search.spec.ts:43:7 тА║ News search page (/[lang]/news/search) тА║ popular query syncs the search field and back restores idle input (670ms)
+  ok 379 [chromium] тА║ e2e\news-sidebar.spec.ts:27:7 тА║ News sidebar (desktop) тА║ sidebar scrollTop moves when content exceeds capped height (524ms)
+  ok 380 [chromium] тА║ e2e\news-sidebar.spec.ts:43:7 тА║ News sidebar (desktop) тА║ trending section is reachable via sidebar scroll (583ms)
+  ok 381 [chromium] тА║ e2e\news-sidebar.spec.ts:82:7 тА║ News sidebar (desktop) тА║ filter rows are compact on desktop (630ms)
+  ok 382 [chromium] тА║ e2e\not-found.spec.ts:6:7 тА║ returns HTTP 404 for /en/zzz-missing (595ms)
+  ok 383 [chromium] тА║ e2e\not-found.spec.ts:6:7 тА║ returns HTTP 404 for /uk/zzz-missing (518ms)
+  ok 384 [chromium] тА║ e2e\not-found.spec.ts:6:7 тА║ returns HTTP 404 for /zzz-missing (414ms)
+  ok 385 [chromium] тА║ e2e\not-found.spec.ts:14:5 тА║ 404 page has no infinite CSS animations (484ms)
+  ok 387 [chromium] тА║ e2e\not-found.spec.ts:36:5 тА║ 404 suggested links include digests and subscribe (472ms)
+[WebServer] тип Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '1997443275'
+[WebServer] }
+  ok 386 [chromium] тА║ e2e\not-found.spec.ts:29:5 тА║ 404 search form navigates to news search (563ms)
+  ok 390 [chromium] тА║ e2e\overlays.spec.ts:93:7 тА║ overlay catalog тА║ an open modal locks body scroll and restores it on close (561ms)
+  ok 389 [chromium] тА║ e2e\overlays.spec.ts:74:7 тА║ overlay catalog тА║ full sheet closes from Escape and the close button and covers the viewport (657ms)
+  ok 388 [chromium] тА║ e2e\overlays.spec.ts:37:7 тА║ overlay catalog тА║ Escape, backdrop and close return focus; Tab stays inside; the page does not scroll (1.2s)
+  ok 391 [chromium] тА║ e2e\overlays.spec.ts:118:7 тА║ overlay catalog тА║ disclosure is a link list, not a menu, and dismiss returns focus (641ms)
+  ok 393 [chromium] тА║ e2e\overlays.spec.ts:167:7 тА║ overlay catalog тА║ modal shell uses the modal layer token (458ms)
+  ok 392 [chromium] тА║ e2e\overlays.spec.ts:148:7 тА║ overlay catalog тА║ Ukrainian labels and a scoped axe pass (941ms)
+  ok 394 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:23:9 тА║ Responsive breakpoint contract тА║ header chrome lockstep + --header-h at 768px (382ms)
+  ok 395 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:52:9 тА║ Responsive breakpoint contract тА║ filter sidebar/trigger mutual exclusivity at 768px (370ms)
+  ok 397 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:52:9 тА║ Responsive breakpoint contract тА║ filter sidebar/trigger mutual exclusivity at 834px (333ms)
+  ok 396 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:23:9 тА║ Responsive breakpoint contract тА║ header chrome lockstep + --header-h at 834px (419ms)
+  ok 398 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:23:9 тА║ Responsive breakpoint contract тА║ header chrome lockstep + --header-h at 900px (404ms)
+  ok 399 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:52:9 тА║ Responsive breakpoint contract тА║ filter sidebar/trigger mutual exclusivity at 900px (396ms)
+  ok 401 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:52:9 тА║ Responsive breakpoint contract тА║ filter sidebar/trigger mutual exclusivity at 959px (417ms)
+  ok 400 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:23:9 тА║ Responsive breakpoint contract тА║ header chrome lockstep + --header-h at 959px (484ms)
+  ok 402 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:23:9 тА║ Responsive breakpoint contract тА║ header chrome lockstep + --header-h at 960px (469ms)
+  ok 403 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:52:9 тА║ Responsive breakpoint contract тА║ filter sidebar/trigger mutual exclusivity at 960px (426ms)
+  ok 404 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:23:9 тА║ Responsive breakpoint contract тА║ header chrome lockstep + --header-h at 1024px (458ms)
+  ok 405 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:52:9 тА║ Responsive breakpoint contract тА║ filter sidebar/trigger mutual exclusivity at 1024px (404ms)
+  ok 406 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 320px on /en (372ms)
+  ok 407 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 320px on /en/news (330ms)
+  ok 409 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 375px on /en/news (300ms)
+  ok 408 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 375px on /en (387ms)
+  ok 410 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 390px on /en (403ms)
+  ok 411 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 390px on /en/news (338ms)
+  ok 412 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 768px on /en (434ms)
+  ok 413 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 768px on /en/news (366ms)
+  ok 414 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 960px on /en (468ms)
+  ok 415 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 960px on /en/news (424ms)
+  ok 416 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 1440px on /en (491ms)
+  ok 417 [chromium] тА║ e2e\responsive-breakpoints.spec.ts:75:11 тА║ Responsive breakpoint contract тА║ no horizontal overflow at 1440px on /en/news (441ms)
+  ok 419 [chromium] тА║ e2e\search-dialog-keyboard.spec.ts:48:7 тА║ SearchDialog keyboard and network тА║ Escape returns focus to the header trigger (519ms)
+  ok 421 [chromium] тА║ e2e\smoke.spec.ts:5:7 тА║ Smoke тА║ /uk/news renders header, sidebar, and feed (496ms)
+  ok 420 [chromium] тА║ e2e\search-dialog-keyboard.spec.ts:60:7 тА║ SearchDialog keyboard and network тА║ empty query sends zero requests to /api/search (900ms)
+  ok 418 [chromium] тА║ e2e\search-dialog-keyboard.spec.ts:9:7 тА║ SearchDialog keyboard and network тА║ Ctrl+K opens, Escape closes with focus return, arrows move focus, Enter opens result (1.3s)
+  ok 423 [chromium] тА║ e2e\sponsor-spacing.spec.ts:5:7 тА║ Sponsor card spacing тА║ sponsor card has gap from preceding post card (511ms)
+  ok 422 [chromium] тА║ e2e\smoke.spec.ts:19:7 тА║ Smoke тА║ header navigation links are reachable (693ms)
+  ok 424 [chromium] тА║ e2e\theme.spec.ts:28:7 тА║ Theme toggle тА║ toggles light theme class on html (721ms)
+  ok 426 [chromium] тА║ e2e\theme.spec.ts:74:7 тА║ Theme toggle тА║ keeps analytics values light/dark and respects opt-out (856ms)
+  ok 425 [chromium] тА║ e2e\theme.spec.ts:52:7 тА║ Theme toggle тА║ persists theme preference after reload (885ms)
+  ok 427 [chromium] тА║ e2e\theme.spec.ts:124:7 тА║ Theme toggle тА║ keeps hidden and visible controls in sync after resizing and soft navigation (903ms)
+  ok 429 [chromium] тА║ e2e\theme.spec.ts:157:9 тА║ Theme before hydration тА║ first body frame: light / system dark (351ms)
+  ok 428 [chromium] тА║ e2e\theme.spec.ts:157:9 тА║ Theme before hydration тА║ first body frame: dark / system light (365ms)
+  ok 430 [chromium] тА║ e2e\theme.spec.ts:157:9 тА║ Theme before hydration тА║ first body frame: null / system light (370ms)
+  ok 431 [chromium] тА║ e2e\theme.spec.ts:157:9 тА║ Theme before hydration тА║ first body frame: null / system dark (374ms)
+  ok 432 [chromium] тА║ e2e\theme.spec.ts:157:9 тА║ Theme before hydration тА║ first body frame: invalid / system light (373ms)
+  ok 433 [chromium] тА║ e2e\theme.spec.ts:157:9 тА║ Theme before hydration тА║ first body frame: blocked / system light (341ms)
+  ok 436 [chromium] тА║ e2e\theme.spec.ts:237:7 тА║ Theme before hydration тА║ manifest uses the Night token for splash and chrome (16ms)
+  ok 434 [chromium] тА║ e2e\theme.spec.ts:214:9 тА║ Theme before hydration тА║ Night with JavaScript disabled: en (358ms)
+  ok 435 [chromium] тА║ e2e\theme.spec.ts:214:9 тА║ Theme before hydration тА║ Night with JavaScript disabled: uk (374ms)
+  ok 438 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en dark 390 (802ms)
+  ok 437 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en dark 360 (876ms)
+  ok 439 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en dark 768 (836ms)
+  ok 441 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en dark 1440 (834ms)
+  ok 440 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en dark 1024 (854ms)
+  ok 442 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en dark 320 (886ms)
+  ok 444 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en light 360 (743ms)
+  ok 445 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en light 390 (744ms)
+  ok 443 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en dark 1280 text-200 (848ms)
+  ok 446 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en light 768 (882ms)
+  ok 447 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en light 1024 (859ms)
+  ok 448 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en light 1440 (858ms)
+  ok 449 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en light 320 (753ms)
+  ok 450 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ en light 1280 text-200 (803ms)
+  ok 451 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk dark 360 (795ms)
+  ok 452 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk dark 390 (827ms)
+  ok 454 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk dark 1024 (898ms)
+  ok 453 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk dark 768 (903ms)
+  ok 456 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk dark 320 (788ms)
+  ok 457 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk dark 1280 text-200 (802ms)
+  ok 455 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk dark 1440 (1.0s)
+  ok 459 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk light 390 (766ms)
+  ok 458 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk light 360 (887ms)
+  ok 460 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk light 768 (952ms)
+  ok 463 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk light 320 (766ms)
+  ok 461 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk light 1024 (976ms)
+  ok 462 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk light 1440 (1.0s)
+  ok 465 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en night 390: local fonts and one heading family (415ms)
+  ok 466 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en night 1440: local fonts and one heading family (509ms)
+  ok 467 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en day 390: local fonts and one heading family (409ms)
+  ok 464 [chromium] тА║ e2e\theme.spec.ts:252:13 тА║ Theme control accessibility matrix тА║ uk light 1280 text-200 (881ms)
+  ok 468 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en day 1440: local fonts and one heading family (513ms)
+  ok 469 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk night 390: local fonts and one heading family (463ms)
+  ok 470 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk night 1440: local fonts and one heading family (567ms)
+  ok 471 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk day 390: local fonts and one heading family (458ms)
+  ok 472 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk day 1440: local fonts and one heading family (550ms)
+  ok 473 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping night 390: local fonts and one heading family (495ms)
+  ok 474 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping night 1440: local fonts and one heading family (477ms)
+  ok 475 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping day 390: local fonts and one heading family (413ms)
+  ok 476 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping day 1440: local fonts and one heading family (443ms)
+  ok 477 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping night 390: local fonts and one heading family (423ms)
+  ok 478 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping night 1440: local fonts and one heading family (462ms)
+  ok 479 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping day 390: local fonts and one heading family (414ms)
+  ok 480 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping day 1440: local fonts and one heading family (434ms)
+  ok 481 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 night 390: local fonts and one heading family (617ms)
+  ok 483 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 day 390: local fonts and one heading family (459ms)
+  ok 482 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 night 1440: local fonts and one heading family (650ms)
+  ok 485 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 night 390: local fonts and one heading family (503ms)
+  ok 484 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 day 1440: local fonts and one heading family (594ms)
+  ok 486 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 night 1440: local fonts and one heading family (621ms)
+  ok 489 [chromium] тА║ e2e\typography.spec.ts:36:7 тА║ AH-1.5 typography тА║ server language scopes Georgia without the pre-paint script (259ms)
+  ok 487 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 day 390: local fonts and one heading family (532ms)
+  ok 488 [chromium] тА║ e2e\typography.spec.ts:14:11 тА║ AH-1.5 typography тА║ /uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23 day 1440: local fonts and one heading family (607ms)
+  ok 490 [chromium] тА║ e2e\typography.spec.ts:51:7 тА║ AH-1.5 typography тА║ Ukrainian tracking wins over legacy heading utilities (304ms)
+  ok 491 [chromium] тА║ e2e\typography.spec.ts:61:7 тА║ AH-1.5 typography тА║ eyebrow, registry, reading and italic use the agreed tokens (485ms)
+  ok 492 [chromium] тА║ e2e\ui-components.spec.ts:10:7 тА║ UI composite primitives тА║ Popover: toggles aria-expanded, Escape closes and returns focus (491ms)
+  ok 493 [chromium] тА║ e2e\ui-components.spec.ts:21:7 тА║ UI composite primitives тА║ Popover: outside click closes (493ms)
+  ok 494 [chromium] тА║ e2e\ui-components.spec.ts:27:7 тА║ UI composite primitives тА║ DropdownMenu: arrows skip disabled, typeahead, Enter selects and closes (500ms)
+  ok 495 [chromium] тА║ e2e\ui-components.spec.ts:45:7 тА║ UI composite primitives тА║ Tooltip: shows on focus, is described-by, dismissed with Escape (497ms)
+  ok 496 [chromium] тА║ e2e\ui-components.spec.ts:55:7 тА║ UI composite primitives тА║ Tabs: roving tabindex, arrows skip disabled, Home/End, panel follows (484ms)
+  ok 497 [chromium] тА║ e2e\ui-components.spec.ts:70:7 тА║ UI composite primitives тА║ Accordion: single mode keeps one panel open (539ms)
+  ok 498 [chromium] тА║ e2e\ui-components.spec.ts:81:7 тА║ UI composite primitives тА║ Combobox: filter, arrow to option, Enter selects, Esc clears (492ms)
+  ok 499 [chromium] тА║ e2e\ui-components.spec.ts:97:7 тА║ UI composite primitives тА║ Combobox: matches Cyrillic case-insensitively and reports empty state (448ms)
+  ok 501 [chromium] тА║ e2e\ui-components.spec.ts:116:7 тА║ UI composite primitives тА║ Dialog: modal, focus trapped, Esc closes and returns focus (560ms)
+  ok 500 [chromium] тА║ e2e\ui-components.spec.ts:105:7 тА║ UI composite primitives тА║ Toast: errors use role=alert, dismissible, capped queue (697ms)
+  ok 502 [chromium] тА║ e2e\ui-components.spec.ts:131:7 тА║ UI composite primitives тА║ Dialog: backdrop click and ├Ч both close (823ms)
+  ok 504 [chromium] тА║ e2e\ui-components.spec.ts:162:7 тА║ UI primitives accessibility tree тА║ Tabs expose tablist / selected tab / labelled tabpanel (395ms)
+  ok 503 [chromium] тА║ e2e\ui-components.spec.ts:140:7 тА║ UI composite primitives тА║ Popover: flips above and stays inside the viewport near the bottom edge (507ms)
+  ok 505 [chromium] тА║ e2e\ui-components.spec.ts:172:7 тА║ UI primitives accessibility tree тА║ DropdownMenu exposes menu with menuitems and disabled state (475ms)
+  ok 506 [chromium] тА║ e2e\ui-components.spec.ts:183:7 тА║ UI primitives accessibility tree тА║ Combobox exposes expanded listbox with options and selection (470ms)
+  ok 507 [chromium] тА║ e2e\ui-components.spec.ts:197:7 тА║ UI primitives accessibility tree тА║ Toast announces through a live region (475ms)
+  ok 508 [chromium] тА║ e2e\ui-components.spec.ts:202:7 тА║ UI primitives accessibility tree тА║ Pagination: semantic links with href, aria-current="page", rel="prev/next", aria-disabled on extremes, touch floor >= 44px (521ms)
+  ok 510 [chromium] тА║ e2e\ui-components.spec.ts:263:7 тА║ UI primitives accessibility tree тА║ Breadcrumbs: renders semantic breadcrumbs with links, separator, and last item aria-current="page" (468ms)
+  ok 509 [chromium] тА║ e2e\ui-components.spec.ts:247:7 тА║ UI primitives accessibility tree тА║ LinkTabs: renders nav with links, aria-current="page" on selected tab, optional counts (516ms)
+  x  363 [chromium] тА║ e2e\news-feed-interaction.spec.ts:109:7 тА║ News feed interaction, URL state and pagination (G14) тА║ search query shows relevance sort option and updates URL (30.1s)
+(node:34136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 511 [chromium] тА║ e2e\ui-components.spec.ts:283:9 тА║ axe WCAG 2.2 AA тАФ dark theme тА║ resting catalog has no violations (2.2s)
+  -  515 [chromium] тА║ e2e\ui-components.spec.ts:308:9 тА║ visual: catalog dark desktop
+  -  516 [chromium] тА║ e2e\ui-components.spec.ts:308:9 тА║ visual: catalog dark mobile
+  ok 513 [chromium] тА║ e2e\ui-components.spec.ts:283:9 тА║ axe WCAG 2.2 AA тАФ light theme тА║ resting catalog has no violations (2.4s)
+  -  517 [chromium] тА║ e2e\ui-components.spec.ts:308:9 тА║ visual: catalog light desktop
+  -  518 [chromium] тА║ e2e\ui-components.spec.ts:308:9 тА║ visual: catalog light mobile
+  ok 519 [chromium] тА║ e2e\weekly-seo.spec.ts:3:5 тА║ an unpublished Weekly Digest is a true noindex 404 without article SEO (272ms)
+  ok 512 [chromium] тА║ e2e\ui-components.spec.ts:288:9 тА║ axe WCAG 2.2 AA тАФ dark theme тА║ with menu, combobox list, popover and dialog open (3.8s)
+  ok 514 [chromium] тА║ e2e\ui-components.spec.ts:288:9 тА║ axe WCAG 2.2 AA тАФ light theme тА║ with menu, combobox list, popover and dialog open (3.7s)
+
+
+  1) [chromium] тА║ e2e\news-feed-interaction.spec.ts:109:7 тА║ News feed interaction, URL state and pagination (G14) тА║ search query shows relevance sort option and updates URL 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: /news/i, level: 1 })
+    Expected: visible
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 30000ms
+      - waiting for getByRole('heading', { name: /news/i, level: 1 })
+      - Test timeout of 30000ms exceeded.
+
+
+      112 |
+      113 |     // Direct visit with search query parameter
+    > 114 |     await page.goto('/en/news?q=intelligence', { waitUntil: 'domcontentloaded' });
+          |                                                                          ^
+      115 |     await expect(page.getByRole('heading', { level: 1, name: /news/i })).toBeVisible({
+      116 |       timeout: 30_000,
+      117 |     });
+        at E:\wt\ai-today-brief\R1003-ca8a\e2e\news-feed-interaction.spec.ts:114:74
+
+    attachment #1: screenshot (image/png) тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+    test-results\news-feed-interaction-News-bb8bb-sort-option-and-updates-URL-chromium\test-failed-1.png
+    тФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФАтФА
+
+    Error Context: test-results\news-feed-interaction-News-bb8bb-sort-option-and-updates-URL-chromium\error-context.md
+
+  1 failed
+    [chromium] тА║ e2e\news-feed-interaction.spec.ts:109:7 тА║ News feed interaction, URL state and pagination (G14) тА║ search query shows relevance sort option and updates URL 
+  5 skipped
+  513 passed (2.0m)

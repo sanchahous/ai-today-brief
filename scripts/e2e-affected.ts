@@ -319,13 +319,34 @@ async function serverIsUp(): Promise<boolean> {
   }
 }
 
-function runProductionBuild(): void {
-  console.log(`e2e:affected — no server on :${e2ePort}; running production build first…\n`);
+function runProductionBuild(reason: string): void {
+  console.log(`e2e:affected — ${reason}\n`);
   const b = spawnSync('npm', ['run', 'build:ci'], {
     stdio: 'inherit',
     shell: true,
   });
   if (b.status !== 0) process.exit(b.status ?? 1);
+}
+
+/** Stop a stale `next start` so Playwright boots a fresh build (DS_CATALOG=1). */
+function stopServerOnPort(port: number): void {
+  if (process.platform === 'win32') {
+    const out = spawnSync('netstat', ['-ano'], { encoding: 'utf8', shell: true });
+    const pids = new Set<number>();
+    for (const line of out.stdout?.split('\n') ?? []) {
+      if (!line.includes(`:${port}`) || !line.includes('LISTENING')) continue;
+      const pid = Number.parseInt(line.trim().split(/\s+/).pop() ?? '', 10);
+      if (Number.isFinite(pid) && pid > 0) pids.add(pid);
+    }
+    for (const pid of pids) {
+      spawnSync('taskkill', ['/PID', String(pid), '/F'], { stdio: 'ignore', shell: true });
+    }
+    return;
+  }
+  spawnSync('sh', ['-c', `lsof -ti tcp:${port} | xargs -r kill -9`], {
+    stdio: 'ignore',
+    shell: true,
+  });
 }
 
 function runPlaywright(playwrightArgs: string[]): never {
@@ -394,10 +415,18 @@ async function main(): Promise<void> {
 
   if (process.env.SKIP_BUILD === '1') {
     console.log(`e2e:affected — SKIP_BUILD=1; assuming a server is reachable on :${e2ePort}.\n`);
+  } else if (runAll) {
+    if (await serverIsUp()) {
+      console.log(
+        `e2e:affected — broad change: stopping stale server on :${e2ePort} before rebuild.\n`,
+      );
+      stopServerOnPort(e2ePort);
+    }
+    runProductionBuild(`broad change → production build for :${e2ePort}`);
   } else if (await serverIsUp()) {
     console.log(`e2e:affected — reusing the server already on :${e2ePort} (skipping build).\n`);
   } else {
-    runProductionBuild();
+    runProductionBuild(`no server on :${e2ePort}; running production build first`);
   }
 
   runPlaywright(runAll ? [] : specs);
