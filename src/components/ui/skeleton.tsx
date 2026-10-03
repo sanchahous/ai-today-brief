@@ -128,9 +128,15 @@ export function CategoryPageSkeleton() {
   return (
     <div className="skeleton-reveal mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
       <Skeleton className="mb-6 h-4 w-56 rounded-md" />
-      <Skeleton className="h-10 w-72 rounded-md" />
-      <Skeleton className="mt-3 h-5 w-full max-w-lg rounded-md" />
-      <div className="mt-10 space-y-4">
+      <div className="mb-8 flex items-start gap-4">
+        <Skeleton className="h-14 w-14 shrink-0 rounded-[14px]" />
+        <div className="min-w-0 flex-1">
+          <Skeleton className="h-10 w-72 rounded-md" />
+          <Skeleton className="mt-3 h-5 w-full max-w-lg rounded-md" />
+          <Skeleton className="mt-2 h-5 w-[90%] max-w-md rounded-md" />
+        </div>
+      </div>
+      <div className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <PostCardSkeleton key={i} />
         ))}

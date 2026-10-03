@@ -400,7 +400,7 @@ flowchart TD
 | AH-5.12 | About і Author ([статус](../tasks/ah-5.12.md)) | M | агент | AH-5.1, AH-3.4 | routes `about`, `author` |
 | AH-5.13 | Subscribe і Advertise ([статус](../tasks/ah-5.13.md)) | M | агент + власник | AH-5.1, AH-3.4 | routes `subscribe`, `advertise` |
 | AH-5.14 | Чотири політики ([статус](../tasks/ah-5.14.md)) | S | агент | AH-5.1 | route `policy` |
-| AH-5.15 | 404 і loading-стани ([статус](../tasks/ah-5.15.md)) | S | агент | AH-3.3, AH-2.5 | route `404`, B10 |
+| AH-5.15 | ✅ 404 і loading-стани ([PR #409](https://github.com/sanchahous/ai-today-brief/pull/409)) | S | агент | AH-3.3, AH-2.5 | route `404`, B10 |
 | AH-5.16 | Saved / індекс категорій — не виконується ([статус](../tasks/ah-5.16.md)) | — | — | — | — |
 | AH-6.1 | Motion runtime і жести ([статус](../tasks/ah-6.1.md)) | M | агент | G5 | Tension v3 |
 | AH-6.2 | The Resolve і «акорд» знака ([статус](../tasks/ah-6.2.md)) | M | агент | AH-6.1, AH-5.3, AH-3.1 | бренд-сцена |
@@ -1866,9 +1866,9 @@ AVIF/WebP через `next/image` з підписом «Concept art · After Hou
 Loading — скелетони за формою нових шаблонів (home, news, category).
 
 **AC:**
-- [ ] HTTP 404 для неіснуючих шляхів `/en/…`, `/uk/…` і кореневих.
-- [ ] На 404 немає нескінченних анімацій (`document.getAnimations()`).
-- [ ] Перехід loading → контент без CLS > 0,05 (лабораторно).
+- [x] HTTP 404 для неіснуючих шляхів `/en/…`, `/uk/…` і кореневих.
+- [x] На 404 немає нескінченних анімацій (`document.getAnimations()`).
+- [x] Перехід loading → контент без CLS > 0,05 (лабораторно).
 
 ### AH-5.16 · (опційно, лише за D6 = так) Saved і/або індекс рубрик
 

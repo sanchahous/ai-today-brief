@@ -817,89 +817,57 @@ html[lang='uk'],
 }
 
 .not-found-page {
-  background: radial-gradient(80% 120% at 50% -20%, rgb(var(--accent-rgb) / 0.08), transparent 55%);
+  display: grid;
+  justify-items: start;
+  gap: 0;
 }
 
-.not-found-scene .nf-card {
-  transform-origin: center;
-  animation: nf-float 5s ease-in-out infinite;
+.nf-code {
+  color: var(--line-strong, var(--border));
+  font-family: var(--font-display), serif;
+  font-size: clamp(6rem, 4rem + 8vw, 11rem);
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  margin: 0;
 }
-.not-found-scene .nf-card-b {
-  animation-delay: -1.4s;
-}
-.not-found-scene .nf-card-c {
-  animation-delay: -2.8s;
-}
-.not-found-scene .nf-pipeline {
-  stroke-dashoffset: 0;
-  animation: nf-dash 12s linear infinite;
-}
-.not-found-scene .nf-node {
-  animation: nf-pulse 2.4s ease-in-out infinite;
-}
-.not-found-scene .nf-radar {
-  animation: nf-radar 6s ease-in-out infinite;
-}
-.not-found-scene .nf-radar-arm {
-  transform-origin: 0 0;
-  animation: nf-sweep 3s ease-in-out infinite;
-}
-.not-found-scene .nf-broken-link {
-  animation: nf-wiggle 4s ease-in-out infinite;
+.nf-code span {
+  color: var(--signal);
 }
 
-@keyframes nf-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-7px);
-  }
+.not-found-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 36rem;
+  margin-top: 2rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
 }
-@keyframes nf-dash {
-  to {
-    stroke-dashoffset: -36;
-  }
+
+.nf-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
-@keyframes nf-pulse {
-  0%,
-  100% {
-    opacity: 0.75;
-  }
-  50% {
-    opacity: 1;
-  }
+.nf-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-floor, 44px);
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
-@keyframes nf-radar {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-@keyframes nf-sweep {
-  0%,
-  100% {
-    transform: rotate(-18deg);
-  }
-  50% {
-    transform: rotate(22deg);
-  }
-}
-@keyframes nf-wiggle {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  33% {
-    transform: rotate(-4deg);
-  }
-  66% {
-    transform: rotate(4deg);
-  }
+.nf-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

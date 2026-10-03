@@ -55,12 +55,10 @@ const style = { color: 'rgb(var(--rgb))', boxShadow: 'none' };`,
       'src/lib/social/render.tsx',
       'src/lib/weekly-digest/pdf.ts',
       'src/lib/brand-mark.ts',
-      'src/components/not-found-illustration.tsx',
       'src/components/example.test.tsx',
     ])
       expect(isExcludedPath(excluded)).toBe(true);
     expect(scanDesignValues(path, '<svg><rect fill="#abcdef" /></svg>')).toHaveLength(1);
-    expect(scanDesignValues('src/components/not-found-illustration.tsx', '#abcdef')).toEqual([]);
   });
 
   it('ignores line movement but blocks added copies, replacements and moves to another file', () => {

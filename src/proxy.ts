@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 import type { Database } from '@/lib/database.types';
 import { LANG_COOKIE, LANG_COOKIE_MAX_AGE, resolvePreferredLang } from '@/lib/preferred-lang';
+import { isLangPublicRouteSegment, parseLangSingleSegmentPath } from '@/lib/lang-public-routes';
 import { resolveWeeklyPublicSlug } from '@/lib/weekly-digest/placeholder-slug';
 import type { Lang } from '@/lib/site';
 
@@ -96,6 +97,38 @@ function weeklyStatusPage(lang: Lang, status: 404 | 503) {
   return response;
 }
 
+async function isPublishedBriefSlug(
+  origin: string,
+  key: string,
+  slug: string,
+): Promise<boolean | null> {
+  try {
+    const endpoint = new URL('/rest/v1/briefs', origin);
+    endpoint.searchParams.set('select', 'id');
+    endpoint.searchParams.set('slug', `eq.${slug}`);
+    endpoint.searchParams.set('status', 'eq.published');
+    endpoint.searchParams.set('limit', '1');
+    const result = await fetch(endpoint, {
+      headers: weeklyRestHeaders(key),
+      cache: 'no-store',
+    });
+    if (!result.ok) return null;
+    const rows: unknown = await result.json();
+    if (!Array.isArray(rows)) return null;
+    return rows.length > 0;
+  } catch {
+    return null;
+  }
+}
+
+function siteNotFoundResponse(request: NextRequest, lang: Lang): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = `/${lang}/__site-404__`;
+  const response = NextResponse.rewrite(url, { status: 404 });
+  persistLangCookie(response, lang);
+  return response;
+}
+
 function persistLangCookie(response: NextResponse, lang: Lang): void {
   response.cookies.set(LANG_COOKIE, lang, {
     path: '/',
@@ -146,6 +179,18 @@ export async function proxy(request: NextRequest) {
       // 'pass' includes lookup failure: ISR-cached HTML must still serve.
     }
   }
+
+  const singleSegment = parseLangSingleSegmentPath(pathname);
+  if (singleSegment && !isLangPublicRouteSegment(singleSegment.segment)) {
+    const origin = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (origin && key) {
+      const exists = await isPublishedBriefSlug(origin, key, singleSegment.segment);
+      if (exists === false) return siteNotFoundResponse(request, singleSegment.lang);
+      // null lookup failure: fall through so ISR-cached HTML can still serve.
+    }
+  }
+
   let response =
     pathname === '/'
       ? NextResponse.redirect(

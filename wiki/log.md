@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-10-03
 
+## 2026-10-03 — AH-5.15: 404 і loading-стани After Hours ([PR #409](https://github.com/sanchahous/ai-today-brief/pull/409))
+
+- **404:** перероблено `not-found-content.tsx` за прототипом `artifacts/after-hours/pages.js` — celadon-нуль у коді 404, eyebrow «Поза ефіром», H1 з курсивним акцентом, лід, inline-форма пошуку (`NotFoundSearch` → `/[lang]/news/search`), навігація рекомендованих сторінок (Home, News, Digests, Subscribe). Видалено `not-found-illustration.tsx` і CSS `nf-*` з нескінченними анімаціями; прибрано декоративні orbs.
+- **Loading:** уточнено `CategoryPageSkeleton` (блок заголовка категорії); home/news skeletons уже відповідали шаблонам.
+- **Тести:** `e2e/not-found.spec.ts` — HTTP 404, відсутність infinite animations, пошук і suggested links.
+- **Наступна задача епіку:** AH-6.1 (Motion runtime).
+(source: PR #409; [епік AH-5.15](product/after-hours-redesign-epic.md#ah-515--404-і-loading-стани))
+
 ## 2026-10-03 — Виправлення рев'ю T1-f2 для AH-3.3 (EditorialHeader)
 
 - **Навігація (Digests):** оновлено логіку `isActive` для підсвічування маршрутів daily briefs (`/[lang]/[brief]`), що не належать до переліку відомих root-шляхів сайту (news, concepts, guides тощо). Додано E2E перевірку `aria-current` для тижневих та щоденних брифів.

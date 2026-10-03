@@ -122,8 +122,7 @@ Baseline — `scripts/raw-design-values.baseline.json`: ідентичність
 (source: `scripts/report-raw-design-values.ts`; `src/lib/design-system/raw-design-values.test.ts`)
 
 Винятки: Admin (поза межами епіку), тести, OG/Twitter `ImageResponse` маршрути,
-`brand-mark.ts`, соціальні/PDF/card-рендери та конкретна SVG-ілюстрація
-`not-found-illustration.tsx`. Декларації custom properties у канонічному
+`brand-mark.ts`, соціальні/PDF/card-рендери. Декларації custom properties у канонічному
 `src/app/globals.css` є визначеннями токенів; їхні споживачі перевіряються.
 `z-[var(--z-…)]` і `shadow-[var(--shadow-…)]` дозволені. Звіт є лексичним
 скануванням і не оцінює computed styles чи значення з БД; це задача QA-матриці.
