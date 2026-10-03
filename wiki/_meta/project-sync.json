@@ -1,5 +1,5 @@
 {
-  "description": "Contract: when watched project paths change, listed wiki pages must be updated in the same branch (git timestamp) and must still contain extracted facts.",
+  "description": "Contract: when watched project paths change, listed wiki pages must be updated in the same branch (git timestamp) and must still contain extracted facts. Watchers that list now.md also accept a commit under wiki/tasks: task status is wiki/tasks/<id>.md, not an edit to now.md.",
   "watchers": [
     {
       "id": "weekly-digest",

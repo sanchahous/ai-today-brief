@@ -19,7 +19,11 @@ The full contract is in [`CLAUDE.md`](CLAUDE.md) — read it once per session. S
 - **Four zones:** `raw/` immutable inputs · `wiki/` curated knowledge · `artifacts/` deliverables ·
   code in `src/` `pipeline/` `supabase/` `e2e/` `scripts/`.
 - **Never** modify `raw/`. **Never** push to `main`. **Never** put business facts in `CLAUDE.md`.
-- Before any push: `npm run pr:check` (includes `wiki:check` — project↔wiki sync). After any wiki
-  change: update `wiki/index.md` **and** append to `wiki/log.md`. Watched code zones are listed in
-  `wiki/_meta/project-sync.json`.
+- Before any push: `npm run pr:check` (includes `wiki:check` — project↔wiki sync). A task's
+  status, log line and "next task" go only in `wiki/tasks/<id>.md`. Do not edit `wiki/now.md`,
+  the `Sources:` line or handoff cell in `wiki/index.md`, the open-PR list in
+  `wiki/product/after-hours-epic-handoff.md`, epic §5.3, or the top of `wiki/log.md` for that
+  status. Rollup: `npm run wiki:tasks` (prints, does not write). A new wiki page still gets one
+  index row; raw-source ingest still appends to `wiki/log.md`. Watched code zones are listed in
+  `wiki/_meta/project-sync.json` — a watcher that lists `now.md` is satisfied by the task fragment.
 - Every factual claim in `wiki/` carries `(source: …)` or a link to the page that holds it.

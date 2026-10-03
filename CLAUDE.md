@@ -48,7 +48,7 @@ Agent-instruction files themselves (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/*.m
 Before the first substantive response in a session, read:
 
 1. [wiki/overview.md](wiki/overview.md) — business context, hard constraints, what did NOT work.
-2. [wiki/now.md](wiki/now.md) — what is being worked on right now.
+2. [wiki/now.md](wiki/now.md) — pointer to current work. Live task status is `wiki/tasks/<id>.md` (`npm run wiki:tasks`).
 
 For a code task, also read `.cursor/rules/00-core.mdc`. Do not re-read them mid-session.
 
@@ -90,8 +90,16 @@ Keep these paths exactly — the index, the linter and downstream tooling depend
 1. **Never modify anything in `raw/`.** Corrections live in a `wiki/` page that cites the raw file.
 2. **Never push to `main`.** Feature branch + PR. Before any push: `npm run pr:check`.
 3. **No business facts in this file.** They belong in `wiki/overview.md` with a source link.
-4. **Always update [wiki/index.md](wiki/index.md) and [wiki/log.md](wiki/log.md)** after changing the
-   wiki. `log.md` is append-only — never rewrite history in it.
+4. **Task status is one fragment file, not a shared list.** A task PR writes
+   `wiki/tasks/<id>.md` only (`ah-3.5.md`, `atb-67.md`) for its status, log line and
+   "next task". Do not edit, in a task PR: the status list or `Last updated` in
+   `wiki/now.md`; the `Sources:` line or the handoff status cell in `wiki/index.md`;
+   the open-PR list or "next task" paragraph in `wiki/product/after-hours-epic-handoff.md`;
+   table §5.3 in `wiki/product/after-hours-redesign-epic.md`; the top of `wiki/log.md`.
+   Those pages are stable pointers. `npm run wiki:tasks` prints the rollup and does not
+   write it. A brand-new wiki page still gets one new row in `wiki/index.md`. Ingest of a
+   raw source (not a parallel task PR) still appends to `wiki/log.md` — that journal is
+   append-only and its history is never rewritten.
 5. **Next.js 16 is not the Next.js you know** — read `node_modules/next/dist/docs/` before writing
    route/API code (see `AGENTS.md`).
 6. **Do not auto-fix lint findings.** Report a numbered list, wait for OK.

@@ -21,7 +21,7 @@ Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`
 
 - `pr:check` fails → fix, re-run until green, **then** push / open the PR.
 - Can't fix within scope → report the failure and **do not** open the PR.
-- Code under a wiki sync watcher (`wiki/_meta/project-sync.json`) without updating the listed wiki pages → `wiki:sync` fails; update pages + `wiki/log.md` in the same PR.
+- Code under a wiki sync watcher (`wiki/_meta/project-sync.json`) without updating the listed wiki pages → `wiki:sync` fails. Update those pages in the same PR. Where the watcher lists `now.md`, add `wiki/tasks/<id>.md` instead of editing `now.md`. Task PRs do not edit `wiki/now.md`, the `Sources:` line or handoff cell in `wiki/index.md`, the open-PR list in `wiki/product/after-hours-epic-handoff.md`, epic §5.3, or the top of `wiki/log.md`.
 
 ## Branching
 

@@ -57,6 +57,25 @@ export function resolveWatchedFiles(repoRoot, watcher) {
   return [...new Set(out)].sort((a, b) => a.localeCompare(b));
 }
 
+/**
+ * Paths whose latest commit counts as the watcher wiki timestamp.
+ * Task status lives in wiki/tasks/<id>.md, so a watcher that used to require
+ * now.md also accepts a commit under wiki/tasks. now.md stays in the list
+ * because its frozen facts are still checked separately.
+ */
+export function wikiTimestampPaths(wikiPages) {
+  const paths = (wikiPages ?? []).map((page) => toPosix(`wiki/${page}`));
+  if ((wikiPages ?? []).includes('now.md')) paths.push('wiki/tasks');
+  return [...new Set(paths)].sort((a, b) => a.localeCompare(b));
+}
+
+function watcherUpdateHint(wikiPages) {
+  if ((wikiPages ?? []).includes('now.md')) {
+    return 'статус задачі — файл wiki/tasks/<id>.md у цьому ж коміті; now.md, рядок Sources в index.md, список PR у handoff і таблицю §5.3 не редагувати';
+  }
+  return `оновити ${wikiPages.join(', ')} (контент + Last updated) і закомітити в цій же гілці`;
+}
+
 /** Latest commit unix time for the given paths, or null if none. */
 export function gitLatestCommitUnix(repoRoot, paths) {
   if (!paths.length) return null;
@@ -133,21 +152,22 @@ export function runProjectSync({ repoRoot, wikiRoot, contract, nowUnix = Math.fl
     }
 
     const codeTs = gitLatestCommitUnix(repoRoot, codeFiles);
-    const wikiTs = gitLatestCommitUnix(repoRoot, wikiRepoPaths);
+    const wikiTs = gitLatestCommitUnix(repoRoot, wikiTimestampPaths(watcher.wikiPages));
+    const updateHint = watcherUpdateHint(watcher.wikiPages);
     if (codeTs != null && wikiTs != null && codeTs > wikiTs) {
       const lagHours = Math.round((codeTs - wikiTs) / 3600);
       add(
         'error',
         `watcher:${watcher.id}:stale-wiki`,
         `код під «${watcher.id}» новіший за wiki на ~${lagHours}h`,
-        `оновити ${watcher.wikiPages.join(', ')} (контент + Last updated) і закомітити в цій же гілці`,
+        updateHint,
       );
     } else if (codeTs != null && wikiTs == null) {
       add(
         'error',
         `watcher:${watcher.id}:wiki-never-committed`,
         `є код для «${watcher.id}», але wiki-сторінки ще не в git`,
-        `додати ${watcher.wikiPages.join(', ')}`,
+        updateHint,
       );
     }
 
