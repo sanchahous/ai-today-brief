@@ -4,7 +4,14 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-10-02
+Last updated: 2026-10-03
+
+## 2026-10-03 — Виправлення рев'ю T1-f2 для AH-3.3 (EditorialHeader)
+
+- **Навігація (Digests):** оновлено логіку `isActive` для підсвічування маршрутів daily briefs (`/[lang]/[brief]`), що не належать до переліку відомих root-шляхів сайту (news, concepts, guides тощо). Додано E2E перевірку `aria-current` для тижневих та щоденних брифів.
+- **i18n:** жорстко закодований текст пошуку у мобільному sheet меню замінено на словниковий `t.header.searchPlaceholder`.
+- **Документація:** оновлено значення `header-h` у розділі дизайн-токенів (`wiki/architecture/design-system-tokens.md`), вказавши 76px (mobile) та 132px (desktop).
+
 
 ## 2026-10-02 — AH-3.5: редизайн Footer After Hours ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404))
 

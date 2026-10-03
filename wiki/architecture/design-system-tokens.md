@@ -84,7 +84,7 @@ fallback невідомих. Day color-mix overrides прибрано.
    - Major: перейменування чи видалення токенів, зміна шкали типографіки чи сітки.
 3. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
 4. **Продовження v2.1.0 (2026-09-30, AH-1.2):** єдиний контраст-гейт 2.0 (222 пари замість 158) і сім токенів прототипу, яких бракувало в коді: `--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`, `--selection-text` (Night і Day; споживачі з'являться з компонентами фази 2 і 3). Візуально нічого не змінюється.
-5. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: `--header-h` лишається 60px (змінюється разом із header у AH-3.3), стандартні `sm/md/lg/xl` Tailwind.
+5. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: стандартні `sm/md/lg/xl` Tailwind. Значення `--header-h` оновлено в AH-3.3.
 6. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
 7. **Changelog v1.0.0 (2026-09-26):**
    - Уніфікація токенів After Hours і чинного production.
@@ -293,9 +293,9 @@ AH-1.5 підключає локальні OFL subset-и через `next/font/l
 | `--max` | 1280px | ширина сторінки; `max-w-page` |
 | `--max-wide` | 1440px | широка сторінка; `max-w-page-wide` |
 | `--reading` | 42.5rem | міра читання (680px за замовчуванням); `max-w-reading` |
-| `--header-h` | 60px | висота header і sticky-зсуви; **72px прототипу переходить разом із header у AH-3.3** |
+| `--header-h` | 76px (mobile) / 132px (desktop) | висота header і sticky-зсуви |
 
-`--header-h` не змінено навмисно: тест `responsive-breakpoints` вимагає, щоб реальна висота header дорівнювала токену, а поведінка header за AC AH-1.6 змінюється лише в AH-3.3. Значення прототипу (72px) записано як `PRIMITIVES.sizes.headerHPrototype`.
+`--header-h` змінено на 76px для мобільних та 132px для десктопу в рамках AH-3.3. Значення прототипу (72px) записано як `PRIMITIVES.sizes.headerHPrototype`.
 
 ### 7.6 Глибина й ефекти
 
