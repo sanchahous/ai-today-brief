@@ -111,7 +111,12 @@ export default async function Home({ params }: { params: Promise<Params> }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
       />
-      <HomeHero lang={lang} categoryCount={data.categoryCount} categories={data.categories} />
+      <HomeHero
+        lang={lang}
+        categoryCount={data.categoryCount}
+        categories={data.categories}
+        popularQueries={data.trending.slice(0, 6).map((topic) => topic.name)}
+      />
       <CategoryGrid lang={lang} categories={data.categories} />
       <TopOfWeek lang={lang} featured={data.featured} secondary={data.secondary} />
       <WeeklyDigestBlock lang={lang} digest={weeklyDigest} />

@@ -56,13 +56,16 @@ test.describe('Header layout', () => {
       expect(navMetrics.navHeight).toBeLessThanOrEqual(44);
       expect(navMetrics.navOverflow).toBeLessThanOrEqual(1);
 
-      const search = header.getByRole('search').first();
-      await expect(search).toBeVisible();
-      const searchBox = await search.boundingBox();
+      const searchTrigger = header.getByTestId('search-trigger-compact');
+      await expect(searchTrigger).toBeVisible();
+      const searchBox = await searchTrigger.boundingBox();
       expect(searchBox).not.toBeNull();
       expect(searchBox!.width).toBeGreaterThanOrEqual(160);
 
-      const input = search.getByRole('searchbox');
+      await searchTrigger.click();
+      const dialog = page.getByRole('dialog', { name: /search|пошук/i });
+      await expect(dialog).toBeVisible({ timeout: 15_000 });
+      const input = dialog.getByRole('searchbox');
       await input.fill('agent');
       await expect(input).toHaveValue('agent');
       await input.press('Enter');

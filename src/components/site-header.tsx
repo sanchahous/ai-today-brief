@@ -1,5 +1,6 @@
 import { getCategories } from '@/lib/categories';
 import { categoryColor, categoryMeta } from '@/lib/category-meta';
+import { getHomeData } from '@/lib/home';
 import type { Lang } from '@/lib/site';
 import { SiteHeaderChrome, type NavCategory } from '@/components/site-header-chrome';
 
@@ -14,6 +15,8 @@ async function getNavCategories(lang: Lang): Promise<NavCategory[]> {
 }
 
 export async function SiteHeader({ lang }: { lang: Lang }) {
-  const categories = await getNavCategories(lang);
-  return <SiteHeaderChrome lang={lang} categories={categories} />;
+  const [categories, homeData] = await Promise.all([getNavCategories(lang), getHomeData(lang)]);
+  return (
+    <SiteHeaderChrome lang={lang} categories={categories} trending={homeData.trending} />
+  );
 }

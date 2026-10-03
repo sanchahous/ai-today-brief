@@ -32,7 +32,7 @@ export interface OverlayDrawerProps {
 /**
  * The only modal focus trap and body-scroll lock in the product.
  * `Dialog` (centre, left, right, full) is a shell on top of this component.
- * Header, news filters and mobile search still call it directly until AH-3.2, AH-3.3 and AH-4.3.
+ * Header, news filters still call it directly until AH-3.3 and AH-4.3.
  * Non-modal disclosures use `useDismissable` and do not trap focus.
  */
 

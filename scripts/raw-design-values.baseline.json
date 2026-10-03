@@ -164,12 +164,6 @@
       "count": 1
     },
     {
-      "path": "src/components/search-preview-dropdown.tsx",
-      "kind": "z-index",
-      "value": "z-[80]",
-      "count": 1
-    },
-    {
       "path": "src/components/site-header-chrome.tsx",
       "kind": "z-index",
       "value": "z-[70]",
