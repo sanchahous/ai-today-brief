@@ -15,6 +15,23 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
+const FIXTURE_GIT_ENV = {
+  ...process.env,
+  GIT_AUTHOR_NAME: 'wiki-sync-test',
+  GIT_AUTHOR_EMAIL: 'wiki-sync-test@example.com',
+  GIT_COMMITTER_NAME: 'wiki-sync-test',
+  GIT_COMMITTER_EMAIL: 'wiki-sync-test@example.com',
+};
+
+function git(cwd, args) {
+  return execFileSync('git', args, {
+    cwd,
+    env: FIXTURE_GIT_ENV,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
+
 describe('project-sync helpers', () => {
   it('wikiTimestampPaths counts task fragments instead of forcing a now.md edit', () => {
     assert.deepEqual(wikiTimestampPaths(['pipeline/weekly-digest.md', 'now.md']), [
@@ -34,12 +51,12 @@ describe('project-sync helpers', () => {
     mkdirSync(join(root, 'wiki', 'tasks'), { recursive: true });
     writeFileSync(join(root, 'header.tsx'), 'export const x = 1;\n');
     writeFileSync(join(root, 'wiki', 'tasks', 'ah-4.4.md'), '# AH-4.4\n');
-    execFileSync('git', ['init'], { cwd: root });
-    execFileSync('git', ['add', '.'], { cwd: root });
-    execFileSync('git', ['commit', '-m', 'code'], { cwd: root });
+    git(root, ['init']);
+    git(root, ['add', '.']);
+    git(root, ['commit', '-m', 'code']);
     writeFileSync(join(root, 'header.tsx'), 'export const x = 2;\n');
-    execFileSync('git', ['add', 'header.tsx'], { cwd: root });
-    execFileSync('git', ['commit', '-m', 'newer code'], { cwd: root });
+    git(root, ['add', 'header.tsx']);
+    git(root, ['commit', '-m', 'newer code']);
     writeFileSync(join(root, 'wiki', 'tasks', 'ah-4.4.md'), '# AH-4.4\n\nupdated\n');
     assert.ok(hasWorkingTreeChanges(root, ['wiki/tasks']));
     const wikiTs = wikiLatestUnix(root, ['now.md'], 9_999_999_999);
