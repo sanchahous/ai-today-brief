@@ -8,7 +8,7 @@ test.describe('Smoke', () => {
 
     await expect(page.locator('h1')).toBeVisible();
 
-    const postCards = page.getByTestId('post-card');
+    const postCards = page.getByTestId('story-card');
     const emptyState = page.getByText(/Нічого не знайдено|Nothing found/i);
 
     const hasPosts = (await postCards.count()) > 0;

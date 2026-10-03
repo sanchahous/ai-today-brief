@@ -10,12 +10,12 @@ test.describe('Sponsor card spacing', () => {
     const sponsorCount = await sponsor.count();
     test.skip(sponsorCount === 0, 'Fewer than 3 posts — sponsor not woven in');
 
-    const postCards = page.getByTestId('post-card');
+    const postCards = page.getByTestId('story-card');
     expect(await postCards.count()).toBeGreaterThanOrEqual(3);
 
     const gap = await page.evaluate(() => {
       const sponsorEl = document.querySelector('[data-testid="sponsor-card"]');
-      const posts = document.querySelectorAll('[data-testid="post-card"]');
+      const posts = document.querySelectorAll('[data-testid="story-card"]');
       if (!sponsorEl || posts.length < 3) return -1;
 
       const sponsorRect = sponsorEl.getBoundingClientRect();

@@ -16,4 +16,29 @@ Task: ah-4.3
 | AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
 ```
 
-(source: перенос ATB-67, [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
+### log
+
+```verbatim
+## 2026-10-03 — AH-4.3: Редизайн сторінки /[lang]/news (Discovery)
+
+- Вступ: додано eyebrow "Стрічка новин" та залишено рядок "Curated by".
+- Discovery toolbar: додано пошук з очищенням, кнопку "Фільтри" з лічильником (на мобільних) та сортування.
+- Рядок результатів: додано `role="status"` з чесним обсягом знайдених матеріалів.
+- Фільтри: реалізовано facet rail із категоріями (гліф + лічильник), періодом та темами (з приміткою про OR/AND логіку).
+- Картки новин: переведено з `PostCard` на `StoryCard`. Інтегровано `NewsletterForm` (inline).
+- Технічні вимоги: гарантовано відсутність читання `searchParams` у серверному компоненті для збереження ISR.
+- Тести: оновлено E2E тести (news-feed-interaction) для роботи з новими селекторами пошуку та фільтрів.
+(source: PR #411; [епік AH-4.3](product/after-hours-redesign-epic.md#ah-43--сторінка-langnews-за-контрактом-discovery))
+```
+
+### handoff-next-task
+
+```verbatim
+Next task: AH-4.4 (Сторінка пошуку `/[lang]/news/search`).
+```
+
+### now-status
+
+```verbatim
+- **AH-4.3 виконано (2026-10-03)** на поточній гілці: редизайн `/[lang]/news` завершено за контрактом discovery. Додано `SearchInput`, оновлено тулбар, вбудовано теми в facet rail, замінено `PostCard` на `StoryCard`. E2E оновлено для перевірки тулбару замість старих chips. **Наступна після інтеграції — AH-4.4.** (source: завдання AH-4.3; [епік §5.3 AH-4.3](product/after-hours-redesign-epic.md#ah-43--сторінка-langnews-за-контрактом-discovery))
+```

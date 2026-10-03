@@ -101,6 +101,9 @@ export default async function NewsPage({ params }: { params: Promise<Params> }) 
       <Breadcrumbs items={crumbs} />
 
       <header className="mb-8 max-w-[720px]">
+        <p className="text-accent mb-2 text-xs font-bold tracking-[0.1em] uppercase">
+          {t.newsEyebrow}
+        </p>
         <h1 className="mb-3 text-[clamp(1.8rem,4.5vw,2.7rem)]">{t.title}</h1>
         <p className="text-muted m-0 mb-4 text-base leading-relaxed">{t.lead}</p>
         <Byline lang={lang} updated={updated} />

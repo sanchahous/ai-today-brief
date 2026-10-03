@@ -16,9 +16,8 @@ import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { trackEvent } from '@/lib/analytics-client';
 import { Reveal } from '@/components/reveal';
-import { PostCard } from '@/components/post-card';
+import { StoryCard } from '@/components/editorial/story-card';
 import { SponsorCard } from '@/components/home/sponsor-card';
-import { NewsletterBand } from '@/components/home/newsletter-band';
 import { SlidersIcon } from '@/components/icons';
 import {
   NewsSidebar,
@@ -28,19 +27,22 @@ import {
 } from '@/components/news/news-sidebar';
 import {
   applyNewsFilters,
+  buildTopicFacet,
   countCategories,
   normalizePage,
   parseNewsUrlParams,
   serializeNewsUrlParams,
   sortItems,
 } from '@/lib/news-filters';
-import { resolveTopicNames } from '@/lib/topic-normalize';
 import {
   ActionButton,
   EmptyState,
+  ErrorState,
   FilterChip,
   AccessiblePagination,
   Select,
+  SearchInput,
+  NewsletterForm,
 } from '@/components/ui';
 
 const PAGE_SIZE = 12;
@@ -53,6 +55,8 @@ export function NewsFeed({
   initialQuery = '',
   initialCategory = '',
   initialPage = 1,
+  error = false,
+  onRetry,
 }: {
   lang: Lang;
   items: HomeItem[];
@@ -61,8 +65,11 @@ export function NewsFeed({
   initialQuery?: string;
   initialCategory?: string;
   initialPage?: number;
+  error?: boolean;
+  onRetry?: () => void;
 }) {
-  const t = getStrings(lang).news;
+  const core = getStrings(lang);
+  const t = core.news;
   const router = useRouter();
   const serverSearchActive = initialQuery.trim().length > 0;
 
@@ -134,13 +141,25 @@ export function NewsFeed({
     [items, filters, serverSearchActive],
   );
 
-  const topicNames = useMemo(() => resolveTopicNames(items.map((p) => p.tools)), [items]);
-  // A stale link can carry topics no story has: they filter nothing, so they get no chip either.
-  const activeTopics = filters.topics.filter((slug) => topicNames.has(slug));
+  const topicOptions = useMemo(
+    () => buildTopicFacet(items, filters, { serverSearch: serverSearchActive }),
+    [items, filters, serverSearchActive],
+  );
+
+  const topicNames = useMemo(() => new Map(topicOptions.map(t => [t.slug, t.name])), [topicOptions]);
+  const activeTopics = useMemo(() => topicOptions.filter(t => t.selected).map(t => t.slug), [topicOptions]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = normalizePage(page, pageCount);
   const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const itemStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const itemEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
+  const showingText = t.showingCountOf
+    .replace('{start}', itemStart.toString())
+    .replace('{end}', itemEnd.toString())
+    .replace('{total}', filtered.length.toString())
+    .replace('{max}', items.length.toString());
 
   const hasActive =
     filters.q.trim().length > 0 ||
@@ -191,6 +210,33 @@ export function NewsFeed({
     }
   };
 
+  const [searchValue, setSearchValue] = useState(filters.q);
+  useEffect(() => {
+    setSearchValue(filters.q);
+  }, [filters.q]);
+
+  const setSearchQuery = (q: string) => {
+    if (q) trackEvent('search', { query: q });
+    const nextFilters = { ...filters, q };
+    if (!q && nextFilters.sort === 'relevance') nextFilters.sort = 'newest';
+    setFilters(nextFilters);
+    setPage(1);
+    syncUrl(nextFilters, 1);
+  };
+
+  const toggleTopic = (slug: string) => {
+    trackEvent('filter_topic', { topic: slug });
+    const nextFilters: NewsFilters = {
+      ...filters,
+      topics: filters.topics.includes(slug)
+        ? filters.topics.filter((s) => s !== slug)
+        : [...filters.topics, slug],
+    };
+    setFilters(nextFilters);
+    setPage(1);
+    syncUrl(nextFilters, 1);
+  };
+
   const removeTopic = (slug: string) => {
     const nextFilters: NewsFilters = {
       ...filters,
@@ -217,18 +263,6 @@ export function NewsFeed({
     syncUrl(nextFilters, 1);
   };
 
-  const removeQuery = () => {
-    const nextSort = filters.sort === 'relevance' ? 'newest' : filters.sort;
-    const nextFilters: NewsFilters = { ...filters, q: '', sort: nextSort };
-    setFilters(nextFilters);
-    setPage(1);
-    if (serverSearchActive) {
-      router.push(`/${lang}/news`);
-    } else {
-      syncUrl(nextFilters, 1);
-    }
-  };
-
   const goToPage = (p: number) => {
     const target = normalizePage(p, pageCount);
     setPage(target);
@@ -236,13 +270,6 @@ export function NewsFeed({
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const dateChipLabel = (d: DatePreset) => {
-    if (d === 'today') return t.dateToday;
-    if (d === 'week') return t.dateWeek;
-    if (d === 'month') return t.dateMonth;
-    return t.dateAll;
   };
 
   const sortOptions = filters.q.trim()
@@ -274,6 +301,8 @@ export function NewsFeed({
         onDate={setDateFilter}
         onSort={setSortFilter}
         onReset={reset}
+        topicOptions={topicOptions}
+        onToggleTopic={toggleTopic}
         hasActive={hasActive}
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
@@ -282,11 +311,25 @@ export function NewsFeed({
       />
 
       <section aria-label={t.title} className="min-w-0">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-muted m-0 text-[0.9rem]" aria-live="polite">
-            {t.resultsCount} <span className="text-text font-semibold">{filtered.length}</span>
-          </p>
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1 min-w-[200px] max-w-md">
+            <SearchInput
+              lang={lang}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setSearchQuery(searchValue);
+                }
+              }}
+              onClear={() => setSearchQuery('')}
+            />
+          </div>
           <div className="flex items-center gap-2">
+            <p className="text-muted m-0 text-sm" aria-live="polite" role="status">
+              {showingText}
+            </p>
             <label htmlFor="news-sort-top" className="sr-only">
               {t.sortLabel}
             </label>
@@ -317,67 +360,66 @@ export function NewsFeed({
             </ActionButton>
           </div>
         </div>
-
+        
         {hasActive && (
-          <div
-            data-testid="active-filter-chips"
-            className="mb-5 flex flex-wrap items-center gap-2"
-            role="region"
-            aria-label={lang === 'uk' ? 'Активні фільтри' : 'Active filters'}
-          >
+          <div data-testid="active-filter-chips" className="mb-6 flex flex-wrap items-center gap-2">
             {filters.q.trim() && (
-              <FilterChip lang={lang}
-                label={`«${filters.q.trim()}»`}
+              <FilterChip
+                lang={lang}
+                label={filters.q}
                 active
-                onRemove={removeQuery}
-
+                onRemove={() => setSearchQuery('')}
+                removeAriaLabel={t.removeTopic.replace('{name}', filters.q)}
               />
             )}
-            {filters.categories.map((slug) => {
-              const c = categories.find((x) => x.slug === slug);
-              return (
-                <FilterChip lang={lang}
+            {filters.categories.map(slug => {
+              const cat = categories.find(c => c.slug === slug);
+              return cat ? (
+                <FilterChip
+                  lang={lang}
                   key={slug}
-                  label={c?.name ?? slug}
-                  categorySlug={slug}
-                  categoryColor={c?.color}
+                  label={cat.name}
                   active
                   onRemove={() => toggleCategory(slug)}
-
+                  removeAriaLabel={t.removeTopic.replace('{name}', cat.name)}
                 />
-              );
+              ) : null;
             })}
-            {activeTopics.map((slug) => {
-              const name = topicNames.get(slug) ?? slug;
-              return (
-                <FilterChip lang={lang}
+            {activeTopics.map(slug => (
+               <FilterChip
+                  lang={lang}
                   key={slug}
-                  label={name}
+                  label={topicNames.get(slug) ?? slug}
                   active
                   onRemove={() => removeTopic(slug)}
-                  removeAriaLabel={t.removeTopic.replace('{name}', name)}
-                />
-              );
-            })}
+                  removeAriaLabel={t.removeTopic.replace('{name}', topicNames.get(slug) ?? slug)}
+               />
+            ))}
             {filters.date !== 'all' && (
-              <FilterChip lang={lang}
-                label={dateChipLabel(filters.date)}
+              <FilterChip
+                lang={lang}
+                label={
+                  filters.date === 'today' ? t.dateToday :
+                  filters.date === 'week' ? t.dateWeek :
+                  filters.date === 'month' ? t.dateMonth : ''
+                }
+                active
                 onRemove={() => setDateFilter('all')}
-
+                removeAriaLabel={t.removeTopic.replace('{name}', filters.date)}
               />
             )}
-            <ActionButton
-              variant="ghost"
-              size="sm"
-              onClick={reset}
-              className="text-accent"
-            >
-              {t.filterReset}
-            </ActionButton>
+            <ActionButton variant="ghost" onClick={reset}>{t.filterReset}</ActionButton>
           </div>
         )}
 
-        {filtered.length === 0 ? (
+        {error ? (
+          <ErrorState
+            title={core.searchErrorTitle}
+            description={core.searchErrorDescription}
+            retryLabel={core.searchErrorRetry}
+            onRetry={onRetry}
+          />
+        ) : filtered.length === 0 ? (
           <EmptyState
             title={t.emptyTitle}
             description={t.emptyBody}
@@ -392,7 +434,7 @@ export function NewsFeed({
             {pageRows.map((p, i) => (
               <Fragment key={p.id}>
                 <Reveal delayMs={i * 45}>
-                  <PostCard lang={lang} item={p} />
+                  <StoryCard lang={lang} item={p} />
                 </Reveal>
                 {i === 5 && (
                   <Reveal delayMs={i * 45 + 20}>
@@ -419,9 +461,9 @@ export function NewsFeed({
           />
         )}
 
-        {/* Newsletter band — mobile only (desktop version is in the sidebar) */}
+        {/* Newsletter form — mobile only (desktop version is in the sidebar) */}
         <div className="mt-8 [@media(min-width:900px)]:hidden">
-          <NewsletterBand lang={lang} embedded placement="news-feed-mobile" />
+          <NewsletterForm lang={lang} variant="inline" placement="news-feed-mobile" />
         </div>
       </section>
     </div>

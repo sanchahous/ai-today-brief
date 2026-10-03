@@ -14,6 +14,7 @@ import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Pill } from '@/components/ui/pill';
+import { FilterChip } from '@/components/ui/chip';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 
 export type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
@@ -29,6 +30,8 @@ interface SidebarControlsProps {
   onDate: (d: DatePreset) => void;
   onSort: (s: SortMode) => void;
   onReset: () => void;
+  topicOptions?: { slug: string; name: string; count: number; selected: boolean }[];
+  onToggleTopic?: (slug: string) => void;
   hasActive: boolean;
   compact?: boolean;
   showSort?: boolean;
@@ -68,6 +71,8 @@ function SidebarControls({
   onDate,
   onSort,
   onReset,
+  topicOptions = [],
+  onToggleTopic,
   hasActive,
   compact = false,
   showSort = true,
@@ -175,6 +180,32 @@ function SidebarControls({
           })}
         </div>
       </FilterGroup>
+
+      {topicOptions.length > 0 && (
+        <FilterGroup label={t.filterTopics} compact={compact}>
+          <ul className={`m-0 grid list-none gap-1 p-0 ${compact ? 'min-[520px]:grid-cols-2' : ''}`}>
+            {topicOptions.map((topic) => (
+              <li key={topic.slug}>
+                <label className={rowClass(topic.selected)}>
+                  <input
+                    type="checkbox"
+                    checked={topic.selected}
+                    onChange={() => onToggleTopic?.(topic.slug)}
+                    className="accent-accent size-4 shrink-0"
+                  />
+                  <span className={`min-w-0 flex-1 leading-snug ${compact ? 'break-words' : 'truncate'}`}>
+                    {topic.name}
+                  </span>
+                  <span className="text-faint ml-2 shrink-0 text-2xs tabular-nums">
+                    {topic.count}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <p className="text-faint mt-2 mb-0 text-xs">{t.facetLogicNote}</p>
+        </FilterGroup>
+      )}
 
       {hasActive && (
         <Button variant="outline"

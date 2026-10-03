@@ -23,28 +23,50 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
       // Verify URL updated without full page reload
       await expect(page).toHaveURL(/categories=/);
       // Verify active filter chip appeared
-      const activeChips = page.getByTestId('active-filter-chips');
-      await expect(activeChips).toBeVisible();
+      const resetButton = sidebar.getByRole('button', { name: /reset|скинути/i });
+      await expect(resetButton).toBeVisible();
     }
 
-    // 3. Select a date preset
+    // 3. Select a topic if available
+    const topicCheckboxes = sidebar.locator('section').filter({ hasText: /topics|теми/i }).locator('input[type="checkbox"]');
+    const hasTopic = await topicCheckboxes.count().then(c => c > 0);
+    if (hasTopic) {
+      await topicCheckboxes.first().check();
+      await expect(page).toHaveURL(/topics=/);
+    }
+
+    // 4. Select a date preset
     const dateWeekButton = sidebar.getByRole('button', { name: /week/i });
     if (await dateWeekButton.isVisible()) {
       await dateWeekButton.click();
       await expect(page).toHaveURL(/date=week/);
-
-      // 4. Test browser back button restores previous state
+    }
+    
+    // 5. Test reload preserves state
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', { timeout: 30_000 });
+    if (hasCategoryCheckbox) await expect(page).toHaveURL(/categories=/);
+    if (hasTopic) await expect(page).toHaveURL(/topics=/);
+    if (await dateWeekButton.isVisible()) await expect(page).toHaveURL(/date=week/);
+    
+    // 6. Test browser back button restores previous state
+    if (await dateWeekButton.isVisible()) {
       await page.goBack();
       // After back, date=week should be gone
-      expect(page.url()).not.toContain('date=week');
+      await expect(page).not.toHaveURL(/date=week/);
+    }
+    if (hasTopic) {
+      await page.goBack();
+      await expect(page).not.toHaveURL(/topics=/);
     }
   });
 
-  test('hydrates state directly from URL query parameters', async ({ page }) => {
+  test('hydrates state directly from URL query parameters and preserves result set across copied URLs', async ({ page, context }) => {
     await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
 
-    // Direct visit with query parameters
-    await page.goto('/en/news?date=month&sort=oldest', { waitUntil: 'domcontentloaded' });
+    // Direct visit with query parameters (simulate user A)
+    const testUrl = '/en/news?categories=tools-and-releases&topics=codex&date=month&sort=oldest';
+    await page.goto(testUrl, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1, name: /news/i })).toBeVisible({
       timeout: 30_000,
     });
@@ -52,14 +74,36 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
       timeout: 30_000,
     });
 
-    // Check that date "Month" button has pressed state
-    const sidebar = page.getByTestId('news-sidebar');
+    // Save result set count
+    const statusText = await page.getByRole('status').textContent();
+    const resultCount = statusText ? statusText.trim() : '';
+
+    // Simulate copied URL in a new context (simulate user B)
+    const newPage = await context.newPage();
+    await newPage.setViewportSize(NEWS_DESKTOP_VIEWPORT);
+    await newPage.goto(testUrl, { waitUntil: 'domcontentloaded' });
+    await expect(newPage.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
+      timeout: 30_000,
+    });
+
+    // Check that state hydrated correctly in new tab
+    const sidebar = newPage.getByTestId('news-sidebar');
     const monthButton = sidebar.getByRole('button', { name: /month/i });
     await expect(monthButton).toHaveAttribute('aria-pressed', 'true');
-
-    // Check that sort select has 'oldest' value
-    const sortSelect = page.getByLabel(/sort/i);
+    const sortSelect = newPage.getByLabel(/sort/i);
     await expect(sortSelect).toHaveValue('oldest');
+
+    // Check result set is identical
+    const newStatusText = await newPage.getByRole('status').textContent();
+    expect(newStatusText?.trim()).toBe(resultCount);
+    
+    // Check that active filter chips rendered for category and topic
+    const activeChips = newPage.getByTestId('active-filter-chips');
+    await expect(activeChips).toBeVisible();
+    await expect(activeChips.getByText(/tools/i)).toBeVisible();
+    await expect(activeChips.getByText(/codex/i)).toBeVisible();
+
+    await newPage.close();
   });
 
   test('search query shows relevance sort option and updates URL', async ({ page }) => {
@@ -76,6 +120,10 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
     const updatedOptions = await sortSelect.locator('option').allTextContents();
     expect(updatedOptions.some((o) => /relevance/i.test(o))).toBe(true);
 
+    // Search input should have the query value
+    const searchInput = page.getByRole('searchbox');
+    await expect(searchInput).toHaveValue('intelligence');
+
     // Active query chip should be visible
     const activeChips = page.getByTestId('active-filter-chips');
     await expect(activeChips).toBeVisible();
@@ -85,6 +133,7 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
     if (await clearBtn.isVisible()) {
       await clearBtn.click();
       await expect(page).not.toHaveURL(/q=intelligence/);
+      await expect(searchInput).toHaveValue('');
     }
   });
 
