@@ -240,8 +240,8 @@ describe('non-colour token sync (AH-1.6)', () => {
     expect(focus).toEqual({ width: 2, offset: 3 });
   });
 
-  it('keeps the header at its rendered 60px until AH-3.3 and records the prototype value', () => {
-    expect(CSS_VARS_STATIC['--header-h']).toBe('60px');
+  it('updates the header to its rendered 76px for AH-3.3 and records the prototype value', () => {
+    expect(CSS_VARS_STATIC['--header-h']).toBe('76px');
     expect(PRIMITIVES.sizes.headerHPrototype).toBe('72px');
   });
 

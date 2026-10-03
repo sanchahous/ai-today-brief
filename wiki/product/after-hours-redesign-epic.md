@@ -1160,13 +1160,13 @@ AH-1.6 (D5) · **Закриває:** контракт `EditorialHeader(lang, act
    `globals.css`, щоб не з'явилась «мертва смуга» до AH-4.3.
 
 **AC:**
-- [ ] Клавіатура: skip link → header → усі пункти; меню категорій — Enter / Space / Escape з
+- [x] Клавіатура: skip link → header → усі пункти; меню категорій — Enter / Space / Escape з
   поверненням фокусу; мобільний sheet з focus trap (E2E).
-- [ ] На 360–1440 і при 200% тексту — без переповнення; header і news-layout перемикаються на тій
+- [x] На 360–1440 і при 200% тексту — без переповнення; header і news-layout перемикаються на тій
   самій ширині (спека на межі брейкпоінта ± 1 px).
-- [ ] Edition-рядок бере дату з даних (unit-тест форматера з `Intl`, EN/UK).
-- [ ] `header-layout`, `mobile-menu`, `responsive-breakpoints`, `theme` specs зелені й оновлені під D5.
-- [ ] Висота header синхронізована з токеном `header-h`, CLS від header — 0; `wiki/now.md` оновлено.
+- [x] Edition-рядок бере дату з даних (unit-тест форматера з `Intl`, EN/UK).
+- [x] `header-layout`, `mobile-menu`, `responsive-breakpoints`, `theme` specs зелені й оновлені під D5.
+- [x] Висота header синхронізована з токеном `header-h`, CLS від header — 0; `wiki/now.md` оновлено.
 
 ### AH-3.4 · NewsletterForm: спільний компонент і всі стани
 

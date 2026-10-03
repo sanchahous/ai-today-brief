@@ -158,9 +158,9 @@ export const PRIMITIVES = {
     reading: '42.5rem',
     /**
      * The prototype header is 72px, but `--header-h` must equal the rendered header (sticky
-     * offsets and e2e assert it) and the header only changes in AH-3.3 — so it stays 60px until then.
+     * offsets and e2e assert it) and the header only changes in AH-3.3.
      */
-    headerH: '60px',
+    headerH: '76px',
     headerHPrototype: '72px',
   },
   typography: {

@@ -224,7 +224,8 @@ QA-матриця працює в режимі report.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
 2. Підтягни origin/main і перевір актуальний стан у §1 цього handoff та §5.3 епіку.
    На 2026-10-01 AH-3.2 реалізовано в PR #394 на `feat/ah-3.2-search-dialog`.
-   Після інтеграції наступна задача — AH-3.3 (EditorialHeader).
+   AH-3.3 реалізовано в PR #406 на `feat/ah-3.3-editorial-header`.
+   Наступна задача — AH-3.4 (NewsletterForm).
    AH-2.6 реалізовано в PR #392 на feat/ah-2.6-navigation.
    AH-2.5 реалізовано в PR #391 на feat/ah-2.5-feedback-states і очікує власного review.
    AH-3.5 реалізовано в PR #404 на feat/ah-3.5-footer; після інтеграції — AH-3.6 (Consent-картка).

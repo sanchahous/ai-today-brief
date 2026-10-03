@@ -106,7 +106,7 @@
   --tracking-meta: 0.08em;
   --tracking-eyebrow: 0.13em;
   --measure: 68ch;
-  --header-h: 60px;
+  --header-h: 76px;
   --bg: #171918;
   --bg-soft: #131514;
   --stage: #0e100f;
@@ -772,6 +772,9 @@ html[lang='uk'],
 }
 /* News archive layout flips at the same breakpoint as header chrome: Tailwind tablet (60rem / 960px). */
 @variant tablet {
+  :root {
+    --header-h: 132px;
+  }
   .news-layout {
     grid-template-columns: 264px minmax(0, 1fr);
     align-items: start;

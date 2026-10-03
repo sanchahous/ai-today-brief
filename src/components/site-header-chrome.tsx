@@ -51,7 +51,23 @@ export function SiteHeaderChrome({
 
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    if (pathname === href || pathname.startsWith(`${href}/`)) return true;
+    
+    // SECTION_OF mapping for digests
+    if (href === `/${lang}/digests`) {
+      return pathname.startsWith(`/${lang}/weekly/`) || /^\/[a-z]{2}\/\d{4}-\d{2}-\d{2}$/.test(pathname);
+    }
+    // SECTION_OF mapping for news (assuming articles are under /news, wait, articles are /news/[category]/[slug])
+    if (href === `/${lang}/news`) {
+      // Actually startsWith(href + '/') is covered by the first check for /news/..., 
+      // but if there are other article formats, we cover them.
+      // Usually news are /en/news/... which is covered by startsWith.
+      return false;
+    }
+    
+    return false;
+  };
 
   useEffect(() => {
     if (!catsOpen) return;
@@ -122,14 +138,14 @@ export function SiteHeaderChrome({
   }
 
   return (
-    <header className="site-header-shell sticky z-50 border-b border-border bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]" style={{ top: '-4.75rem' }}>
+    <header className="site-header-shell sticky top-0 tablet:-top-[4.75rem] z-50 border-b border-border bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]">
       <div className="mx-auto flex h-[4.75rem] max-w-page items-center gap-6 px-gutter">
         <Link href={`/${lang}`} aria-label={`${SITE_NAME} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] items-center gap-3 whitespace-nowrap text-[1.4375rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text">
           <BrandMark size={40} />
           <span>
             AI Today Brief
             <small className="mt-[6px] block font-mono text-[0.75rem] uppercase tracking-[0.14em] text-faint">
-              {lang === 'uk' ? 'Редакція AI-новин' : 'The Intelligence Edit'}
+              {t.header.intelligenceEdit}
             </small>
           </span>
         </Link>
@@ -139,7 +155,7 @@ export function SiteHeaderChrome({
             <span className="live-dot" aria-hidden="true" />
             {formattedDate}
             <span className="mx-1.5">·</span>
-            {lang === 'uk' ? 'Щоденний випуск' : 'Daily edition'} {editionDay}
+            {t.header.dailyEdition} {editionDay}
           </p>
         ) : null}
 
@@ -224,7 +240,7 @@ export function SiteHeaderChrome({
                 {t.navCategories}
                 <ArrowRight
                   size={14}
-                  className={`opacity-60 transition-transform duration-200 ${catsOpen ? 'rotate-90' : 'rotate-90'}`}
+                  className={`opacity-60 transition-transform duration-200 ${catsOpen ? '-rotate-90' : 'rotate-90'}`}
                 />
               </button>
               {catsOpen ? (
@@ -257,7 +273,7 @@ export function SiteHeaderChrome({
                     ))}
                   </ul>
                   <Link href={`/${lang}/categories`} className="flex items-center justify-between min-h-[44px] mt-2 pt-2 px-2.5 border-t border-line text-accent text-[0.875rem] font-semibold no-underline" onClick={() => setCatsOpen(false)}>
-                    {lang === 'uk' ? 'Усі категорії' : 'All categories'}
+                    {t.header.allCategories}
                     <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -267,7 +283,7 @@ export function SiteHeaderChrome({
             {navLink(`/${lang}/about`, t.navAbout, isActive(`/${lang}/about`))}
           </nav>
 
-          <SearchTrigger lang={lang} source="header" variant="field" className="min-w-[240px] max-w-sm rounded-pill" placeholder={lang === 'uk' ? 'Пошук новин, концептів, утиліт' : 'Search stories, concepts, tools'} testId="search-trigger-compact" />
+          <SearchTrigger lang={lang} source="header" variant="field" className="min-w-[240px] max-w-sm rounded-pill" placeholder={t.header.searchPlaceholder} testId="search-trigger-compact" />
           
           <Link
              href={`/${lang}/subscribe`}

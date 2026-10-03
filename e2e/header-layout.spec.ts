@@ -31,8 +31,8 @@ test.describe('Header layout', () => {
         };
       });
 
-      // Header is --header-h (60px) + top row (76px) on desktop (width >= 960)
-      const expectedHeight = width >= 960 ? headerMetrics.cssHeaderHeight + 76 : headerMetrics.cssHeaderHeight;
+      // Header is --header-h (132px on desktop, 76px on mobile)
+      const expectedHeight = headerMetrics.cssHeaderHeight;
       expect(headerMetrics.renderedHeight).toBeCloseTo(expectedHeight, 0);
       expect(headerMetrics.documentOverflow).toBeLessThanOrEqual(1);
 
@@ -76,4 +76,25 @@ test.describe('Header layout', () => {
       await expect(page).toHaveURL(/\/uk\/news\/search\?q=agent$/);
     });
   }
+
+  test('desktop category dropdown opens, closes on Escape and returns focus', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHeaderLayoutPage(page);
+
+    // Find the Categories button
+    const categoriesBtn = page.getByRole('button', { name: /Categories|Категорії/i });
+    await expect(categoriesBtn).toBeVisible();
+    await categoriesBtn.click();
+
+    // Verify dropdown opens
+    const listbox = page.getByRole('listbox', { name: /Categories|Категорії/i });
+    await expect(listbox).toBeVisible();
+
+    // Close with Escape
+    await page.keyboard.press('Escape');
+    await expect(listbox).toBeHidden();
+
+    // Focus returns to the trigger
+    await expect(categoriesBtn).toBeFocused();
+  });
 });
