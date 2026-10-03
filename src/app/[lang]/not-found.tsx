@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
 import { NotFoundContentClient } from '@/components/not-found-content-client';
+import { getStrings } from '@/lib/i18n';
+import { DEFAULT_LANG } from '@/lib/site';
+
+const t = getStrings(DEFAULT_LANG);
 
 export const metadata: Metadata = {
-  title: '404',
+  title: t.notFoundMetaTitle,
+  description: t.notFoundBody,
   robots: { index: false, follow: true },
 };
 

@@ -24,6 +24,8 @@ Last updated: 2026-10-03 (AH-3.3 review fixes)
 
 ## Стан репозиторію
 
+- **AH-5.15 відкрито в [#409](https://github.com/sanchahous/ai-today-brief/pull/409)** на `feat/ah-5.15-not-found-loading`: After Hours 404 (celadon-нуль, eyebrow, форма пошуку → `/news/search`, suggested links) без нескінченних анімацій; loading-скелетони home/news/category. E2E `not-found.spec.ts`. **Наступна задача епіку — AH-6.1.** (source: PR #409; [епік §5.3 AH-5.15](product/after-hours-redesign-epic.md#ah-515--404-і-loading-стани))
+
 - **AH-3.3 реалізовано (2026-10-03)** на `feat/ah-3.3-header-layout`: 2-рівневий header-chrome (desktop), compact sticky навігація через `IntersectionObserver`, мобільний sheet (Categories і Search) та перемикання брейкпойнтів на 960px (`@variant tablet`). E2E тести оновлено (`e2e/helpers/viewports.ts`). Виправлено review findings: `isActive` для `digests` підтримує daily briefs, пошук у mobile menu використовує i18n, додано тест активного стану. (source: PR AH-3.3; [епік §5.3](product/after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 
 - **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav, error+retry) замінив `HeaderSearchField`, `MobileSearchModal` і `SearchPreviewDropdown`; header/hero/menu/404 ведуть у той самий сценарій. У `site-header-chrome.tsx` mobile menu: categories `<summary>` і lang toggle — `h-12` (≥44px tap target після E2E). E2E `header-layout` і `category-colours` відкривають dialog через `SearchTrigger`, не inline `role="search"`. **Наступна після інтеграції — AH-3.4.** (source: PR #394; [епік §5.3 AH-3.2](product/after-hours-redesign-epic.md#ah-32--searchdialog-ctrlcmdk))

@@ -152,18 +152,6 @@
       "count": 1
     },
     {
-      "path": "src/components/not-found-content.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.18)",
-      "count": 1
-    },
-    {
-      "path": "src/components/not-found-content.tsx",
-      "kind": "color",
-      "value": "rgba(91,201,240,0.12)",
-      "count": 1
-    },
-    {
       "path": "src/components/site-header-chrome.tsx",
       "kind": "z-index",
       "value": "z-[70]",

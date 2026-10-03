@@ -12,7 +12,7 @@ function shortcutHint(): string {
   return /Mac|iPhone|iPad/i.test(navigator.userAgent) ? '⌘K' : 'Ctrl K';
 }
 
-/** Opens the unified SearchDialog from header, hero, menu, or 404. */
+/** Opens the unified SearchDialog from header, hero, or menu. */
 export function SearchTrigger({
   lang,
   source,
