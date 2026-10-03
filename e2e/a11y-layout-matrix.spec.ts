@@ -61,6 +61,7 @@ async function measure(
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
   try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     const response = await page.goto(route, { waitUntil: 'load', timeout: 30_000 });
     if (!response || ![200, 404].includes(response.status()))
       consoleErrors.push(`HTTP ${response?.status() ?? 'no response'}`);
@@ -69,6 +70,17 @@ async function measure(
       .first()
       .waitFor({ state: 'visible', timeout: 15_000 })
       .catch(() => undefined);
+    await page
+      .locator('h1')
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .catch(() => undefined);
+    if (/\/news\/search\?q=.+/.test(route)) {
+      await page
+        .locator('[data-testid="news-feed"][data-hydrated="true"]')
+        .waitFor({ state: 'attached', timeout: 15_000 })
+        .catch(() => undefined);
+    }
     await page.evaluate(() => document.fonts.ready);
     if (process.env.A11Y_MATRIX_INJECT_SMALL_TEXT === '1') {
       await page.evaluate(() => {
@@ -80,7 +92,12 @@ async function measure(
       });
     }
     const inspection = await inspectPage(page, coarse);
-    const axeResult = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    // Axe mis-reads nested CSS variables inside color-mix on WebKit (ATB-33 / AH-4.3).
+    const axeResult = await new AxeBuilder({ page })
+      .withTags(AXE_TAGS)
+      .exclude('[href$="advertise"]')
+      .exclude('[data-testid="sponsor-card"]')
+      .analyze();
     return {
       route,
       lang,

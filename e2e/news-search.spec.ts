@@ -39,4 +39,23 @@ test.describe('News search page (/[lang]/news/search)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/зв/i);
     await expect(page.getByTestId('news-search-form')).toBeVisible();
   });
+
+  test('popular query syncs the search field and back restores idle input', async ({ page }) => {
+    await page.goto('/en/news/search', { waitUntil: 'domcontentloaded' });
+    const input = page.locator('#news-search-q');
+    await expect(input).toHaveValue('');
+
+    const chip = page.getByTestId('news-search-idle').getByRole('button').first();
+    const label = (await chip.textContent())?.trim() ?? '';
+    expect(label.length).toBeGreaterThan(0);
+
+    await chip.click();
+    await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(label).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    await expect(input).toHaveValue(label);
+    await expect(page.getByTestId('news-feed')).toBeVisible({ timeout: 30_000 });
+
+    await page.goBack();
+    await expect(page.getByTestId('news-search-idle')).toBeVisible({ timeout: 30_000 });
+    await expect(input).toHaveValue('');
+  });
 });

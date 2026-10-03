@@ -460,7 +460,7 @@ export function NewsFeed({
                 <Reveal delayMs={i * 45}>
                   <StoryCard lang={lang} item={p} />
                 </Reveal>
-                {i === 5 && (
+                {i === 5 && feedContext === 'hub' && (
                   <Reveal delayMs={i * 45 + 20}>
                     <SponsorCard lang={lang} placement="news-feed" />
                   </Reveal>

@@ -4,6 +4,26 @@
       "id": "ds-catalog",
       "path": "/ds-catalog",
       "locales": ["en"]
+    },
+    {
+      "id": "news-search-q",
+      "path": "/en/news/search?q=mcp",
+      "locales": ["en"]
+    },
+    {
+      "id": "news-search-q-uk",
+      "path": "/uk/news/search?q=mcp",
+      "locales": ["uk"]
+    },
+    {
+      "id": "news-search-idle",
+      "path": "/en/news/search?q=",
+      "locales": ["en"]
+    },
+    {
+      "id": "news-search-idle-uk",
+      "path": "/uk/news/search?q=",
+      "locales": ["uk"]
     }
   ]
 }
