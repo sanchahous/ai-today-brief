@@ -14,6 +14,7 @@ import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Pill } from '@/components/ui/pill';
+import { FilterChip } from '@/components/ui/chip';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 
 export type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
@@ -29,6 +30,8 @@ interface SidebarControlsProps {
   onDate: (d: DatePreset) => void;
   onSort: (s: SortMode) => void;
   onReset: () => void;
+  activeTopics?: { slug: string; name: string }[];
+  onRemoveTopic?: (slug: string) => void;
   hasActive: boolean;
   compact?: boolean;
   showSort?: boolean;
@@ -68,6 +71,8 @@ function SidebarControls({
   onDate,
   onSort,
   onReset,
+  activeTopics = [],
+  onRemoveTopic,
   hasActive,
   compact = false,
   showSort = true,
@@ -175,6 +180,24 @@ function SidebarControls({
           })}
         </div>
       </FilterGroup>
+
+      {activeTopics.length > 0 && (
+        <FilterGroup label={t.filterTopics} compact={compact}>
+          <div className="flex flex-wrap gap-2">
+            {activeTopics.map((topic) => (
+              <FilterChip
+                lang={lang}
+                key={topic.slug}
+                label={topic.name}
+                active
+                onRemove={() => onRemoveTopic?.(topic.slug)}
+                removeAriaLabel={t.removeTopic.replace('{name}', topic.name)}
+              />
+            ))}
+          </div>
+          <p className="text-faint mt-2 mb-0 text-xs">{t.facetLogicNote}</p>
+        </FilterGroup>
+      )}
 
       {hasActive && (
         <Button variant="outline"

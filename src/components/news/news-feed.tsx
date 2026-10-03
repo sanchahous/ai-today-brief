@@ -16,9 +16,8 @@ import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { trackEvent } from '@/lib/analytics-client';
 import { Reveal } from '@/components/reveal';
-import { PostCard } from '@/components/post-card';
+import { StoryCard } from '@/components/editorial/story-card';
 import { SponsorCard } from '@/components/home/sponsor-card';
-import { NewsletterBand } from '@/components/home/newsletter-band';
 import { SlidersIcon } from '@/components/icons';
 import {
   NewsSidebar,
@@ -38,9 +37,10 @@ import { resolveTopicNames } from '@/lib/topic-normalize';
 import {
   ActionButton,
   EmptyState,
-  FilterChip,
   AccessiblePagination,
   Select,
+  SearchInput,
+  NewsletterForm,
 } from '@/components/ui';
 
 const PAGE_SIZE = 12;
@@ -142,6 +142,14 @@ export function NewsFeed({
   const safePage = normalizePage(page, pageCount);
   const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
+  const itemStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const itemEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
+  const showingText = t.showingCountOf
+    .replace('{start}', itemStart.toString())
+    .replace('{end}', itemEnd.toString())
+    .replace('{total}', filtered.length.toString())
+    .replace('{max}', items.length.toString());
+
   const hasActive =
     filters.q.trim().length > 0 ||
     filters.categories.length > 0 ||
@@ -191,6 +199,20 @@ export function NewsFeed({
     }
   };
 
+  const [searchValue, setSearchValue] = useState(filters.q);
+  useEffect(() => {
+    setSearchValue(filters.q);
+  }, [filters.q]);
+
+  const setSearchQuery = (q: string) => {
+    if (q) trackEvent('search', { query: q });
+    const nextFilters = { ...filters, q };
+    if (!q && nextFilters.sort === 'relevance') nextFilters.sort = 'newest';
+    setFilters(nextFilters);
+    setPage(1);
+    syncUrl(nextFilters, 1);
+  };
+
   const removeTopic = (slug: string) => {
     const nextFilters: NewsFilters = {
       ...filters,
@@ -217,18 +239,6 @@ export function NewsFeed({
     syncUrl(nextFilters, 1);
   };
 
-  const removeQuery = () => {
-    const nextSort = filters.sort === 'relevance' ? 'newest' : filters.sort;
-    const nextFilters: NewsFilters = { ...filters, q: '', sort: nextSort };
-    setFilters(nextFilters);
-    setPage(1);
-    if (serverSearchActive) {
-      router.push(`/${lang}/news`);
-    } else {
-      syncUrl(nextFilters, 1);
-    }
-  };
-
   const goToPage = (p: number) => {
     const target = normalizePage(p, pageCount);
     setPage(target);
@@ -236,13 +246,6 @@ export function NewsFeed({
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const dateChipLabel = (d: DatePreset) => {
-    if (d === 'today') return t.dateToday;
-    if (d === 'week') return t.dateWeek;
-    if (d === 'month') return t.dateMonth;
-    return t.dateAll;
   };
 
   const sortOptions = filters.q.trim()
@@ -274,6 +277,8 @@ export function NewsFeed({
         onDate={setDateFilter}
         onSort={setSortFilter}
         onReset={reset}
+        activeTopics={activeTopics.map((slug) => ({ slug, name: topicNames.get(slug) ?? slug }))}
+        onRemoveTopic={removeTopic}
         hasActive={hasActive}
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
@@ -282,11 +287,25 @@ export function NewsFeed({
       />
 
       <section aria-label={t.title} className="min-w-0">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-muted m-0 text-[0.9rem]" aria-live="polite">
-            {t.resultsCount} <span className="text-text font-semibold">{filtered.length}</span>
-          </p>
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1 min-w-[200px] max-w-md">
+            <SearchInput
+              lang={lang}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setSearchQuery(searchValue);
+                }
+              }}
+              onClear={() => setSearchQuery('')}
+            />
+          </div>
           <div className="flex items-center gap-2">
+            <p className="text-muted m-0 text-sm hidden lg:block" aria-live="polite" role="status">
+              {showingText}
+            </p>
             <label htmlFor="news-sort-top" className="sr-only">
               {t.sortLabel}
             </label>
@@ -318,64 +337,6 @@ export function NewsFeed({
           </div>
         </div>
 
-        {hasActive && (
-          <div
-            data-testid="active-filter-chips"
-            className="mb-5 flex flex-wrap items-center gap-2"
-            role="region"
-            aria-label={lang === 'uk' ? 'Активні фільтри' : 'Active filters'}
-          >
-            {filters.q.trim() && (
-              <FilterChip lang={lang}
-                label={`«${filters.q.trim()}»`}
-                active
-                onRemove={removeQuery}
-
-              />
-            )}
-            {filters.categories.map((slug) => {
-              const c = categories.find((x) => x.slug === slug);
-              return (
-                <FilterChip lang={lang}
-                  key={slug}
-                  label={c?.name ?? slug}
-                  categorySlug={slug}
-                  categoryColor={c?.color}
-                  active
-                  onRemove={() => toggleCategory(slug)}
-
-                />
-              );
-            })}
-            {activeTopics.map((slug) => {
-              const name = topicNames.get(slug) ?? slug;
-              return (
-                <FilterChip lang={lang}
-                  key={slug}
-                  label={name}
-                  active
-                  onRemove={() => removeTopic(slug)}
-                  removeAriaLabel={t.removeTopic.replace('{name}', name)}
-                />
-              );
-            })}
-            {filters.date !== 'all' && (
-              <FilterChip lang={lang}
-                label={dateChipLabel(filters.date)}
-                onRemove={() => setDateFilter('all')}
-
-              />
-            )}
-            <ActionButton
-              variant="ghost"
-              size="sm"
-              onClick={reset}
-              className="text-accent"
-            >
-              {t.filterReset}
-            </ActionButton>
-          </div>
-        )}
 
         {filtered.length === 0 ? (
           <EmptyState
@@ -392,7 +353,7 @@ export function NewsFeed({
             {pageRows.map((p, i) => (
               <Fragment key={p.id}>
                 <Reveal delayMs={i * 45}>
-                  <PostCard lang={lang} item={p} />
+                  <StoryCard lang={lang} item={p} />
                 </Reveal>
                 {i === 5 && (
                   <Reveal delayMs={i * 45 + 20}>
@@ -419,9 +380,9 @@ export function NewsFeed({
           />
         )}
 
-        {/* Newsletter band — mobile only (desktop version is in the sidebar) */}
+        {/* Newsletter form — mobile only (desktop version is in the sidebar) */}
         <div className="mt-8 [@media(min-width:900px)]:hidden">
-          <NewsletterBand lang={lang} embedded placement="news-feed-mobile" />
+          <NewsletterForm lang={lang} variant="inline" placement="news-feed-mobile" />
         </div>
       </section>
     </div>

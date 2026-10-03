@@ -23,8 +23,8 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
       // Verify URL updated without full page reload
       await expect(page).toHaveURL(/categories=/);
       // Verify active filter chip appeared
-      const activeChips = page.getByTestId('active-filter-chips');
-      await expect(activeChips).toBeVisible();
+      const resetButton = sidebar.getByRole('button', { name: /reset|скинути/i });
+      await expect(resetButton).toBeVisible();
     }
 
     // 3. Select a date preset
@@ -76,15 +76,16 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
     const updatedOptions = await sortSelect.locator('option').allTextContents();
     expect(updatedOptions.some((o) => /relevance/i.test(o))).toBe(true);
 
-    // Active query chip should be visible
-    const activeChips = page.getByTestId('active-filter-chips');
-    await expect(activeChips).toBeVisible();
+    // Search input should have the query value
+    const searchInput = page.getByRole('searchbox');
+    await expect(searchInput).toHaveValue('intelligence');
 
-    // Clear search using chip remove button
-    const clearBtn = activeChips.getByRole('button', { name: /remove|✕|x/i }).first();
+    // Clear search using input clear button
+    const clearBtn = page.getByRole('button', { name: /clear|очистити/i });
     if (await clearBtn.isVisible()) {
       await clearBtn.click();
       await expect(page).not.toHaveURL(/q=intelligence/);
+      await expect(searchInput).toHaveValue('');
     }
   });
 
