@@ -103,8 +103,15 @@ export function NewsletterForm({
 
     markStarted();
 
+    // Read the live field value so submit stays correct if React state lags the DOM
+    // (Playwright fill + immediate click, or a slow onChange batch).
+    const submittedEmail = String(new FormData(e.currentTarget).get('email') ?? email);
+    if (submittedEmail !== email) {
+      setEmail(submittedEmail);
+    }
+
     const validation = validateNewsletterInput(
-      { email, consent, variant },
+      { email: submittedEmail, consent, variant },
       { invalidEmail: copy.invalidEmail, invalidConsent: copy.invalidConsent },
     );
 
@@ -131,7 +138,7 @@ export function NewsletterForm({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email.trim(),
+          email: submittedEmail.trim(),
           lang: edition,
           placement,
         }),

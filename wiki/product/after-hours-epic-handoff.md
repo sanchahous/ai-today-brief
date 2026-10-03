@@ -13,6 +13,7 @@ Last updated: 2026-10-03
 
 ## 1. Стан задач
 
+- **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav). **Наступна після інтеграції — AH-3.3 (EditorialHeader).** (source: PR #394; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 <!-- task-status: fragments -->
 
 Живий статус кожної задачі — файл `wiki/tasks/<id>.md` (один файл на задачу). Зведення друкує `npm run wiki:tasks` і нічого не комітить. PR задачі не дописує пункт у цей список і не змінює тут рядок «наступна задача»: її, якщо вона є, записано у фрагменті тієї задачі, яка її називає. Черга плану — §5.4 епіку.
@@ -20,6 +21,20 @@ Last updated: 2026-10-03
 Історичні пункти цього розділу перенесені дослівно у фрагменти.
 
 (source: ATB-67, [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
+- **AH-3.4 відкрито в [#395](https://github.com/sanchahous/ai-today-brief/pull/395)** на `feat/ah-3.4-newsletter-form`: спільний компонент `NewsletterForm` (варіанти `band`, `inline`, `full`), реекспорт через `src/components/ui/newsletter-form.tsx` та `src/components/ui/index.ts`, повна матриця станів (`idle`, `invalid`, `pending` з `aria-busy` та блокуванням подвійного сабміту через `isSubmittingRef`, `success` лише при 2xx бекенду, `already_subscribed` без розкриття PII, `error` зі збереженням введеного email, `not_configured`), чесні Beehiiv-обіцянки без фейкових цифр і без модалок, воронка подій `newsletter_impression` (1 на сесію на placement), `newsletter_form_start`, `newsletter_submit_error`, секція `NewsletterCatalog` у `/ds-catalog`, міграція сторінки `/[lang]/subscribe` на `variant="full"`. Unit-тести `src/lib/ui/newsletter.test.ts` (11 passing, 100% logic coverage) та розширений E2E-набір `e2e/footer-newsletter.spec.ts` (13 тестів, 39 passing across chromium/firefox/webkit). (source: PR #395; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-3.7 відкрито в [#402](https://github.com/sanchahous/ai-today-brief/pull/402)** на `feat/ah-3.7-mark-in-generators`: After Hours mark у OG, weekly PDF, LinkedIn document, Instagram carousel і соц-ассетах через спільну геометрію `brand-mark.ts`; `MARK_COLOR*` видалено з `site.ts`. Підпис на PR не потрібен (ATB-64). (source: PR #402; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-3.6 відкрито в [#396](https://github.com/sanchahous/ai-today-brief/pull/396)** на `feat/ah-3.6-consent-card`: After Hours consent-картка на `Button`/`Switch`, opt-in CMP, focus-trap при reopen з футера, розширений `e2e/cookie-overlay.spec.ts`. ⚠️ consent conflict [open-questions §11](../open-questions.md); merge після checks (ATB-64). (source: PR #396; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-3.1 відкрито в [#393](https://github.com/sanchahous/ai-today-brief/pull/393)** на `feat/ah-3.1-brand-mark`: After Hours brand mark (пластина + A-лінії + celadon-крапка) у `brand-mark.ts`, `BrandMark` у header/footer, favicon/apple-icon/logo.png через `icons:generate`, аватар редактора на токенах. AH-3.7/AH-3.8 мерджаться з AH-3.1 в один день (D7). (source: PR #393)
+- **AH-2.6 відкрито в [#392](https://github.com/sanchahous/ai-today-brief/pull/392)** на `feat/ah-2.6-navigation`: консолідація пагінації (`src/components/pagination.tsx` видалено, `post-feed.tsx` переведено на `AccessiblePagination` з URL-синхронізацією на клієнті), `LinkTabs` з `aria-current="page"` у `src/components/ui/tabs.tsx`, рестайл `Breadcrumbs` за специфікацією After Hours (`breadcrumbJsonLd` без змін), секція `NavigationCatalog` у `/ds-catalog`, E2E та unit-тести. **Наступна після інтеграції — AH-3.1.** (source: PR #392; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
+- **AH-2.5 відкрито в [#391](https://github.com/sanchahous/ai-today-brief/pull/391)** на `feat/ah-2.5-feedback-states` від `56a9cf8`. Notice, Spinner, ErrorState, StaleNotice і ланцюг станів у каталозі. Toast і Skeleton не дубльовано. Окремий підпис не потрібен (ATB-64): мердж після зелених перевірок. (source: [AH-2.5 validation](after-hours-ah-2-5-validation.md); PR #391)
+- **AH-2.4 змерджено в [#390](https://github.com/sanchahous/ai-today-brief/pull/390), `56a9cf8`, о 11:20 UTC.** Окремого текстового підпису не було. Push: Playwright [run 36854771692](https://github.com/sanchahous/ai-today-brief/actions/runs/36854771692), deps integrity, migration drift і Vercel — success. Sonar на push не запускався; Sonar PR був success до merge. PR Playwright [run 36853557144](https://github.com/sanchahous/ai-today-brief/actions/runs/36853557144) після merge success. Weekly generation worker падав як `workflow_dispatch`, це не CI merge. Міграції header, search, filters і share лишаються. Merge не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC і G1. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01)
+- **#388 підписано й змерджено в `e75c438` о 09:45 UTC.** #389 змерджено в `7f523e6` о 10:19 UTC. Push `7f523e6`: Playwright [run 36848455712](https://github.com/sanchahous/ai-today-brief/actions/runs/36848455712), deps integrity, migration drift і Vercel — success. Окремого Sonar workflow на цьому push немає; Sonar PR #389 був success до merge. Падіння Weekly generation worker — `workflow_dispatch`, не CI цього merge. Merge #388 не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy AC і G1. (source: `gh pr view 388`; `gh pr view 389`; `gh run list --commit 7f523e6` 2026-10-01; повідомлення власника)
+- **#387 змерджено в `c03a4dd`, CI включно з Playwright success.** Окремого текстового візуального підпису #387 не було. Merge не закриває UK Home/Article/Weekly, Preview CLS, H1/legacy QA чи G1. (source: [PR #387](https://github.com/sanchahous/ai-today-brief/pull/387); [Playwright run 36837592359](https://github.com/sanchahous/ai-today-brief/actions/runs/36837592359); [main Playwright run 36837852364](https://github.com/sanchahous/ai-today-brief/actions/runs/36837852364))
+- **#386 змерджено й явно підтверджено власником:** «ПР закритий значить підтверджую 386». Main `c477b09`; CI, включно з [Playwright run 36826783157](https://github.com/sanchahous/ai-today-brief/actions/runs/36826783157), success. Tracking follow-up більше не є локальним залишком чи draft. UK Home/Article/Weekly із #385, прийняття локального CLS, H1/legacy QA та G1 лишаються відкритими. (source: [PR #386](https://github.com/sanchahous/ai-today-brief/pull/386); [AH-1.5 validation](after-hours-ah-1-5-validation.md); повідомлення власника)
+- **G0 і фаза 0 завершені:** #373–#376 інтегровані, GA4/Tag Assistant/CWV baseline вже прийняті. AH-1.1 / AH-2.1 — #369; AH-1.3 — #378; AH-1.7 — #377; AH-1.4 — #382; AH-1.2 — #384; AH-1.6 — #381, його окремий підпис отримано. Не дублювати й не просити G0 повторно. (source: [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач); [baseline](../analytics/2026-09-29-redesign-baseline.md))
+- **AH-4.1 — #380:** lib/URL/active Chip інтегровані, facet picker — AH-4.3. AH-5.16 знято D6; D1–D13 ухвалено. Частково виконані AH-2.3–2.6 мають картки із залишком. (source: [епік](after-hours-redesign-epic.md); повідомлення власника 2026-10-01)
+- **Підпис на кожен PR знято 2026-10-02 (ATB-64, [PR #397](https://github.com/sanchahous/ai-today-brief/pull/397)).** Наступна продуктова задача лишається AH-3.1 після інтеграції AH-2.6. Нові задачі епіку, включно з high/critical і «агент + власник», мерджаться після зелених перевірок без `orc verdict accept` і без підпису власника на PR. Хаб питає мердж лише якщо рев'ю не було незалежним. Гейти G1–G7 і далі питають власника. (source: дозвіл власника в ATB-64, 2026-10-02; [епік §0.1](after-hours-redesign-epic.md#01-definition-of-done--для-кожного-pr-епіку))
+- **ATB-22 (AH-3.1), ATB-23 (AH-3.2) і ATB-27 (AH-3.6) ще стоять у waiting/approval** на запитах merge, відкритих до зміни політики. Нова політика їх сама не знімає: живий `orc serve` тримає старий конфіг до рестарту, а стадія approval не перечитує правила. (source: дошка оркестратора 2026-10-02)
 
 ## Пакет для підпису G0
 
@@ -220,6 +235,21 @@ QA-матриця працює в режимі report.
    таблицю §5.3 епіку чи верх wiki/log.md.
 3. Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main і запис лише у wiki/tasks/<id>.md.
    Definition of Done §0.1, npm run pr:check перед push.
+2. Підтягни origin/main і перевір актуальний стан у §1 цього handoff та §5.3 епіку.
+   На 2026-10-01 AH-3.2 реалізовано в PR #394 на `feat/ah-3.2-search-dialog`.
+   Після інтеграції наступна задача — AH-3.3 (EditorialHeader).
+   AH-2.6 реалізовано в PR #392 на feat/ah-2.6-navigation.
+   AH-2.5 реалізовано в PR #391 на feat/ah-2.5-feedback-states і очікує власного review.
+   AH-3.5 реалізовано в PR #404 на feat/ah-3.5-footer; після інтеграції — AH-3.6 (Consent-картка).
+   AH-3.6 реалізовано в PR #396 на feat/ah-3.6-consent-card; після інтеграції — AH-3.7.
+   AH-3.7 реалізовано в PR #402 на feat/ah-3.7-mark-in-generators. Наступна задача — AH-3.8 (brand-kit).
+   AH-3.1 реалізовано в PR #393 на feat/ah-3.1-brand-mark; після інтеграції — AH-3.2 (SearchDialog).
+   UK Home/Article/Weekly, CLS, legacy QA та G1 лишаються відкритими.
+   Для нової задачі — гілка feat/ah-<id>-<slug> від origin/main,
+   Definition of Done §0.1, npm run pr:check перед push, PR у main.
+   Окремий підпис власника на PR не потрібен: оркестратор мерджить після зелених перевірок
+   (ATB-64, 2026-10-02). Гейти G1–G7 і далі зупиняють і питають власника.
+3. Після PR онови §5.3 епіку, wiki/now.md, wiki/log.md і рядок «Наступна задача» в handoff.
 4. У точках із розділу «Точки зупинки» зупинись і спитай мене. Нічого не вигадуй.
 Відповідай мені українською.
 ```

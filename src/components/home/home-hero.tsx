@@ -16,10 +16,12 @@ export function HomeHero({
   lang,
   categoryCount,
   categories,
+  popularQueries,
 }: {
   lang: Lang;
   categoryCount: number;
   categories: HomeCategory[];
+  popularQueries: string[];
 }) {
   const t = getStrings(lang).landing;
   const stats = [
@@ -84,6 +86,7 @@ export function HomeHero({
             placeholder={t.searchPlaceholder}
             button={t.searchButton}
             popularLabel={t.searchPopular}
+            popularQueries={popularQueries}
           />
         </div>
 

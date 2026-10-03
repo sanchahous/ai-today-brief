@@ -19,7 +19,7 @@ const bottomOwner = (page: import('@playwright/test').Page) =>
       window.innerHeight - 24,
     );
     if (!el) return 'none';
-    if (el.closest('[data-testid="mobile-search-panel"],[data-testid="mobile-search-backdrop"]'))
+    if (el.closest('[data-testid="search-dialog-panel"],[data-testid="search-dialog-backdrop"]'))
       return 'search-modal';
     if (el.closest('[data-testid="mobile-menu-panel"],[data-testid="mobile-menu-backdrop"]'))
       return 'menu';

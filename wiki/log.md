@@ -122,6 +122,21 @@ override. Документація: [ops/e2e-local](ops/e2e-local.md), README, `
 - Оркестратор проєкту: `merge = auto`, `verdict = never` (не чекати `orc verdict accept`).
 (source: дозвіл власника в задачі ATB-64, 2026-10-02; [PR #397](https://github.com/sanchahous/ai-today-brief/pull/397))
 
+## 2026-10-01 — AH-3.2 follow-up: E2E + mobile menu tap targets, PR #394
+
+- **E2E:** `header-layout.spec.ts` і `category-colours.spec.ts` — SearchTrigger + SearchDialog замість inline `role="search"`; dialog locator EN/UK (`/search|пошук/i`).
+- **Chrome:** `site-header-chrome.tsx` — mobile menu categories `<summary>` і lang link `h-12` для ≥44px tap target (`mobile-menu.spec.ts`).
+- **Wiki:** `now.md` sync (watcher `brand-chrome`).
+(source: PR #394; commit orc T1-f1)
+
+## 2026-10-01 — AH-3.2 SearchDialog (Ctrl/Cmd+K), PR #394
+
+- **Код:** один `SearchDialog` + `SearchTrigger` + `search-dialog-store` замінили `HeaderSearchField`,
+  `MobileSearchModal`, `SearchPreviewDropdown`, `mobile-search-store`; trending idle з `getHomeData().trending`;
+  Ctrl/Cmd+K, aria-live лічильник, keyboard nav, error+retry; E2E `mobile-search.spec.ts` + `search-dialog-keyboard.spec.ts`.
+- **Wiki:** §5.3 і картка AH-3.2, `now.md`, `log.md`, handoff «Наступна задача → AH-3.3».
+(source: PR #394; [after-hours-redesign-epic § AH-3.2](product/after-hours-redesign-epic.md#ah-32--searchdialog-ctrlcmdk))
+
 ## 2026-09-28 — Виправлення візуальних артефактів контролів After Hours та підготовка PR
 
 - **Усунення спотворення радіокнопок і чекбоксів:** ізольовано селектори `input:not([type="checkbox"]):not([type="radio"])` у `artifacts/after-hours/style.css`, які раніше накладали `min-height: 46px` та `padding: 12px` на всі елементи вводу.

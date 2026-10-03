@@ -3,12 +3,28 @@
 Summary: над чим іде робота просто зараз. Живий статус кожної задачі — окремий файл у каталозі фрагментів, не список у цьому файлі.
 Sources: wiki/tasks/README.md; заморожений факт sync нижче; історична шапка — у wiki/tasks/archive-shared-lines.md (ATB-67, PR #405)
 Last updated: 2026-10-03
+Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
+Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
+YouTube 120s + Supabase egress 2026-09-02,
+SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03,
+LinkedIn PDF skip on public promote 2026-09-03,
+social URLs follow the published slug 2026-09-03,
+weekly digest two-phase release (Ship / Publish video) 2026-09-03,
+X self-reply is USE + compact `?s=` URL 2026-09-03,
+LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392); AH-3.1 brand mark PR #393; AH-3.4 newsletter form and states 2026-10-02 (#395); AH-3.6 consent PR #396; AH-3.7 mark in generators PR #402; AH-3.8 brand-kit PR #403; per-PR owner signature removed 2026-10-02 (ATB-64, #397); Singapore bot diagnosis + Fast Origin Transfer check 2026-10-02
+Last updated: 2026-10-02 (AH-3.8 PR #403)
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30; AH-2.6 navigation consolidation 2026-10-01 (#392); AH-3.1 brand mark PR #393; AH-3.2 SearchDialog PR #394; AH-3.4 newsletter form and states 2026-10-02 (#395); AH-3.5 footer PR #404; AH-3.6 consent PR #396; AH-3.7 mark in generators PR #402; per-PR owner signature removed 2026-10-02 (ATB-64, #397); Singapore bot diagnosis + Fast Origin Transfer check 2026-10-02
+Last updated: 2026-10-02 (AH-3.2 PR #394; AH-3.4 PR #395; AH-3.5 PR #404; AH-3.6 PR #396; AH-3.7 PR #402)
 
 ---
 
 <!-- task-status: fragments -->
 
 ## Стан репозиторію
+
+- **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav, error+retry) замінив `HeaderSearchField`, `MobileSearchModal` і `SearchPreviewDropdown`; header/hero/menu/404 ведуть у той самий сценарій. У `site-header-chrome.tsx` mobile menu: categories `<summary>` і lang toggle — `h-12` (≥44px tap target після E2E). E2E `header-layout` і `category-colours` відкривають dialog через `SearchTrigger`, не inline `role="search"`. **Наступна після інтеграції — AH-3.3.** (source: PR #394; [епік §5.3 AH-3.2](product/after-hours-redesign-epic.md#ah-32--searchdialog-ctrlcmdk))
 
 Живий статус задач сюди не дописується. Кожна задача пише лише `wiki/tasks/<id>.md`. Зведення друкує `npm run wiki:tasks` і нічого не комітить.
 
