@@ -7,6 +7,7 @@ const LOGIC_INCLUDE = [
   'src/lib/theme.ts',
   'src/lib/beehiiv-config.ts',
   'src/lib/site.ts',
+  'src/lib/hash-seed.ts',
   'src/lib/category-meta.ts',
   'src/lib/concept-meta.ts',
   'src/lib/news-filters.ts',

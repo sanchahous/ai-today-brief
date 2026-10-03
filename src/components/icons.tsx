@@ -275,6 +275,31 @@ export function ExternalLinkIcon({ size = 15, strokeWidth = 1.7, style, classNam
   );
 }
 
+export function PlusIcon({ size = 16, strokeWidth = 1.8, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function MinusIcon({ size = 16, strokeWidth = 1.8, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+export function LinkIcon({ size = 16, strokeWidth = 1.8, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
+      <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
+    </svg>
+  );
+}
+
 // ── brand mark ──
 /**
  * After Hours mark — plate, nested A strokes and celadon signal dot.
