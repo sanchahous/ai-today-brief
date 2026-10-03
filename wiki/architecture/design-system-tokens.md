@@ -2,7 +2,7 @@
 
 Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v2.1.0 (міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
 Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29.
-Last updated: 2026-10-01
+Last updated: 2026-10-03
 
 **Статус:** прийнято. Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md).
 
@@ -350,14 +350,14 @@ AH-1.5 підключає локальні OFL subset-и через `next/font/l
 
 ### 7.10 Брейкпоінти (D5, варіант A)
 
-Значення прототипу в rem, щоб розкладка реагувала на збільшення шрифту в браузері. Tailwind будує з них `min-width` варіанти (`tablet:` від 60rem); `max-width` запити прототипу — `max-tablet:` (Tailwind порівнює строго «менше», тож межа відрізняється на 1px від прототипу). Стандартні `sm/md/lg/xl` не перевизначено до AH-7.3. Header і discovery залишаються на Tailwind `lg` (1024px) до AH-3.3 / AH-4.3, коли перейдуть на `tablet`. Контракт для e2e — `e2e/helpers/viewports.ts` (959 / 960 px).
+Значення прототипу в rem, щоб розкладка реагувала на збільшення шрифту в браузері. Tailwind будує з них `min-width` варіанти (`tablet:` від 60rem); `max-width` запити прототипу — `max-tablet:` (Tailwind порівнює строго «менше», тож межа відрізняється на 1px від прототипу). Стандартні `sm/md/lg/xl` не перевизначено до AH-7.3. Header і news-layout перемикаються на `tablet` (960px) з AH-3.3; решта discovery-шаблонів — в AH-4.3. Контракт для e2e — `e2e/helpers/viewports.ts` (`NAV_COMPACT_LAST` 959 / `NAV_WIDE_FIRST` 960).
 
 | Токен | Значення | px за замовчуванням |
 |---|---|---|
 | `--breakpoint-compact` | 23.75rem | 380 |
 | `--breakpoint-narrow` | 25rem | 400 |
 | `--breakpoint-phone` | 47.5rem | 760 |
-| `--breakpoint-tablet` | 60rem | 960 — перемикач header і discovery після AH-3.3 / AH-4.3 |
+| `--breakpoint-tablet` | 60rem | 960 — перемикач header і news-layout з AH-3.3; решта discovery в AH-4.3 |
 | `--breakpoint-laptop` | 68.75rem | 1100 |
 | `--breakpoint-nav-compact` | 73.75rem | 1180 |
 | `--breakpoint-desktop` | 80rem | 1280 |

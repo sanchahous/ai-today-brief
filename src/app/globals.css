@@ -71,8 +71,8 @@
 /*
  * D5 breakpoints (prototype values, rem so they follow the reader's font size). Tailwind builds
  * `min-width` variants from these names (`tablet:` = 60rem; the prototype's max-width queries are
- * `max-tablet:`). Default sm / md / lg / xl are deliberately NOT redefined until AH-7.3; header and
- * discovery move to `tablet` in AH-3.3 / AH-4.3.
+ * `max-tablet:`). Default sm / md / lg / xl are deliberately NOT redefined until AH-7.3. Header
+ * chrome and the news archive switch at `tablet` (AH-3.3); remaining discovery templates move in AH-4.3.
  */
 @theme {
   --breakpoint-compact: 23.75rem;

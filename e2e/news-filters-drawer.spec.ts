@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { gotoNewsPage } from './helpers/news-page';
-import { VIEWPORTS } from './helpers/viewports';
+import { NAV_COMPACT_LAST, NAV_WIDE_FIRST, VIEWPORTS } from './helpers/viewports';
 
 async function openFiltersDrawer(page: Page) {
   const trigger = page.getByRole('button', { name: /filters|фільтри/i });
@@ -88,24 +88,23 @@ test.describe('News filters drawer', () => {
     await expect(dialog).toBeHidden();
   });
 
-  for (const viewport of [VIEWPORTS.layout960, VIEWPORTS.header1023, VIEWPORTS.header1024]) {
+  // D5 / AH-3.3: header and the news archive flip together at 960px (959 compact, 960 wide).
+  // 1024 stays wide so the old Tailwind `lg` edge cannot silently come back.
+  for (const viewport of [NAV_COMPACT_LAST, NAV_WIDE_FIRST, VIEWPORTS.header1024]) {
     test(`keeps filters trigger and desktop sidebar mutually exclusive at ${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await gotoNewsPage(page, 'en');
 
-      const triggerVisible = await page
-        .getByRole('button', { name: /filters/i })
-        .isVisible()
-        .catch(() => false);
-      const sidebarVisible = await page.getByTestId('news-sidebar').isVisible().catch(() => false);
+      const trigger = page.getByRole('button', { name: /filters/i });
+      const sidebar = page.getByTestId('news-sidebar');
+      const isWide = viewport.width >= NAV_WIDE_FIRST.width;
 
-      expect(Number(triggerVisible) + Number(sidebarVisible)).toBe(1);
-      if (viewport.width < 1024) {
-        expect(triggerVisible).toBe(true);
-        expect(sidebarVisible).toBe(false);
+      if (isWide) {
+        await expect(sidebar).toBeVisible();
+        await expect(trigger).toBeHidden();
       } else {
-        expect(triggerVisible).toBe(false);
-        expect(sidebarVisible).toBe(true);
+        await expect(trigger).toBeVisible();
+        await expect(sidebar).toBeHidden();
       }
     });
   }
