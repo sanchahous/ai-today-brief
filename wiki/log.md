@@ -5737,3 +5737,4 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 - `launch-card-independent.html` — After Hours mark і палітра замість legacy ATB wordmark.
 - AC «завантаження на платформи» — чекає власника в день релізу D7 (разом з AH-3.1/AH-3.7). Оновлено епік §2.2 (B11), §5.3, картку AH-3.8, handoff, now.md. (source: PR #403; `artifacts/brand-kit/`)
 
+2026-10-03: Реалізовано AH-3.3 (2-рівневий header, sticky на 960px, mobile menu) (ATB-24)

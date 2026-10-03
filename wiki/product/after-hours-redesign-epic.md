@@ -365,7 +365,7 @@ flowchart TD
 | AH-2.6 | ◐ Навігація: Pagination (консолідація), Tabs, Breadcrumbs у [#392](https://github.com/sanchahous/ai-today-brief/pull/392); legacy `pagination.tsx` видалено, `post-feed.tsx` мігровано, `LinkTabs` додано, `Breadcrumbs` рестайлено, G2 очікує підпису | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | ◐ Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` у [#393](https://github.com/sanchahous/ai-today-brief/pull/393) | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | ◐ SearchDialog (Ctrl/Cmd+K): [#394](https://github.com/sanchahous/ai-today-brief/pull/394) на `feat/ah-3.2-search-dialog` — один `SearchDialog`, trending idle, Ctrl/Cmd+K, aria-live, keyboard nav; G16 частково | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
-| AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
+| AH-3.3 | ✅ EditorialHeader: desktop, compact sticky, mobile sheet ([#405](https://github.com/sanchahous/ai-today-brief/pull/405)) | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | ✅ NewsletterForm і стани ([PR #395](https://github.com/sanchahous/ai-today-brief/pull/395)) | — | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | ✅ Footer ([PR #404](https://github.com/sanchahous/ai-today-brief/pull/404)) | S | агент | AH-3.1, AH-3.4 | — |
 | AH-3.6 | ◐ Consent-картка: After Hours UI, opt-in CMP, focus з футера, e2e у [#396](https://github.com/sanchahous/ai-today-brief/pull/396) на `feat/ah-3.6-consent-card`; ⚠️ conflict wiki §11 pending Tag Assistant | S | агент | AH-2.2, AH-2.3 | — |

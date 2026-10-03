@@ -17,7 +17,7 @@ async function goto(page: Page, path: string) {
 
 test.describe('Responsive breakpoint contract', () => {
   for (const size of BREAKPOINT_CONTRACT_WIDTHS) {
-    const isDesktop = size.width >= 1024;
+    const isDesktop = size.width >= 960;
 
     test(`header chrome lockstep + --header-h at ${size.width}px`, async ({ page }) => {
       await page.setViewportSize(size);

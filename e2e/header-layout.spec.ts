@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-const HEADER_COLLISION_WIDTHS = [1024, 1100, 1160] as const;
+const HEADER_COLLISION_WIDTHS = [960, 1100, 1160] as const;
 
 async function gotoHeaderLayoutPage(page: import('@playwright/test').Page) {
   await page.goto('/uk/news', { waitUntil: 'domcontentloaded' });
-  // Level 1 only — story headlines containing "news" also match the name regex.
+  // Level 1 only - story headlines containing "news" also match the name regex.
   await expect(page.getByRole('heading', { level: 1, name: /news|новини/i })).toBeVisible({
     timeout: 30_000,
   });
@@ -31,7 +31,9 @@ test.describe('Header layout', () => {
         };
       });
 
-      expect(headerMetrics.renderedHeight).toBeCloseTo(headerMetrics.cssHeaderHeight, 0);
+      // Header is --header-h (60px) + top row (76px) on desktop (width >= 960)
+      const expectedHeight = width >= 960 ? headerMetrics.cssHeaderHeight + 76 : headerMetrics.cssHeaderHeight;
+      expect(headerMetrics.renderedHeight).toBeCloseTo(expectedHeight, 0);
       expect(headerMetrics.documentOverflow).toBeLessThanOrEqual(1);
 
       const nav = page.getByRole('navigation', { name: 'Primary' });

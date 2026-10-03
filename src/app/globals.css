@@ -770,8 +770,8 @@ html[lang='uk'],
     align-items: start;
   }
 }
-/* News archive layout flips at the same breakpoint as header chrome: Tailwind lg (64rem / 1024px). */
-@variant lg {
+/* News archive layout flips at the same breakpoint as header chrome: Tailwind tablet (60rem / 960px). */
+@variant tablet {
   .news-layout {
     grid-template-columns: 264px minmax(0, 1fr);
     align-items: start;

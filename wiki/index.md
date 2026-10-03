@@ -10,8 +10,8 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30, повідомлення власника про кошик GA4 + HYPD і live tag check 2026-09-30, AH-2.6 navigation consolidation 2026-10-01 (#392), AH-3.2 SearchDialog 2026-10-01 (#394), AH-3.4 newsletter form and states 2026-10-02 (#395), AH-3.5 footer redesign 2026-10-02 (#404), діагноз Singapore bot + Fast Origin Transfer 2026-10-02
-Last updated: 2026-10-02
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30, повідомлення власника про кошик GA4 + HYPD і live tag check 2026-09-30, AH-2.6 navigation consolidation 2026-10-01 (#392), AH-3.2 SearchDialog 2026-10-01 (#394), AH-3.3 header layout 2026-10-03, AH-3.4 newsletter form and states 2026-10-02 (#395), AH-3.5 footer redesign 2026-10-02 (#404), діагноз Singapore bot + Fast Origin Transfer 2026-10-02
+Last updated: 2026-10-03
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).

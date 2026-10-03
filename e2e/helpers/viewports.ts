@@ -33,13 +33,13 @@ export const BREAKPOINT_CONTRACT_WIDTHS = [
   VIEWPORTS.tablet768,
   VIEWPORTS.tablet834,
   VIEWPORTS.layout900,
-  VIEWPORTS.layout960,
-  VIEWPORTS.header1023,
+  NAV_COMPACT_LAST,
+  NAV_WIDE_FIRST,
   VIEWPORTS.header1024,
 ] as const;
 
 export const HEADER_LAYOUT_WIDTHS = [
-  VIEWPORTS.header1024,
+  NAV_WIDE_FIRST,
   VIEWPORTS.desktop1280,
   VIEWPORTS.desktop1440,
 ] as const;
@@ -49,7 +49,7 @@ export const MOBILE_MENU_WIDTHS = [
   VIEWPORTS.phone375,
   VIEWPORTS.phone390,
   VIEWPORTS.tablet768,
-  VIEWPORTS.header1023,
+  NAV_COMPACT_LAST,
 ] as const;
 
 export const FILTER_DRAWER_WIDTHS = [
@@ -63,6 +63,6 @@ export const HORIZONTAL_OVERFLOW_WIDTHS = [
   VIEWPORTS.phone375,
   VIEWPORTS.phone390,
   VIEWPORTS.tablet768,
-  VIEWPORTS.header1024,
+  NAV_WIDE_FIRST,
   VIEWPORTS.desktop1440,
 ] as const;
