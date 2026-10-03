@@ -17,3 +17,7 @@ Task: ah-3.3
 ```
 
 (source: перенос ATB-67, [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
+
+## Log
+
+- 2026-10-03: pre-push відхилив [PR #406](https://github.com/sanchahous/ai-today-brief/pull/406), бо `theme-toggle` на 320px виходив за в’юпорт (правий край ~336px). Верхній ряд header тепер стискається як у прототипі: нижче `phone` (47.5rem) ховається дескриптор, знак і wordmark менші, gap дій 0; wordmark має `min-w-0` і обрізається, щоб пошук, тема й меню лишались у в’юпорті. Висота `<header>` дорівнює токену `--header-h` (рамка всередині боксу). E2E теми шукає видимий перемикач у header, не в Primary nav. Наступна задача епіку — AH-3.4 (вже в [#395](https://github.com/sanchahous/ai-today-brief/pull/395)).
