@@ -34,7 +34,6 @@ import {
   serializeNewsUrlParams,
   sortItems,
 } from '@/lib/news-filters';
-import { resolveTopicNames } from '@/lib/topic-normalize';
 import {
   ActionButton,
   EmptyState,
@@ -56,6 +55,8 @@ export function NewsFeed({
   initialQuery = '',
   initialCategory = '',
   initialPage = 1,
+  error = false,
+  onRetry,
 }: {
   lang: Lang;
   items: HomeItem[];
@@ -64,6 +65,8 @@ export function NewsFeed({
   initialQuery?: string;
   initialCategory?: string;
   initialPage?: number;
+  error?: boolean;
+  onRetry?: () => void;
 }) {
   const core = getStrings(lang);
   const t = core.news;
@@ -80,7 +83,6 @@ export function NewsFeed({
   const [page, setPage] = useState(initialPage);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [ready, setReady] = useState(false);
-  const [searchError, setSearchError] = useState(false);
   const filtersTriggerRef = useRef<HTMLButtonElement>(null);
   const noResultsTracked = useRef('');
   const isHydrated = useRef(false);
@@ -410,12 +412,12 @@ export function NewsFeed({
           </div>
         )}
 
-        {searchError ? (
+        {error ? (
           <ErrorState
             title={core.searchErrorTitle}
             description={core.searchErrorDescription}
             retryLabel={core.searchErrorRetry}
-            onRetry={() => setSearchError(false)}
+            onRetry={onRetry}
           />
         ) : filtered.length === 0 ? (
           <EmptyState
