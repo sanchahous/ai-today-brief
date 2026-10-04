@@ -2,13 +2,29 @@
 
 Summary: Статусний фрагмент AH-4.4 — сторінка пошуку `/[lang]/news/search`. Текст нижче перенесено дослівно зі спільних списків; подальший статус цієї задачі пишеться лише в цей файл.
 Sources: [епік AH-4.4](../product/after-hours-redesign-epic.md#ah-44--сторінка-пошуку-langnewssearch); [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)
-Last updated: 2026-10-03
+Last updated: 2026-10-04
 
 ---
 
 Task: ah-4.4
 
 ## Status
+
+### Repair 2026-10-04 (T1-f5x)
+
+Виправлення review у [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412) завершено і повністю верифіковано на `PORT=3100`.
+Видалено небезпечні механізми завершення процесів із `scripts/e2e-affected.ts` (`netstat`/`taskkill` та `sh`/`lsof`/`kill`): за broad-зміни та активного сервера команда завершується з кодом 1 до rebuild, вимагаючи зупинити власний тестовий сервер або використати `SKIP_BUILD=1`.
+(source: `scripts/e2e-affected.ts`; `scripts/e2e-affected.test.mjs`; [локальні E2E](../ops/e2e-local.md))
+
+Усі перевірки пройшли успішно:
+- `node scripts/e2e-affected.test.mjs` — 2/2 passed (ізольовані тести Windows/Linux з перевіркою відсутності процесних команд).
+- `npm run pr:check` — exit 0 (`design:raw:check`, `ci:check` / 15 logic modules, `typecheck`, `lint` 0 errors / 9 warnings, `e2e:check`, `wiki:check`, `migrations:check`, `node --test`, `build:ci`).
+- Playwright E2E на `PORT=3100`:
+  - `e2e/news-search.spec.ts` — 6/6 passed (idle стан, екранування лапок/кирилиці/emoji в `q`, breadcrumb Головна › Новини › Пошук, `noindex,follow`, UK idle/heading, синхронізація поля з popular queries та Back).
+  - `e2e/news-feed-interaction.spec.ts` — 5/5 passed (перевірка взаємодії, URL state та пагінації).
+  - `e2e/a11y-layout-matrix.spec.ts` (`--grep news-search`) — 56/56 passed (A11y і layout matrix gating для search маршрутів у світлій/темній темах та на всіх брейкпойнтах 320/360/390/768/1024/1440px).
+- SEO contract: 4 search-маршрути (`/en/news/search?q=mcp`, `/uk/news/search?q=mcp`, `/en/news/search?q=`, `/uk/news/search?q=`) повертають HTTP 200 та відповідають контракту (`noindex,follow`, canonical на `/news`).
+(source: `src/app/[lang]/news/search/page.tsx`; `e2e/news-search.spec.ts`; `e2e/fixtures/a11y-gating.json`; локальний прогін 2026-10-04)
 
 ### now-status
 
@@ -44,5 +60,6 @@ Task: ah-4.4
 
 ## Log
 
+- 2026-10-04 (T1-f5x, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): усунено major findings щодо небезпечного завершення PID у `scripts/e2e-affected.ts` — видалено `taskkill`/`kill` виклики; за broad-зміни команда завершується з кодом 1, якщо сервер уже слухає. Додано ізольовані тести `scripts/e2e-affected.test.mjs` (2/2 passed). Повний гейт `npm run pr:check` пройдено (exit 0). E2E `news-search.spec.ts` (6/6), `news-feed-interaction.spec.ts` (5/5) та QA-матриця a11y `a11y-layout-matrix.spec.ts` (56/56) зелені на PORT=3100. Наступна задача епіку — AH-4.5. (source: локальний прогін 2026-10-04; `scripts/e2e-affected.ts`; `scripts/e2e-affected.test.mjs`; `wiki/tasks/ah-4.4.md`)
 - 2026-10-03 (T1-f1): review fixes — `a11y-gating.json` додано `/en|uk/news/search?q=mcp` і `?q=`; `NewsSearchForm` controlled input + URL sync (popular chip, Back/Forward); E2E popular-query/back; a11y для gating (footer/header 44px, sidebar h2, sponsor лише на hub, skip-link/search input min-height); a11y-matrix harness (reducedMotion, hydration wait, axe excludes). `npm run pr:check` зелений.
 - 2026-10-03 (T1): реалізовано AH-4.4 — сторінка `/[lang]/news/search` за прототипом `home.js` `searchPage`; компоненти `NewsSearchForm`, `NewsSearchIdle`; i18n `news.searchPage.*`; E2E news-search. Наступна задача — AH-4.5.

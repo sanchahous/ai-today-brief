@@ -328,27 +328,6 @@ function runProductionBuild(reason: string): void {
   if (b.status !== 0) process.exit(b.status ?? 1);
 }
 
-/** Stop a stale `next start` so Playwright boots a fresh build (DS_CATALOG=1). */
-function stopServerOnPort(port: number): void {
-  if (process.platform === 'win32') {
-    const out = spawnSync('netstat', ['-ano'], { encoding: 'utf8', shell: true });
-    const pids = new Set<number>();
-    for (const line of out.stdout?.split('\n') ?? []) {
-      if (!line.includes(`:${port}`) || !line.includes('LISTENING')) continue;
-      const pid = Number.parseInt(line.trim().split(/\s+/).pop() ?? '', 10);
-      if (Number.isFinite(pid) && pid > 0) pids.add(pid);
-    }
-    for (const pid of pids) {
-      spawnSync('taskkill', ['/PID', String(pid), '/F'], { stdio: 'ignore', shell: true });
-    }
-    return;
-  }
-  spawnSync('sh', ['-c', `lsof -ti tcp:${port} | xargs -r kill -9`], {
-    stdio: 'ignore',
-    shell: true,
-  });
-}
-
 function runPlaywright(playwrightArgs: string[]): never {
   const passthrough = process.argv.slice(2).filter((a) => a !== '--dry-run');
   const args = ['playwright', 'test', ...playwrightArgs, '--project=chromium', ...passthrough];
@@ -417,10 +396,11 @@ async function main(): Promise<void> {
     console.log(`e2e:affected — SKIP_BUILD=1; assuming a server is reachable on :${e2ePort}.\n`);
   } else if (runAll) {
     if (await serverIsUp()) {
-      console.log(
-        `e2e:affected — broad change: stopping stale server on :${e2ePort} before rebuild.\n`,
+      // This invocation did not start the listener, so it cannot safely stop it.
+      console.error(
+        `e2e:affected — broad change requires a fresh server, but ${e2eBaseUrl} is already responding. Stop your test server and retry, or use SKIP_BUILD=1 with a verified fresh build.`,
       );
-      stopServerOnPort(e2ePort);
+      process.exit(1);
     }
     runProductionBuild(`broad change → production build for :${e2ePort}`);
   } else if (await serverIsUp()) {
