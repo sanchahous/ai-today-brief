@@ -729,7 +729,7 @@ export async function getWeeklyDigest(slug: string, lang: Lang): Promise<WeeklyD
   return getWeeklyDigestCached(slug, lang);
 }
 
-async function loadWeeklyBandFacts(
+export async function loadWeeklyBandFacts(
   db: SupabaseClient,
   lang: Lang,
   revisionId: string,
