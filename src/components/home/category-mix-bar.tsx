@@ -10,15 +10,15 @@ import type { Lang } from '@/lib/site';
  */
 export function CategoryMixBar({
   lang,
-  segments,
-  sampleSize,
+  segments = [],
+  sampleSize = 0,
 }: {
   lang: Lang;
-  segments: HomeCoverageSegment[];
-  sampleSize: number;
+  segments?: HomeCoverageSegment[];
+  sampleSize?: number;
 }) {
   const t = getStrings(lang).landing;
-  const withCount = segments.filter((segment) => segment.count > 0);
+  const withCount = (segments ?? []).filter((segment) => segment.count > 0);
   let total = 0;
   for (const segment of withCount) total += segment.count;
   if (sampleSize < 2 || total === 0 || withCount.length < 2) return null;

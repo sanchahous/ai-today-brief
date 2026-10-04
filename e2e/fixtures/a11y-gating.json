@@ -34,6 +34,46 @@
       "id": "news-uk",
       "path": "/uk/news",
       "locales": ["uk"]
+    },
+    {
+      "id": "editorial-policy",
+      "path": "/en/editorial-policy",
+      "locales": ["en"]
+    },
+    {
+      "id": "editorial-policy-uk",
+      "path": "/uk/editorial-policy",
+      "locales": ["uk"]
+    },
+    {
+      "id": "ai-disclosure",
+      "path": "/en/ai-disclosure",
+      "locales": ["en"]
+    },
+    {
+      "id": "ai-disclosure-uk",
+      "path": "/uk/ai-disclosure",
+      "locales": ["uk"]
+    },
+    {
+      "id": "privacy",
+      "path": "/en/privacy",
+      "locales": ["en"]
+    },
+    {
+      "id": "privacy-uk",
+      "path": "/uk/privacy",
+      "locales": ["uk"]
+    },
+    {
+      "id": "terms",
+      "path": "/en/terms",
+      "locales": ["en"]
+    },
+    {
+      "id": "terms-uk",
+      "path": "/uk/terms",
+      "locales": ["uk"]
     }
   ]
 }

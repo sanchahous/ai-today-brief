@@ -1,16 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import {
-  CONTACT_EMAIL,
-  EDITOR_NAME,
-  isLang,
-  SITE_NAME,
-  SITE_URL,
-  type Lang,
-} from '@/lib/site';
+import { CONTACT_EMAIL, EDITOR_NAME, isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { socialMeta } from '@/lib/seo';
+import { PolicyPageShell } from '@/components/trust-page-shell';
 
 export const revalidate = 86400;
 
@@ -64,7 +58,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/editorial-policy`,
       },
     },
-    ...socialMeta({ title: t.editorialPolicy, description: COPY[l].lede, path: `/${l}/editorial-policy`, lang: l }),
+    ...socialMeta({
+      title: t.editorialPolicy,
+      description: COPY[l].lede,
+      path: `/${l}/editorial-policy`,
+      lang: l,
+    }),
   };
 }
 
@@ -87,42 +86,55 @@ export default async function EditorialPolicyPage({ params }: { params: Promise<
   };
 
   return (
-    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <h1 className="text-3xl sm:text-4xl">{t.editorialPolicy}</h1>
-      <p className="mt-6 text-lg leading-relaxed">{c.lede}</p>
+      <PolicyPageShell
+        lang={lang}
+        policyKey="editorial-policy"
+        title={t.editorialPolicy}
+        intro={c.lede}
+        sections={[
+          { id: 'standards', title: c.standardsH },
+          { id: 'fact-checking', title: c.factCheckH },
+          { id: 'corrections', title: c.correctionsH },
+          { id: 'independence', title: c.independenceH },
+        ]}
+      >
+        <section id="standards" className="scroll-mt-[var(--space-24)]">
+          <h2 className="text-xl">{c.standardsH}</h2>
+          <p className="text-muted mt-3 leading-relaxed">{c.standards}</p>
+        </section>
 
-      <section className="mt-10">
-        <h2 className="text-xl">{c.standardsH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">{c.standards}</p>
-      </section>
+        <section id="fact-checking" className="scroll-mt-[var(--space-24)]">
+          <h2 className="text-xl">{c.factCheckH}</h2>
+          <p className="text-muted mt-3 leading-relaxed">{c.factCheck}</p>
+        </section>
 
-      <section className="mt-8">
-        <h2 className="text-xl">{c.factCheckH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">{c.factCheck}</p>
-      </section>
+        <section id="corrections" className="scroll-mt-[var(--space-24)]">
+          <h2 className="text-xl">{c.correctionsH}</h2>
+          <p className="text-muted mt-3 leading-relaxed">{c.corrections}</p>
+        </section>
 
-      <section className="mt-8">
-        <h2 className="text-xl">{c.correctionsH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">{c.corrections}</p>
-      </section>
+        <section id="independence" className="scroll-mt-[var(--space-24)]">
+          <h2 className="text-xl">{c.independenceH}</h2>
+          <p className="text-muted mt-3 leading-relaxed">{c.independence}</p>
+        </section>
 
-      <section className="mt-8">
-        <h2 className="text-xl">{c.independenceH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">{c.independence}</p>
-      </section>
-
-      <p className="text-muted mt-8 leading-relaxed">
-        {c.aiLink}{' '}
-        <Link className="text-accent" href={`/${lang}/ai-disclosure`}>
-          {t.aiDisclosure}
-        </Link>
-        .
-      </p>
-    </div>
+        <p className="text-muted mt-8 leading-relaxed">
+          {c.aiLink}{' '}
+          <Link
+            className="text-accent inline-flex min-h-[var(--touch-target-min)] items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
+            href={`/${lang}/ai-disclosure`}
+          >
+            {t.aiDisclosure}
+          </Link>
+          .
+        </p>
+      </PolicyPageShell>
+    </>
   );
 }

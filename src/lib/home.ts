@@ -315,7 +315,22 @@ async function loadHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
   };
 }
 
-export const getHomeData = cachePublicRead('home-data', loadHomeData);
+const cachedLoadHomeData = cachePublicRead('home-data', loadHomeData);
+
+export async function getHomeData(lang: Lang): Promise<HomeData> {
+  const data = await cachedLoadHomeData(lang);
+  if (!data) return EMPTY;
+  return {
+    ...EMPTY,
+    ...data,
+    rail: data.rail ?? [],
+    focus: data.focus ?? [],
+    coverage: data.coverage ?? [],
+    categories: data.categories ?? [],
+    trending: data.trending ?? [],
+    secondary: data.secondary ?? [],
+  };
+}
 
 async function buildTrending(
   lang: Lang,
