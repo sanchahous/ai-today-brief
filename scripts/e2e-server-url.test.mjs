@@ -4,6 +4,7 @@ import {
   CONSENT_STORAGE_KEY,
   consentStorageState,
   DEFAULT_E2E_PORT,
+  expectedSiteUrl,
   resolveE2eBaseUrl,
   resolveE2ePort,
 } from './e2e-server-url.ts';
@@ -37,6 +38,19 @@ describe('resolveE2eBaseUrl', () => {
     assert.equal(
       resolveE2eBaseUrl({ PORT: '3101', E2E_BASE_URL: 'http://127.0.0.1:3999' }),
       'http://127.0.0.1:3999',
+    );
+  });
+});
+
+describe('expectedSiteUrl', () => {
+  it('defaults to production when NEXT_PUBLIC_SITE_URL is unset', () => {
+    assert.equal(expectedSiteUrl({}), 'https://aitodaybrief.com');
+  });
+
+  it('reads NEXT_PUBLIC_SITE_URL and strips trailing slash', () => {
+    assert.equal(
+      expectedSiteUrl({ NEXT_PUBLIC_SITE_URL: 'http://127.0.0.1:3000/' }),
+      'http://127.0.0.1:3000',
     );
   });
 });

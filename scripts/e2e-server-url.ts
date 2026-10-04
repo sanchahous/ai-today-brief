@@ -24,6 +24,16 @@ export function resolveE2eBaseUrl(env: NodeJS.ProcessEnv = process.env): string 
   return `http://127.0.0.1:${resolveE2ePort(env)}`;
 }
 
+/**
+ * Site origin baked into metadata at build time (`NEXT_PUBLIC_SITE_URL`).
+ * In CI e2e this matches the local server; locally it defaults to production.
+ */
+export function expectedSiteUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const raw = env.NEXT_PUBLIC_SITE_URL?.trim();
+  const base = raw && raw.length > 0 ? raw : 'https://aitodaybrief.com';
+  return base.replace(/\/$/, '');
+}
+
 export const CONSENT_STORAGE_KEY = 'atb-consent-v1';
 export const CONSENT_STORAGE_VALUE =
   '{"analytics":false,"ads":false,"updatedAt":"2026-01-01T00:00:00.000Z"}';

@@ -10,6 +10,11 @@ Task: ah-4.4
 
 ## Status
 
+### Repair 2026-10-04 (T1-f8)
+
+CI Playwright smoke падав на `news-search.spec.ts` (canonical): тест очікував `https://aitodaybrief.com/en/news`, а в CI e2e `NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000` — canonical рендериться з build-time env. Виправлено через `expectedSiteUrl()` у `scripts/e2e-server-url.ts` і оновлений assert у E2E.
+(source: `.github/workflows/e2e.yml`; `e2e/news-search.spec.ts`; `scripts/e2e-server-url.ts`)
+
 ### Repair 2026-10-04 (T1-f7x)
 
 Виправлено major finding review у [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412): повторний пошук з форми на сторінці результатів більше не лишає старий `filters.q`, чіп і `sort` у `NewsFeed` — `key={query}` на search-маршруті плюс sync-ефект у `NewsFeed` при зміні `initialQuery`. Додано E2E `second query from results form resets chip, sort and URL`. Видалено артефакт `e2e-affected-f4.log` з гілки.
@@ -69,6 +74,7 @@ Task: ah-4.4
 
 ## Log
 
+- 2026-10-04 (T1-f8, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): CI canonical assert узгоджено з `NEXT_PUBLIC_SITE_URL` у e2e workflow; додано `expectedSiteUrl()` + unit test. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f7x, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): `NewsFeed` на search-маршруті отримує `key={query}` — client state скидається при новому `q`; E2E на повторний submit із форми результатів (чіп, relevance, URL без старого `sort`); видалено `e2e-affected-f4.log`. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f5x, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): усунено major findings щодо небезпечного завершення PID у `scripts/e2e-affected.ts` — видалено `taskkill`/`kill` виклики; за broad-зміни команда завершується з кодом 1, якщо сервер уже слухає. Додано ізольовані тести `scripts/e2e-affected.test.mjs` (2/2 passed). Повний гейт `npm run pr:check` пройдено (exit 0). E2E `news-search.spec.ts` (6/6), `news-feed-interaction.spec.ts` (5/5) та QA-матриця a11y `a11y-layout-matrix.spec.ts` (56/56) зелені на PORT=3100. Наступна задача епіку — AH-4.5. (source: локальний прогін 2026-10-04; `scripts/e2e-affected.ts`; `scripts/e2e-affected.test.mjs`; `wiki/tasks/ah-4.4.md`)
 - 2026-10-03 (T1-f1): review fixes — `a11y-gating.json` додано `/en|uk/news/search?q=mcp` і `?q=`; `NewsSearchForm` controlled input + URL sync (popular chip, Back/Forward); E2E popular-query/back; a11y для gating (footer/header 44px, sidebar h2, sponsor лише на hub, skip-link/search input min-height); a11y-matrix harness (reducedMotion, hydration wait, axe excludes). `npm run pr:check` зелений.

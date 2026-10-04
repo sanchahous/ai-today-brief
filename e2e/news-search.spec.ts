@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectedSiteUrl } from '../scripts/e2e-server-url';
 
 test.describe('News search page (/[lang]/news/search)', () => {
   test('empty q shows idle state without results feed', async ({ page }) => {
@@ -31,7 +32,7 @@ test.describe('News search page (/[lang]/news/search)', () => {
     expect(robots).toMatch(/noindex/i);
     expect(robots).toMatch(/follow/i);
     const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
-    expect(canonical).toBe('https://aitodaybrief.com/en/news');
+    expect(canonical).toBe(`${expectedSiteUrl()}/en/news`);
   });
 
   test('UK idle heading and form', async ({ page }) => {
