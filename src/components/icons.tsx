@@ -155,6 +155,13 @@ export function ArrowRight({ size = 18, strokeWidth = 1.8, style, className }: I
     </svg>
   );
 }
+export function ArrowDown({ size = 18, strokeWidth = 1.8, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M12 5v14M6 13l6 6 6-6" />
+    </svg>
+  );
+}
 export function PlayIcon({ size = 18, strokeWidth = 1.7, style, className }: IconProps) {
   return (
     <svg {...base(size, strokeWidth, style, className)}>
