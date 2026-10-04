@@ -24,6 +24,8 @@ import {
 } from '@/lib/weekly-digest/weekly-geo';
 import { authorNode, publisherNode } from '@/lib/schema';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
+import { getSupabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const revalidate = 86400;
 
@@ -107,6 +109,14 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
   const digest = await getWeeklyDigest(slug, lang);
   if (!digest) notFound();
 
+  const typed = getSupabase();
+  const db = typed as unknown as SupabaseClient;
+  let facts = null;
+  if (digest.revisionId) {
+    const { loadWeeklyBandFacts } = await import('@/lib/digests');
+    facts = await loadWeeklyBandFacts(db, lang, digest.revisionId, digest.weekStart);
+  }
+
   const copy = WEEKLY_COPY[lang];
   const pagePath = `/${lang}/weekly/${slug}`;
   const crumbs = [
@@ -141,6 +151,9 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
 
   const faq = weeklyFaqFromDigest(digest);
   const metrics = weeklyMetricsFromItems(digest.items);
+  const discussionQuestions = digest.items
+    .map((item) => item.discussionQuestion?.trim())
+    .filter(Boolean);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -210,7 +223,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
       <Breadcrumbs items={crumbs} />
 
       <article>
-        <WeeklyHero digest={digest} lang={lang} />
+        <WeeklyHero digest={digest} facts={facts} lang={lang} />
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-14">
           <aside className="lg:sticky lg:top-[calc(var(--header-h)+2rem)] lg:self-start">
@@ -236,11 +249,24 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
           </aside>
 
           <div id="stories" className="min-w-0 scroll-mt-[calc(var(--header-h)+2rem)]">
-            <div className="grid gap-12">
-              {digest.items.map((item) => (
-                <WeeklyStory key={item.id} item={item} lang={lang} />
-              ))}
-            </div>
+            {digest.editorNote ? (
+              <section
+                aria-labelledby="editor-note-title"
+                className="border-border bg-surface rounded-card mb-12 border p-6 sm:p-8"
+              >
+                <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+                  {copy.editorNote}
+                </p>
+                <h2 id="editor-note-title" className="sr-only">
+                  {copy.editorNote}
+                </h2>
+                <div className="mt-3">
+                  <MarkdownBody markdown={digest.editorNote} />
+                </div>
+              </section>
+            ) : null}
+
+            <WeeklyActionBoard items={digest.items} lang={lang} />
 
             {digest.video ? (
               <section
@@ -264,29 +290,38 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               </section>
             ) : null}
 
-            <WeeklyActionBoard items={digest.items} lang={lang} />
-
-            {faq.length ? (
-              <section aria-labelledby="weekly-faq-title" className="mt-8">
-                <h2 id="weekly-faq-title" className="text-2xl">
-                  {copy.faq}
+            {digest.keyTakeaways.length ? (
+              <section aria-labelledby="takeaways-title" className="mt-12 mb-10">
+                <h2 id="takeaways-title" className="text-2xl">
+                  {copy.keyTakeaways}
                 </h2>
-                <dl className="mt-5 grid gap-4">
-                  {faq.map((entry) => (
-                    <div
-                      key={entry.question}
-                      className="border-border bg-surface rounded-card border p-4"
+                <ol className="mt-5 grid gap-3">
+                  {digest.keyTakeaways.map((takeaway, index) => (
+                    <li
+                      key={`${index}-${takeaway}`}
+                      className="border-border bg-surface rounded-card grid grid-cols-[2rem_minmax(0,1fr)] gap-3 border p-4"
                     >
-                      <dt className="font-semibold">{entry.question}</dt>
-                      <dd className="text-muted mt-2 leading-7">{entry.answer}</dd>
-                    </div>
+                      <span
+                        aria-hidden
+                        className="bg-accent text-on-accent grid h-7 w-7 place-items-center rounded-full text-xs font-bold"
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="text-muted leading-7">{takeaway}</span>
+                    </li>
                   ))}
-                </dl>
+                </ol>
               </section>
             ) : null}
 
+            <div className="grid gap-12">
+              {digest.items.map((item) => (
+                <WeeklyStory key={item.id} item={item} lang={lang} />
+              ))}
+            </div>
+
             {metrics.length ? (
-              <section aria-labelledby="weekly-metrics-title" className="mt-8">
+              <section aria-labelledby="weekly-metrics-title" className="mt-12">
                 <h2 id="weekly-metrics-title" className="text-2xl">
                   {copy.metrics}
                 </h2>
@@ -323,50 +358,41 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               </section>
             ) : null}
 
-            {digest.editorNote ? (
-              <section
-                aria-labelledby="editor-note-title"
-                className="border-border bg-surface rounded-card mt-8 border p-6 sm:p-8"
-              >
-                <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
-                  {copy.editorNote}
-                </p>
-                <h2 id="editor-note-title" className="sr-only">
-                  {copy.editorNote}
+            {discussionQuestions.length ? (
+              <section aria-labelledby="discuss-title" className="mt-12">
+                <h2 id="discuss-title" className="text-2xl">
+                  {copy.discuss}
                 </h2>
-                <div className="mt-3">
-                  <MarkdownBody markdown={digest.editorNote} />
-                </div>
+                <ul className="mt-5 list-disc pl-5 space-y-2 text-muted leading-7">
+                  {discussionQuestions.map((q, i) => (
+                    <li key={i}>{q}</li>
+                  ))}
+                </ul>
               </section>
             ) : null}
 
-            {digest.keyTakeaways.length ? (
-              <section aria-labelledby="takeaways-title" className="mt-8">
-                <h2 id="takeaways-title" className="text-2xl">
-                  {copy.keyTakeaways}
+            {faq.length ? (
+              <section aria-labelledby="weekly-faq-title" className="mt-12">
+                <h2 id="weekly-faq-title" className="text-2xl">
+                  {copy.faq}
                 </h2>
-                <ol className="mt-5 grid gap-3">
-                  {digest.keyTakeaways.map((takeaway, index) => (
-                    <li
-                      key={`${index}-${takeaway}`}
-                      className="border-border bg-surface rounded-card grid grid-cols-[2rem_minmax(0,1fr)] gap-3 border p-4"
+                <dl className="mt-5 grid gap-4">
+                  {faq.map((entry) => (
+                    <div
+                      key={entry.question}
+                      className="border-border bg-surface rounded-card border p-4"
                     >
-                      <span
-                        aria-hidden
-                        className="bg-accent text-on-accent grid h-7 w-7 place-items-center rounded-full text-xs font-bold"
-                      >
-                        {index + 1}
-                      </span>
-                      <span className="text-muted leading-7">{takeaway}</span>
-                    </li>
+                      <dt className="font-semibold">{entry.question}</dt>
+                      <dd className="text-muted mt-2 leading-7">{entry.answer}</dd>
+                    </div>
                   ))}
-                </ol>
+                </dl>
               </section>
             ) : null}
 
             <nav
               aria-label={`${copy.previous} / ${copy.next}`}
-              className="mt-10 grid gap-3 sm:grid-cols-2"
+              className="mt-12 grid gap-3 sm:grid-cols-2"
             >
               {digest.previous ? (
                 <Link
@@ -394,7 +420,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               ) : null}
             </nav>
 
-            <section className="border-border rounded-card mt-10 border p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
+            <section className="border-border rounded-card mt-12 border p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
               <div>
                 <h2 className="text-xl">
                   {lang === 'uk'
