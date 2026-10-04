@@ -106,7 +106,13 @@ export default async function NewsPage({ params }: { params: Promise<Params> }) 
         </p>
         <h1 className="mb-3 text-[clamp(1.8rem,4.5vw,2.7rem)]">{t.title}</h1>
         <p className="text-muted m-0 mb-4 text-base leading-relaxed">{t.lead}</p>
-        <Byline lang={lang} updated={updated} />
+        <Byline 
+          lang={lang} 
+          initials="AI" 
+          authorName="AI Today" 
+          role={lang === 'uk' ? 'Редакція' : 'Editorial'} 
+          publishedAt={updated} 
+        />
       </header>
 
       <NewsFeed

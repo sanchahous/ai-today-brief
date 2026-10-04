@@ -67,13 +67,14 @@ export function MarkdownBody({ markdown }: { markdown: string }) {
         }
         if (block.kind === 'codeBlock') {
           return (
-            <pre
-              key={i}
-              className="bg-surface-2 border-border mb-4 overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] leading-relaxed"
-              data-language={block.language}
-            >
-              <code>{block.code}</code>
-            </pre>
+            <div key={i} className="my-4" tabIndex={0} role="region" aria-label="Code block">
+              <pre
+                className="bg-surface-2 border-border overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] sm:text-[14px] leading-relaxed"
+                data-language={block.language}
+              >
+                <code>{block.code}</code>
+              </pre>
+            </div>
           );
         }
         return (

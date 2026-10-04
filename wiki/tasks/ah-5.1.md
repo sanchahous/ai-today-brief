@@ -17,3 +17,6 @@ Task: ah-5.1
 ```
 
 (source: перенос ATB-67, [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
+
+## Updates
+- 2026-10-04: Implemented all editorial patterns (`TrustLabel`, `SourceList`, `Callout`, `ReadingLayout`, `TableOfContents`, `KeyFacts`, `Takeaways`, `WhenGrid`, `ActionList`, `CodeFigure`, `DataTable`, `Faq`, `RelatedContent`, `DigestCard`, `EditorialHero`, `SleeveArt`, `VideoFacade`). Refactored `byline`, `ai-disclosure-note`, `item-share-bar`, `lite-youtube` and `markdown-body` styles. Added patterns to `ds-catalog/article-patterns-catalog.tsx`. Passed `npm run pr:check`.

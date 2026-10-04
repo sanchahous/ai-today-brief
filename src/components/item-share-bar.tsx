@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { trackItemEvent } from '@/lib/analytics-client';
 import { getStrings } from '@/lib/i18n';
 import { SITE_URL, type Lang } from '@/lib/site';
 import { ShareIcon } from '@/components/icons';
+import { useToast } from '@/components/ui/toast';
 
 export function ItemShareBar({
   lang,
@@ -18,7 +18,7 @@ export function ItemShareBar({
   postId: string;
 }) {
   const t = getStrings(lang).news;
-  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   const absolute = pageUrl.startsWith('http') ? pageUrl : `${SITE_URL}${pageUrl}`;
 
   function trackShare(method: 'x' | 'linkedin' | 'copy_link') {
@@ -27,9 +27,15 @@ export function ItemShareBar({
 
   function copyLink() {
     trackShare('copy_link');
-    void navigator.clipboard?.writeText(absolute).catch(() => {});
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    if (navigator.clipboard) {
+      void navigator.clipboard.writeText(absolute).then(() => {
+        toast({ message: t.copied ?? 'Link copied to clipboard', tone: 'success' });
+      }).catch(() => {
+        toast({ message: lang === 'uk' ? 'Не вдалося скопіювати посилання' : 'Failed to copy link', tone: 'error' });
+      });
+    } else {
+      toast({ message: lang === 'uk' ? 'Буфер обміну недоступний' : 'Clipboard unavailable', tone: 'info' });
+    }
   }
 
   return (
@@ -61,7 +67,7 @@ export function ItemShareBar({
         onClick={copyLink}
         className="rounded-pill border-border text-text hover:border-accent border px-3 py-1.5 text-sm font-medium transition"
       >
-        {copied ? t.copied : t.copyLink}
+        {t.copyLink}
       </button>
     </div>
   );

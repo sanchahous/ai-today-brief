@@ -8,6 +8,7 @@ import { NavigationCatalog } from './navigation-catalog';
 import { NewsletterCatalog } from './newsletter-catalog';
 import { OverlayCatalog } from './overlay-catalog';
 import { EditorialCatalog } from './editorial-catalog';
+import { ArticlePatternsCatalog } from './article-patterns-catalog';
 import {
   Accordion,
   Combobox,
@@ -168,6 +169,7 @@ export function CatalogClient() {
 
         <Section title="Editorial patterns (StoryCard, StoryRow, CategoryBanner)">
           <EditorialCatalog />
+          <ArticlePatternsCatalog />
         </Section>
 
         <Section title="Dialog">
