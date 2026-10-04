@@ -1,18 +1,20 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
-import { getDailyBriefBySlug, getBriefPaths } from '@/lib/briefs';
+import { getAdjacentDailyBriefs, getDailyBriefBySlug, getBriefPaths } from '@/lib/briefs';
+import { briefDateParts, firstPracticeStep, openingTakeaways } from '@/lib/daily-edition';
 import { getConceptNameIndex, getConcepts, type ConceptSummary } from '@/lib/concepts';
 import { socialMeta } from '@/lib/seo';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
-import { AiDisclosureNote } from '@/components/ai-disclosure-note';
 import { BriefDailySections } from '@/components/brief-daily-sections';
 import { ConceptOtherChips } from '@/components/concept-other-chips';
 import { DailyHero } from '@/components/daily/daily-hero';
-import { NewsletterBand } from '@/components/home/newsletter-band';
-import { ArrowRight } from '@/components/icons';
+import { DailyBriefFinale, DailyIssueToc, DailyReadProvider } from '@/components/daily/daily-read-state';
+import { DailyPractice } from '@/components/daily/daily-item';
+import { EditionNav } from '@/components/daily/edition-nav';
+import { CategoryBadge } from '@/components/ui/category-badge';
+import { NewsletterForm } from '@/components/home/newsletter-form';
 
 // 24 h: a brief's content is fixed at publish; new briefs render on first hit
 // (dynamicParams). Short windows here only burned ISR writes via bot crawls.
@@ -72,16 +74,6 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
-function dateLabel(value: string, lang: Lang): string {
-  const date = value.length === 10 ? new Date(`${value}T00:00:00`) : new Date(value);
-  return new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date);
-}
-
 export default async function BriefPage({ params }: { params: Promise<Params> }) {
   const { lang: raw, brief: slug } = await params;
   if (!isLang(raw)) notFound();
@@ -90,14 +82,16 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
   const b = await getDailyBriefBySlug(slug, lang);
   if (!b?.canonicalSlug) notFound();
   const t = getStrings(lang);
-  const dateStr = dateLabel(b.date, lang);
+  const dateParts = briefDateParts(b.date, lang);
+  const dateStr = dateParts?.full ?? b.date;
 
   // Hub-and-spoke: surface the concept hubs this day's items mention, so
   // every daily page links back into the evergreen layer (crawl path for
   // pages otherwise reachable only via the sitemap).
-  const [conceptIndex, allConcepts] = await Promise.all([
+  const [conceptIndex, allConcepts, neighbors] = await Promise.all([
     getConceptNameIndex(),
     getConcepts(lang),
+    getAdjacentDailyBriefs(b.date, lang),
   ]);
   const conceptBySlug = new Map(allConcepts.map((c) => [c.slug, c]));
   const seenConcepts = new Set<string>();
@@ -114,9 +108,16 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
 
   const crumbs = [
     { label: t.news.breadcrumbHome, href: `/${lang}` },
-    { label: t.nav.news, href: `/${lang}/news` },
-    { label: b.title || t.todaysBrief },
+    { label: t.nav.digests, href: `/${lang}/digests` },
+    { label: dateParts ? `${t.dailyCrumb} · ${dateParts.short}` : t.dailyCrumb },
   ];
+  const takeaways = openingTakeaways(b.allItems);
+  const practice = firstPracticeStep(b.allItems);
+  const tocItems = b.allItems.map((item, index) => ({
+    id: item.id,
+    index: index + 1,
+    title: item.title,
+  }));
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -155,33 +156,48 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
 
       <Breadcrumbs items={crumbs} />
 
-      <DailyHero brief={b} lang={lang} dateLabel={dateStr} />
+      <DailyReadProvider lang={lang} itemIds={b.allItems.map((item) => item.id)}>
+        <DailyHero brief={b} lang={lang} />
 
-      <div className="mb-8">
-        <AiDisclosureNote lang={lang} />
-      </div>
+        {takeaways.length > 0 ? (
+          <section className="mb-10" aria-labelledby="thirty-title">
+            <h2 id="thirty-title" className="font-serif text-2xl">
+              {t.briefIn30}
+            </h2>
+            <ul className="m-0 grid list-none gap-3 p-0">
+              {takeaways.map((line, index) => (
+                <li key={`${line.text}-${index}`} className="flex flex-wrap items-start gap-3">
+                  <CategoryBadge slug={line.categorySlug} name={line.categoryName} color={line.categoryColor} />
+                  <span className="text-text min-w-0 flex-1 text-base leading-relaxed">{line.text}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
-      <BriefDailySections lang={lang} packs={b.packs} totalItems={b.allItems.length} />
+        <div className="tablet:grid tablet:grid-cols-3 tablet:items-start tablet:gap-8">
+          <div className="tablet:col-span-2">
+            <BriefDailySections lang={lang} packs={b.packs} />
+            {practice ? <DailyPractice lang={lang} step={practice.step} /> : null}
+            <DailyBriefFinale />
+          </div>
+          <aside className="mt-10 grid gap-4 tablet:sticky tablet:top-[var(--header-h)] tablet:mt-0">
+            <DailyIssueToc items={tocItems} />
+            <ConceptOtherChips
+              lang={lang}
+              concepts={briefConcepts.slice(0, 12)}
+              title={t.briefConceptsLabel}
+              headingId="brief-concepts-title"
+              variant="rail"
+            />
+          </aside>
+        </div>
 
-      <ConceptOtherChips
-        lang={lang}
-        concepts={briefConcepts.slice(0, 12)}
-        title={t.briefConceptsLabel}
-        headingId="brief-concepts-title"
-      />
-
-      <div className="mt-8 max-w-[760px]">
-        <Link
-          href={`/${lang}/news`}
-          className="rounded-pill border-border text-text hover:border-accent inline-flex items-center gap-2 border px-4 py-2.5 text-sm font-semibold no-underline transition"
-        >
-          {t.landing.weekCta}
-          <ArrowRight size={16} />
-        </Link>
-      </div>
+        <EditionNav lang={lang} previous={neighbors.previous} next={neighbors.next} />
+      </DailyReadProvider>
 
       <section className="mt-12 max-w-[760px]">
-        <NewsletterBand lang={lang} embedded placement="brief-page" />
+        <NewsletterForm lang={lang} variant="inline" placement="brief-page" />
       </section>
     </div>
   );

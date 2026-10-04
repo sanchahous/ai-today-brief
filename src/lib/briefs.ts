@@ -4,6 +4,8 @@ import { getStrings } from '@/lib/i18n';
 import { LANGS, type Lang } from '@/lib/site';
 import { extractToolNames } from '@/lib/tools-mentioned';
 import { limitPrerenderPaths } from '@/lib/public-content-cache';
+import { readMinutesForParts } from '@/lib/home-stats';
+import { citationSourceName, distinctWhy, localizedList } from '@/lib/daily-edition';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -20,6 +22,11 @@ export interface BriefItemCard {
   title: string;
   summary: string;
   why: string;
+  takeaways: string[];
+  actionItems: string[];
+  /** Publication name when the public search projection has one. */
+  sourceName: string | null;
+  readMinutes: number;
   /** Tool names mentioned in the item — resolve to concept hubs for linking. */
   tools: string[];
 }
@@ -35,6 +42,11 @@ interface ItemRow {
   summary_uk: string;
   why_matters_en: string | null;
   why_matters_uk: string | null;
+  takeaways_en: unknown;
+  takeaways_uk: unknown;
+  action_items_en: unknown;
+  action_items_uk: unknown;
+  citations: unknown;
   tools_mentioned: unknown;
 }
 
@@ -63,7 +75,7 @@ interface DailyVisualPublicationRow {
 }
 
 const ITEM_COLUMNS =
-  'id, rank, category_slug, slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned';
+  'id, rank, category_slug, slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, takeaways_en, takeaways_uk, action_items_en, action_items_uk, citations, tools_mentioned';
 
 const PACK_COLUMNS =
   'id, date, slug, edition, title_en, title_uk, intro_en, intro_uk, published_at';
@@ -77,8 +89,10 @@ function toCard(
   lang: Lang,
   it: ItemRow,
   catBySlug: Map<string, { name: string; color: string | null }>,
+  sourceName: string | null,
 ): BriefItemCard {
   const summary = pick(lang, it.summary_en, it.summary_uk);
+  const why = distinctWhy(pick(lang, it.why_matters_en, it.why_matters_uk), summary) ?? '';
   const cat = it.category_slug ? catBySlug.get(it.category_slug) : undefined;
   return {
     id: it.id,
@@ -89,9 +103,38 @@ function toCard(
     slug: it.slug,
     title: pick(lang, it.title_en, it.title_uk) || summary,
     summary,
-    why: pick(lang, it.why_matters_en, it.why_matters_uk) || summary,
+    why,
+    takeaways: localizedList(lang, it.takeaways_en, it.takeaways_uk),
+    actionItems: localizedList(lang, it.action_items_en, it.action_items_uk),
+    sourceName: sourceName ?? citationSourceName(it.citations),
+    readMinutes: readMinutesForParts([{ summary, why }]),
     tools: extractToolNames(it.tools_mentioned),
   };
+}
+
+/**
+ * `articles` is not anon-readable. `search_brief_items` is the public projection
+ * that already exposes `source_name` for approved items.
+ */
+async function publicSourceNames(lang: Lang, date: string): Promise<Map<string, string>> {
+  const supabase = getSupabase();
+  const names = new Map<string, string>();
+  if (!supabase || !date) return names;
+  const { data, error } = await supabase.rpc('search_brief_items', {
+    p_query: '',
+    p_lang: lang,
+    p_from_date: date,
+    p_to_date: date,
+    p_limit: 80,
+    p_offset: 0,
+    p_sort: 'newest',
+  });
+  if (error || !data) return names;
+  for (const row of data) {
+    const name = row.source_name?.trim();
+    if (name) names.set(row.id, name);
+  }
+  return names;
 }
 
 export interface BriefPackSection {
@@ -194,6 +237,7 @@ async function loadPackSections(
 
   const cats = await getCategories(lang);
   const catBySlug = new Map(cats.map((c) => [c.slug, c]));
+  const sourceNames = await publicSourceNames(lang, packs[0]?.date ?? '');
   const sections: BriefPackSection[] = [];
   const allItems: BriefItemCard[] = [];
 
@@ -206,7 +250,7 @@ async function loadPackSections(
       .is('canonical_item_id', null)
       .order('rank', { ascending: true });
 
-    const cards = (items ?? []).map((it) => toCard(lang, it, catBySlug));
+    const cards = (items ?? []).map((it) => toCard(lang, it, catBySlug, sourceNames.get(it.id) ?? null));
     sections.push({
       edition: pack.edition,
       slug: pack.slug,
@@ -315,6 +359,61 @@ export async function getBriefBySlug(slug: string, lang: Lang): Promise<BriefSum
     title: daily.title,
     intro: daily.intro,
     items: daily.allItems,
+  };
+}
+
+export interface DailyBriefNeighbor {
+  slug: string;
+  date: string;
+  title: string;
+}
+
+function toNeighbor(
+  lang: Lang,
+  row: { slug: string | null; date: string; title_en: string; title_uk: string } | null,
+): DailyBriefNeighbor | null {
+  if (!row?.slug) return null;
+  return {
+    slug: row.slug,
+    date: row.date,
+    title: pick(lang, row.title_en, row.title_uk) || row.date,
+  };
+}
+
+/** Published edition-1 neighbours. No row means that side of the nav is omitted. */
+export async function getAdjacentDailyBriefs(
+  date: string,
+  lang: Lang,
+): Promise<{ previous: DailyBriefNeighbor | null; next: DailyBriefNeighbor | null }> {
+  const empty = { previous: null, next: null };
+  const supabase = getSupabase();
+  if (!supabase || !date) return empty;
+
+  const columns = 'date, slug, title_en, title_uk';
+  const [older, newer] = await Promise.all([
+    supabase
+      .from('briefs')
+      .select(columns)
+      .eq('status', 'published')
+      .eq('edition', 1)
+      .lt('date', date)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('briefs')
+      .select(columns)
+      .eq('status', 'published')
+      .eq('edition', 1)
+      .gt('date', date)
+      .order('date', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  return {
+    previous: older.error ? null : toNeighbor(lang, older.data),
+    next: newer.error ? null : toNeighbor(lang, newer.data),
   };
 }
 
