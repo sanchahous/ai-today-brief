@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   isSiteAffectingPath,
   parseGitNameOnly,
@@ -76,5 +77,18 @@ describe('parseGitNameOnly', () => {
   it('splits and posix-normalizes', () => {
     assert.deepEqual(parseGitNameOnly('wiki/now.md\r\nfoo\\bar.ts\n'), ['wiki/now.md', 'foo/bar.ts']);
     assert.deepEqual(uniquePaths(['a.ts', 'a.ts', './b.ts']), ['a.ts', 'b.ts']);
+  });
+});
+
+describe('repository log hygiene', () => {
+  it('ensures e2e-affected-f4.log is not present at the repository root', () => {
+    const targetFile = new URL('../e2e-affected-f4.log', import.meta.url);
+    assert.equal(existsSync(targetFile), false);
+  });
+
+  it('ensures .gitignore ignores local *.log files', () => {
+    const gitignorePath = new URL('../.gitignore', import.meta.url);
+    const gitignore = readFileSync(gitignorePath, 'utf8');
+    assert.match(gitignore, /^\*\.log$/m);
   });
 });
