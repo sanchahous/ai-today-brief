@@ -92,6 +92,7 @@ export function NewsFeed({
   const filtersTriggerRef = useRef<HTMLButtonElement>(null);
   const noResultsTracked = useRef('');
   const isHydrated = useRef(false);
+  const lastServerState = useRef({ query: initialQuery, page: initialPage });
 
   // Synchronize state with URL on mount (without breaking ISR SSR)
   useEffect(() => {
@@ -118,6 +119,12 @@ export function NewsFeed({
   // reuses this component instance — reset filter state from props.
   useEffect(() => {
     if (!isHydrated.current) return;
+    // Mount hydration owns URL state. Only changed server props may reset it.
+    if (
+      lastServerState.current.query === initialQuery &&
+      lastServerState.current.page === initialPage
+    ) return;
+    lastServerState.current = { query: initialQuery, page: initialPage };
     setFilters((prev) => {
       if (prev.q === initialQuery) return prev;
       return {

@@ -1,6 +1,6 @@
 # AH-4.5
 
-Summary: Підготовлено обов'язкові E2E для восьми acceptance tasks News slice й розширено QA-матрицю. Автоматичний прогін заблокований Windows EPERM; G4 не підписаний.
+Summary: Підготовлено acceptance E2E та QA-матрицю; виправлено скидання URL-page під час mount і неоднозначний селектор Topics. Повторні браузерні перевірки та pr:check заблоковані Windows EPERM; G4 не підписаний.
 Sources: [картка AH-4.5](../product/after-hours-redesign-epic.md#ah-45--гейт-news-vertical-slice), [gap-plan §7](../audits/2026-09-26-design-system-gap-plan.md#7-acceptance-tasks), `e2e/news-feed-interaction.spec.ts`, `e2e/fixtures/a11y-gating.json`, локальні перевірки 2026-10-04, [PR #415](https://github.com/sanchahous/ai-today-brief/pull/415)
 Last updated: 2026-10-04
 
@@ -9,6 +9,42 @@ Last updated: 2026-10-04
 Task: ah-4.5
 
 ## Status
+
+### Repair T1-f1 — 2026-10-04
+
+**BLOCKED для runtime-перевірки; виправлення збережені.** Pre-push хабу мав 24 passed / 9 failed:
+чотири topic-сценарії, чотири page 2 → Back та межі пагінації.
+Звіти topic-тестів показують strict mode violation: `hasText: Topics/Теми` знаходив також
+Hot topics/Популярні теми. Усі topic-селектори тепер знаходять section за точним accessible heading.
+(source: пакет T1-f1 2026-10-04; `test-results/news-feed-interaction-News-56e42--OR-within-the-topics-facet-chromium/error-context.md`, `e2e/news-feed-interaction.spec.ts`)
+
+Причина втрати page: mount-ефект читав URL, а наступний sync-ефект одразу викликав
+`setPage(initialPage)` з серверним значенням 1. Sync тепер працює лише коли серверні props
+справді змінилися; початковий URL-state зберігається при reload і remount після Back.
+Наявний `key={query}` на search-маршруті збережений. Сценарій №5 додатково робить reload на page 2
+і звіряє URL, current page та впорядковані посилання перед відкриттям статті.
+(source: `src/components/news/news-feed.tsx`, `src/app/[lang]/news/search/page.tsx`, `e2e/news-feed-interaction.spec.ts`)
+
+Перевірки repair:
+
+- До і після виправлення: `node node_modules/@playwright/test/cli.js test e2e/news-feed-interaction.spec.ts --project=chromium`
+  — exit 1, `Error: spawn EPERM`; браузерні сценарії в агентському середовищі не стартували.
+- `npm run pr:check` — exit 1: `design:raw:check` PASS, потім Vitest/Vite config load
+  на `ci:check` падає з `spawn EPERM`. Результат решти гейту невідомий.
+- `node node_modules/typescript/bin/tsc --noEmit` — exit 0 на фінальному repair.
+- `node node_modules/eslint/bin/eslint.js src/components/news/news-feed.tsx e2e/news-feed-interaction.spec.ts`
+  — exit 0, без діагностик.
+- `git diff --check` — exit 0; повний repair diff переглянуто, стороннє форматування прибрано.
+
+(source: `artifacts/_local/ah-4.5/repair-reproduce.log`, `artifacts/_local/ah-4.5/repair-e2e.log`, `artifacts/_local/ah-4.5/repair-pr-check.log`, `artifacts/_local/ah-4.5/repair-typecheck.log`, `artifacts/_local/ah-4.5/repair-lint.log`; локальний прогін 2026-10-04)
+
+Хабу: перевірити виправлення на свіжому мінімальному білді цієї копії, PORT=3100.
+Потрібні той самий Chromium-прогін, search regression, Firefox/WebKit, QA і SEO compare,
+повний pr:check та CI. До підтвердження цих результатів green не заявляється; людський go
+також відсутній. Після автоматики — рішення власника з датою, потім відкриття фази 5.
+(source: пакет T1-f1; [PR #415](https://github.com/sanchahous/ai-today-brief/pull/415))
+
+### Initial attempt — 2026-10-04
 
 **BLOCKED — 2026-10-04.** Код тестів підготовлено; проходження acceptance tasks, QA-матриці,
 SEO compare та браузерів не підтверджене. `npm run pr:check` завершується з exit 1 на
@@ -41,7 +77,8 @@ PR: https://github.com/sanchahous/ai-today-brief/pull/415
 0, від'ємна й нечислова page → page 1.
 QA fixture доповнено `/en/news` та `/uk/news`; наявні EN/UK search results/idle й каталог
 збережені. Глобальна оболонка перевіряється на цих маршрутах існуючим AH-0.5 інспектором.
-Продуктовий код, SEO, аналітика, motion, ISR і токени не змінені.
+У початковій спробі продуктовий код, SEO, аналітика, motion, ISR і токени не змінювалися;
+repair T1-f1 змінює лише guard синхронізації NewsFeed, описаний вище.
 (source: `e2e/news-feed-interaction.spec.ts`, `e2e/fixtures/a11y-gating.json`, `e2e/a11y-layout-matrix.spec.ts`)
 
 ## Checks
@@ -75,6 +112,9 @@ G4 лишається відкритим: **рішення власника «go
 
 ## Log
 
+- 2026-10-04 — T1-f1: точний heading Topics замість broad text; sync server props не скидає
+  page після URL hydration; E2E page 2 доповнено reload. Runtime-перевірка заблокована EPERM.
+  (source: `src/components/news/news-feed.tsx`, `e2e/news-feed-interaction.spec.ts`, [PR #415](https://github.com/sanchahous/ai-today-brief/pull/415))
 - 2026-10-04 — Підготовлено 8 acceptance E2E × 2 мови × 2 теми та boundaries; додано News
   до QA fixture. Автоматичний гейт заблокований `spawn EPERM`; green і людський go не заявляються.
   (source: [PR #415](https://github.com/sanchahous/ai-today-brief/pull/415), локальні перевірки 2026-10-04)

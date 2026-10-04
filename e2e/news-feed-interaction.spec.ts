@@ -89,7 +89,9 @@ for (const lang of ['en', 'uk'] as const) {
         await gotoNewsPage(page, lang);
         const sidebar = page.getByTestId('news-sidebar');
         await sidebar.getByRole('checkbox', { name: /Agents.*MCP|Агенти.*MCP/i }).check();
-        const topics = sidebar.locator('section').filter({ hasText: t.filterTopics });
+        const topics = sidebar
+          .locator('section')
+          .filter({ has: page.getByRole('heading', { name: t.filterTopics, exact: true }) });
         const topic = topics.getByRole('checkbox').first();
         await expect(topic).toBeVisible();
         await topic.check();
@@ -121,7 +123,7 @@ for (const lang of ['en', 'uk'] as const) {
         await sidebar.getByRole('checkbox', { name: /Agents.*MCP|Агенти.*MCP/i }).check();
         const topic = sidebar
           .locator('section')
-          .filter({ hasText: t.filterTopics })
+          .filter({ has: page.getByRole('heading', { name: t.filterTopics, exact: true }) })
           .getByRole('checkbox')
           .first();
         await topic.check();
@@ -162,6 +164,11 @@ for (const lang of ['en', 'uk'] as const) {
         const url = page.url();
         const stories = await results(page);
         expect(stories.length).toBeGreaterThan(0);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await hydrated(page);
+        await expect(page).toHaveURL(url);
+        await expect(page2).toHaveAttribute('aria-current', 'page');
+        await expect.poll(() => results(page)).toEqual(stories);
         const article = page.getByTestId('story-card').locator('h3 a, h2 a').first();
         const href = await article.getAttribute('href');
         await article.click();
@@ -184,7 +191,7 @@ for (const lang of ['en', 'uk'] as const) {
         await sidebar.getByRole('checkbox', { name: /Agents.*MCP|Агенти.*MCP/i }).check();
         await sidebar
           .locator('section')
-          .filter({ hasText: t.filterTopics })
+          .filter({ has: page.getByRole('heading', { name: t.filterTopics, exact: true }) })
           .getByRole('checkbox')
           .first()
           .check();
@@ -265,7 +272,7 @@ for (const lang of ['en', 'uk'] as const) {
         await expect(agents).toBeChecked();
         const topic = dialog
           .locator('section')
-          .filter({ hasText: t.filterTopics })
+          .filter({ has: page.getByRole('heading', { name: t.filterTopics, exact: true }) })
           .getByRole('checkbox')
           .first();
         await tabTo(page, topic);
