@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { MarkdownBody } from '@/components/markdown-body';
-import { LiteYouTube } from '@/components/weekly/lite-youtube';
+import { VideoFacade } from '@/components/editorial/video-facade';
 import { WEEKLY_COPY } from '@/components/weekly/copy';
 import { DigestEngagement } from '@/components/weekly/digest-engagement';
 import { WeeklyHero } from '@/components/weekly/weekly-hero';
@@ -255,7 +255,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
                   {copy.videoTitle}
                 </h2>
                 <p className="text-muted mt-2 mb-5 max-w-2xl leading-7">{copy.videoDescription}</p>
-                <LiteYouTube
+                <VideoFacade
                   videoId={digest.video.youtubeId}
                   thumbnailUrl={digest.video.thumbnailUrl}
                   title={copy.videoTitle}

@@ -231,8 +231,15 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         </div>
 
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <Byline lang={lang} updated={detail.briefDate} />
-          <AiDisclosureNote lang={lang} />
+          <Byline 
+            lang={lang} 
+            initials="AI" 
+            authorName="AI Today" 
+            role={lang === 'uk' ? 'Редакція' : 'Editorial'} 
+            publishedAt={detail.briefDate} 
+            minutes={detail.readMinutes}
+            hasAiDisclosure 
+          />
         </div>
 
         <Reveal>

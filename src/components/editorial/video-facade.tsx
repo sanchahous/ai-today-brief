@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PlayIcon } from '@/components/icons';
 import type { Lang } from '@/lib/site';
 
-export function LiteYouTube({
+export function VideoFacade({
   videoId,
   thumbnailUrl,
   title,

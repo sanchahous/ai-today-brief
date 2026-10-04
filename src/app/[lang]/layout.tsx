@@ -6,6 +6,7 @@ import { CookieConsent } from '@/components/cookie-consent';
 import { AnalyticsProvider } from '@/components/analytics-provider';
 import { SocialClickCapture } from '@/components/social-click-capture';
 import { ReaderRevenue } from '@/components/reader-revenue';
+import { ToastProvider } from '@/components/ui/toast';
 import { getStrings } from '@/lib/i18n';
 import { LANGS, isLang, SITE_NAME, SITE_TAGLINE, SITE_URL, type Lang } from '@/lib/site';
 
@@ -48,7 +49,7 @@ export default async function LangLayout({
   if (!isLang(lang)) notFound();
   const t = getStrings(lang);
   return (
-    <>
+    <ToastProvider>
       <a href="#main-content" className="skip-link">
         {t.skipToContent}
       </a>
@@ -61,6 +62,6 @@ export default async function LangLayout({
       <SocialClickCapture />
       <ReaderRevenue lang={lang} />
       <CookieConsent lang={lang} />
-    </>
+    </ToastProvider>
   );
 }

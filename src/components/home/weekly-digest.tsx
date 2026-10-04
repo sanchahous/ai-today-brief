@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from '@/components/icons';
-import { LiteYouTube } from '@/components/weekly/lite-youtube';
+import { VideoFacade } from '@/components/editorial/video-facade';
 import { WEEKLY_COPY } from '@/components/weekly/copy';
 import { weeklyHeroDescriptions } from '@/components/weekly/weekly-hero';
 import type { WeeklyDigestHomeView } from '@/lib/digests';
@@ -156,7 +156,7 @@ export function WeeklyDigestBlock({
               </p>
               <h3 className="mt-2 text-xl sm:text-2xl">{copy.videoTitle}</h3>
             </div>
-            <LiteYouTube
+            <VideoFacade
               videoId={digest.video.youtubeId}
               thumbnailUrl={digest.video.thumbnailUrl}
               title={copy.videoTitle}

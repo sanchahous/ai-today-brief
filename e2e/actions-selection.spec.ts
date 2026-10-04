@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 async function openCatalog(page: Page, lang: 'en' | 'uk', theme: 'night' | 'day') {
   await page.addInitScript((value) => localStorage.setItem('theme', value), theme === 'day' ? 'light' : 'dark');
   await page.goto('/ds-catalog');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Design system catalog', level: 1 })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   // Axe/computed-colour checks must sample settled states, not transition frames.
   await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' });
