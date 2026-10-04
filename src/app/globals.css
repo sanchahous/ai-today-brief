@@ -792,7 +792,11 @@ html[lang='uk'],
   left: -9999px;
   top: 0;
   z-index: 100;
-  padding: 0.6rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.75rem 1rem;
   background: var(--accent);
   color: #141414;
   font-weight: 600;
@@ -845,6 +849,22 @@ html[lang='uk'],
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface);
+}
+
+.news-search-form {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 42rem;
+  min-height: var(--touch-target-min, 44px);
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+.news-search-form input[type='search'] {
+  min-height: var(--touch-target-min, 44px);
 }
 
 .nf-links {

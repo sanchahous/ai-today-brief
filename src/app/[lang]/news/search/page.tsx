@@ -5,6 +5,8 @@ import { getStrings } from '@/lib/i18n';
 import { getNewsPageData, searchNewsItems } from '@/lib/news';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { NewsFeed } from '@/components/news/news-feed';
+import { NewsSearchForm } from '@/components/news/news-search-form';
+import { NewsSearchIdle } from '@/components/news/news-search-idle';
 
 type Params = { lang: string };
 type Search = { q?: string; category?: string; page?: string };
@@ -36,9 +38,13 @@ export async function generateMetadata({
   const { q } = await searchParams;
   const l: Lang = isLang(lang) ? lang : 'en';
   const t = getStrings(l).news;
+  const sp = t.searchPage;
   const query = (q ?? '').trim();
+  const title = query
+    ? `${sp.resultsFor} “${query}”`
+    : `${sp.idleTitleLead} ${sp.idleTitleEm}`;
   return {
-    title: query ? `${t.title} — ${query}` : t.title,
+    title,
     description: t.lead,
     // Search result pages have never belonged in the index; `follow` keeps the
     // links through to the stories themselves alive.
@@ -59,39 +65,72 @@ export default async function NewsSearchPage({
   const lang: Lang = raw;
   const { q, category, page: pageParam } = await searchParams;
   const t = getStrings(lang).news;
+  const sp = t.searchPage;
 
   const query = (q ?? '').trim();
   const categorySlug = (category ?? '').trim();
   const initialPage = Math.max(1, Number.parseInt(pageParam ?? '1', 10) || 1);
 
   const pageData = await getNewsPageData(lang);
-  // With no query this is just the feed, same as the hub — the empty case is
-  // reachable by hand-editing the URL, not by any link on the site.
-  const items = query ? await searchNewsItems(lang, query) : pageData.items;
+  const items = query ? await searchNewsItems(lang, query) : [];
+  const popularQueries = pageData.trending.slice(0, 6).map((topic) => topic.name);
 
   const crumbs = [
     { label: t.breadcrumbHome, href: `/${lang}` },
     { label: t.title, href: `/${lang}/news` },
+    { label: sp.breadcrumb },
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
+    <div
+      className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10"
+      data-testid="news-search-page"
+    >
       <Breadcrumbs items={crumbs} />
 
       <header className="mb-8 max-w-[720px]">
-        <h1 className="mb-3 text-[clamp(1.8rem,4.5vw,2.7rem)]">{t.title}</h1>
-        <p className="text-muted m-0 mb-4 text-base leading-relaxed">{t.lead}</p>
+        <p className="text-accent eyebrow mb-2">{sp.eyebrow}</p>
+        <h1 className="text-text mb-6 font-serif text-[clamp(1.8rem,4.5vw,2.7rem)] leading-[1.12] font-semibold tracking-tight">
+          {query ? (
+            <>
+              {sp.resultsFor}{' '}
+              <em className="font-display italic font-normal text-inherit">&ldquo;{query}&rdquo;</em>
+            </>
+          ) : (
+            <>
+              {sp.idleTitleLead}{' '}
+              <em className="font-display italic font-normal text-inherit">{sp.idleTitleEm}</em>
+            </>
+          )}
+        </h1>
+        <NewsSearchForm
+          lang={lang}
+          label={sp.breadcrumb}
+          placeholder={sp.placeholder}
+          button={getStrings(lang).search}
+          initialQuery={query}
+        />
       </header>
 
-      <NewsFeed
-        lang={lang}
-        items={items}
-        categories={pageData.categories}
-        trending={pageData.trending}
-        initialQuery={query}
-        initialCategory={categorySlug}
-        initialPage={initialPage}
-      />
+      {query ? (
+        <NewsFeed
+          key={query}
+          lang={lang}
+          items={items}
+          categories={pageData.categories}
+          trending={pageData.trending}
+          initialQuery={query}
+          initialCategory={categorySlug}
+          initialPage={initialPage}
+          feedContext="search"
+        />
+      ) : (
+        <NewsSearchIdle
+          lang={lang}
+          eyebrow={sp.popularSearches}
+          popularQueries={popularQueries}
+        />
+      )}
     </div>
   );
 }

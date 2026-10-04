@@ -3,14 +3,34 @@ import { describe, it } from 'node:test';
 import {
   extractFact,
   extractIndexStatuses,
+  hasWorkingTreeChanges,
   resolveWatchedFiles,
   runProjectSync,
   toPosix,
+  wikiLatestUnix,
   wikiTimestampPaths,
 } from './lib/project-sync.mjs';
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+
+const FIXTURE_GIT_ENV = {
+  ...process.env,
+  GIT_AUTHOR_NAME: 'wiki-sync-test',
+  GIT_AUTHOR_EMAIL: 'wiki-sync-test@example.com',
+  GIT_COMMITTER_NAME: 'wiki-sync-test',
+  GIT_COMMITTER_EMAIL: 'wiki-sync-test@example.com',
+};
+
+function git(cwd, args) {
+  return execFileSync('git', args, {
+    cwd,
+    env: FIXTURE_GIT_ENV,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
 
 describe('project-sync helpers', () => {
   it('wikiTimestampPaths counts task fragments instead of forcing a now.md edit', () => {
@@ -24,6 +44,23 @@ describe('project-sync helpers', () => {
 
   it('toPosix normalizes separators', () => {
     assert.equal(toPosix('a\\b\\c.md'), 'a/b/c.md');
+  });
+
+  it('wikiLatestUnix treats uncommitted task fragments as fresh', () => {
+    const root = mkdtempSync(join(tmpdir(), 'wiki-sync-'));
+    mkdirSync(join(root, 'wiki', 'tasks'), { recursive: true });
+    writeFileSync(join(root, 'header.tsx'), 'export const x = 1;\n');
+    writeFileSync(join(root, 'wiki', 'tasks', 'ah-4.4.md'), '# AH-4.4\n');
+    git(root, ['init']);
+    git(root, ['add', '.']);
+    git(root, ['commit', '-m', 'code']);
+    writeFileSync(join(root, 'header.tsx'), 'export const x = 2;\n');
+    git(root, ['add', 'header.tsx']);
+    git(root, ['commit', '-m', 'newer code']);
+    writeFileSync(join(root, 'wiki', 'tasks', 'ah-4.4.md'), '# AH-4.4\n\nupdated\n');
+    assert.ok(hasWorkingTreeChanges(root, ['wiki/tasks']));
+    const wikiTs = wikiLatestUnix(root, ['now.md'], 9_999_999_999);
+    assert.equal(wikiTs, 9_999_999_999);
   });
 
   it('extractIndexStatuses splits ✅ and 📋 rows', () => {

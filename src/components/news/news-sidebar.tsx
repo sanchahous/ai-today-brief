@@ -14,7 +14,6 @@ import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Pill } from '@/components/ui/pill';
-import { FilterChip } from '@/components/ui/chip';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 
 export type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
@@ -52,9 +51,9 @@ function FilterGroup({
   return (
     <section className={compact ? 'mb-0 min-w-0' : 'mb-6'} data-testid="filter-group">
       <div data-testid={testId} className={testId ? 'contents' : undefined}>
-        <h3 className="text-accent m-0 mb-3 text-2xs font-bold tracking-[0.1em] uppercase">
+        <h2 className="text-accent m-0 mb-3 text-2xs font-bold tracking-[0.1em] uppercase">
           {label}
-        </h3>
+        </h2>
         {children}
       </div>
     </section>

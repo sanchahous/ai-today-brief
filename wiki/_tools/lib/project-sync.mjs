@@ -93,6 +93,39 @@ export function gitLatestCommitUnix(repoRoot, paths) {
   }
 }
 
+/** True when staged or unstaged edits exist under the given repo-relative paths. */
+export function hasWorkingTreeChanges(repoRoot, paths) {
+  if (!paths.length) return false;
+  try {
+    const unstaged = execFileSync(
+      'git',
+      ['diff', '--name-only', 'HEAD', '--', ...paths],
+      { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ).trim();
+    const staged = execFileSync(
+      'git',
+      ['diff', '--cached', '--name-only', 'HEAD', '--', ...paths],
+      { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ).trim();
+    return unstaged.length > 0 || staged.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Wiki freshness for watcher lag checks: committed history plus pending
+ * task-fragment edits agents land before the orchestrator commit.
+ */
+export function wikiLatestUnix(repoRoot, wikiPages, nowUnix = Math.floor(Date.now() / 1000)) {
+  const paths = wikiTimestampPaths(wikiPages);
+  const commitTs = gitLatestCommitUnix(repoRoot, paths);
+  if (hasWorkingTreeChanges(repoRoot, paths)) {
+    return Math.max(commitTs ?? 0, nowUnix);
+  }
+  return commitTs;
+}
+
 export function extractFact(repoRoot, fact) {
   const abs = resolve(repoRoot, fact.fromFile);
   if (!existsSync(abs)) {
@@ -152,7 +185,7 @@ export function runProjectSync({ repoRoot, wikiRoot, contract, nowUnix = Math.fl
     }
 
     const codeTs = gitLatestCommitUnix(repoRoot, codeFiles);
-    const wikiTs = gitLatestCommitUnix(repoRoot, wikiTimestampPaths(watcher.wikiPages));
+    const wikiTs = wikiLatestUnix(repoRoot, watcher.wikiPages, nowUnix);
     const updateHint = watcherUpdateHint(watcher.wikiPages);
     if (codeTs != null && wikiTs != null && codeTs > wikiTs) {
       const lagHours = Math.round((codeTs - wikiTs) / 3600);

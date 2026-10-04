@@ -13,6 +13,7 @@ Last updated: 2026-10-03
 
 ## 1. Стан задач
 
+- **AH-4.4 відкрито в [#412](https://github.com/sanchahous/ai-today-brief/pull/412)** на `feat/ah-4.4-news-search`: сторінка `/[lang]/news/search` (breadcrumb, H1, велике поле, discovery, idle, empty → Concepts). **Наступна задача епіку — AH-4.5 (Гейт News vertical slice).** (source: PR #412; [епік §5.3 AH-4.4](after-hours-redesign-epic.md#ah-44--сторінка-пошуку-langnewssearch))
 - **AH-5.15 відкрито в [#409](https://github.com/sanchahous/ai-today-brief/pull/409)** на `feat/ah-5.15-not-found-loading`: 404 і loading-стани (B10). **Наступна задача епіку — AH-6.1 (Motion runtime і жести).** (source: PR #409; [епік §5.3](after-hours-redesign-epic.md#ah-515--404-і-loading-стани))
 - **AH-3.3 відкрито в [#405](https://github.com/sanchahous/ai-today-brief/pull/405)** (placeholder PR #) на `feat/ah-3.3-header-layout`: 2-рівневий header-chrome (desktop), compact sticky навігація через IntersectionObserver, мобільний sheet. E2E тести оновлено. **Наступна після інтеграції — AH-3.4 (NewsletterForm).** (source: PR AH-3.3; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))
 - **AH-3.2 відкрито в [#394](https://github.com/sanchahous/ai-today-brief/pull/394)** на `feat/ah-3.2-search-dialog`: один `SearchDialog` (Ctrl/Cmd+K, trending idle, aria-live, keyboard nav). **Наступна після інтеграції — AH-3.3 (EditorialHeader).** (source: PR #394; [епік §5.3](after-hours-redesign-epic.md#53-зведена-таблиця-задач))

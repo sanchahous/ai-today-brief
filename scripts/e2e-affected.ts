@@ -335,8 +335,8 @@ async function serverIsUp(): Promise<boolean> {
   }
 }
 
-function runProductionBuild(): void {
-  console.log(`e2e:affected — no server on :${e2ePort}; running production build first…\n`);
+function runProductionBuild(reason: string): void {
+  console.log(`e2e:affected — ${reason}\n`);
   const b = spawnSync('npm', ['run', 'build:ci'], {
     stdio: 'inherit',
     shell: true,
@@ -442,10 +442,19 @@ async function main(): Promise<void> {
 
   if (process.env.SKIP_BUILD === '1') {
     console.log(`e2e:affected — SKIP_BUILD=1; assuming a server is reachable on :${e2ePort}.\n`);
+  } else if (runAll) {
+    if (await serverIsUp()) {
+      // This invocation did not start the listener, so it cannot safely stop it.
+      console.error(
+        `e2e:affected — broad change requires a fresh server, but ${e2eBaseUrl} is already responding. Stop your test server and retry, or use SKIP_BUILD=1 with a verified fresh build.`,
+      );
+      process.exit(1);
+    }
+    runProductionBuild(`broad change → production build for :${e2ePort}`);
   } else if (await serverIsUp()) {
     console.log(`e2e:affected — reusing the server already on :${e2ePort} (skipping build).\n`);
   } else {
-    runProductionBuild();
+    runProductionBuild(`no server on :${e2ePort}; running production build first`);
   }
 
   runPlaywright(runAll ? [] : specs);

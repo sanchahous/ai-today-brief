@@ -417,6 +417,19 @@ export const STRINGS = {
       bylineRole: 'AI Product Engineer',
       sourcesCited: 'Sources cited on every story',
       trendingSidebar: 'Hot topics',
+      searchPage: {
+        breadcrumb: 'Search',
+        eyebrow: 'Search the publication',
+        idleTitleLead: 'Find the',
+        idleTitleEm: 'thread.',
+        resultsFor: 'Results for',
+        placeholder: 'Agents, MCP, caching…',
+        popularSearches: 'Popular searches',
+        emptyTitle: 'No thread found.',
+        emptyBody:
+          'Check the spelling, try a shorter phrase, or browse the concept shelf.',
+        browseConcepts: 'Browse concepts',
+      },
     },
     header: {
       intelligenceEdit: 'The Intelligence Edit',
@@ -840,6 +853,19 @@ export const STRINGS = {
       bylineRole: 'AI Product Engineer',
       sourcesCited: 'Джерела вказані в кожному матеріалі',
       trendingSidebar: 'Популярні теми',
+      searchPage: {
+        breadcrumb: 'Пошук',
+        eyebrow: 'Пошук у виданні',
+        idleTitleLead: 'Знайдіть',
+        idleTitleEm: 'зв’язок.',
+        resultsFor: 'Результати для',
+        placeholder: 'Агенти, MCP, кешування…',
+        popularSearches: 'Популярні запити',
+        emptyTitle: 'Зв’язку не знайдено.',
+        emptyBody:
+          'Перевірте написання, спробуйте коротшу фразу або перегляньте полицю концептів.',
+        browseConcepts: 'Переглянути концепти',
+      },
     },
     header: {
       intelligenceEdit: 'Редакція AI-новин',

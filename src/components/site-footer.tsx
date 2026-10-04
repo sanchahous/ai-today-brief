@@ -38,7 +38,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             <Link
               href={`/${lang}`}
               aria-label={SITE_NAME}
-              className="hover:text-accent inline-flex items-center gap-2.5 no-underline transition-colors"
+              className="hover:text-accent inline-flex min-h-[44px] items-center gap-2.5 no-underline transition-colors"
             >
               <BrandMark size={28} className="shrink-0" />
               <span className="text-text font-serif text-lg font-semibold tracking-tight">

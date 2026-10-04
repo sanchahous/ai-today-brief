@@ -286,7 +286,7 @@
 .control[type='search']::-webkit-search-decoration { appearance: none; }
 
 @media (pointer: coarse), (max-width: 59.999rem) {
-  .segmentText, .segmentOption, .choice, .switchRow, .clear {
+  .segmentText, .segmentOption, .choice, .switchRow, .clear, .control.select {
     min-width: var(--touch-target-min);
     min-height: var(--touch-target-min);
   }

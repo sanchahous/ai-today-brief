@@ -149,7 +149,7 @@ export function SiteHeaderChrome({
   return (
     <header className="site-header-shell sticky top-0 tablet:-top-[4.75rem] z-50 flex h-(--header-h) flex-col border-b border-border bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]">
       <div className="mx-auto flex min-h-0 w-full max-w-page flex-1 items-center gap-2 px-gutter phone:gap-6 tablet:h-[4.75rem] tablet:flex-none">
-        <Link href={`/${lang}`} aria-label={`${SITE_NAME} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] min-w-0 items-center gap-2.5 whitespace-nowrap text-[1.0625rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text compact:text-[1.1875rem] phone:gap-3 phone:text-[1.4375rem]">
+        <Link href={`/${lang}`} aria-label={`${SITE_NAME} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] min-w-0 items-center gap-2.5 whitespace-nowrap py-2 text-[1.0625rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text compact:text-[1.1875rem] phone:gap-3 phone:text-[1.4375rem]">
           <BrandMark size={40} className="size-[30px] shrink-0 compact:size-[34px] phone:size-10" />
           <span className="min-w-0">
             <span className="block truncate">AI Today Brief</span>
@@ -223,7 +223,12 @@ export function SiteHeaderChrome({
 
       <div className="hidden min-h-0 flex-1 border-t border-line tablet:block">
         <div className="mx-auto flex h-full max-w-page items-center gap-4 px-gutter">
-          <Link href={`/${lang}`} aria-label={SITE_NAME} tabIndex={-1} className={`shrink-0 transition-opacity duration-300 ${isScrolled ? 'opacity-100 flex' : 'hidden opacity-0 pointer-events-none'}`}>
+          <Link
+            href={`/${lang}`}
+            aria-label={SITE_NAME}
+            tabIndex={-1}
+            className={`inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center transition-opacity duration-300 ${isScrolled ? 'opacity-100 flex' : 'hidden opacity-0 pointer-events-none'}`}
+          >
              <BrandMark size={28} />
           </Link>
 

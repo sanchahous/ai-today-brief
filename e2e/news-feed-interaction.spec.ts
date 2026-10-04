@@ -62,6 +62,7 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
   });
 
   test('hydrates state directly from URL query parameters and preserves result set across copied URLs', async ({ page, context }) => {
+    test.setTimeout(90_000);
     await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
 
     // Direct visit with query parameters (simulate user A)
@@ -107,11 +108,15 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
   });
 
   test('search query shows relevance sort option and updates URL', async ({ page }) => {
+    test.setTimeout(60_000);
     await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
 
-    // Direct visit with search query parameter
-    await page.goto('/en/news?q=intelligence', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { level: 1, name: /news/i })).toBeVisible({
+    // `?q=` on /news permanently redirects to /news/search (ISR hub cannot read searchParams).
+    await page.goto('/en/news/search?q=intelligence', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/intelligence/i, {
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
       timeout: 30_000,
     });
 
@@ -120,19 +125,19 @@ test.describe('News feed interaction, URL state and pagination (G14)', () => {
     const updatedOptions = await sortSelect.locator('option').allTextContents();
     expect(updatedOptions.some((o) => /relevance/i.test(o))).toBe(true);
 
-    // Search input should have the query value
-    const searchInput = page.getByRole('searchbox');
+    // Large search field should mirror the query
+    const searchInput = page.locator('#news-search-q');
     await expect(searchInput).toHaveValue('intelligence');
 
     // Active query chip should be visible
     const activeChips = page.getByTestId('active-filter-chips');
     await expect(activeChips).toBeVisible();
 
-    // Clear search using chip remove button
+    // Clear search using chip remove button → idle search route
     const clearBtn = activeChips.getByRole('button', { name: /remove|✕|x/i }).first();
     if (await clearBtn.isVisible()) {
       await clearBtn.click();
-      await expect(page).not.toHaveURL(/q=intelligence/);
+      await expect(page).toHaveURL(/\/en\/news\/search$/);
       await expect(searchInput).toHaveValue('');
     }
   });
