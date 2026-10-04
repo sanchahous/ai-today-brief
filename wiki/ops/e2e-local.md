@@ -2,7 +2,6 @@
 
 Summary: як `PORT` і `E2E_BASE_URL` узгоджують Playwright, `e2e:affected` і `next start`, щоб
 паралельні копії репозиторію не тестували чужий білд.
-Sources: `playwright.config.ts`, `scripts/e2e-affected.ts`, `scripts/e2e-server-url.ts`, [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401)
 Sources: `playwright.config.ts`, `scripts/e2e-affected.ts`, `scripts/e2e-server-url.ts`, `.github/workflows/e2e.yml`, [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401)
 Last updated: 2026-10-04
 
@@ -50,6 +49,7 @@ E2E_BASE_URL=http://127.0.0.1:3101 npx playwright test
 до rebuild. Вона не завершує сторонні процеси. Зупиніть власний тестовий сервер і
 повторіть команду; `SKIP_BUILD=1` застосовуйте лише після перевірки актуальності білда.
 (source: `scripts/e2e-affected.ts`; [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412))
+
 ## CI
 
 На PR GitHub Actions не ганяє весь набір: `npx tsx scripts/e2e-affected.ts --ci-plan` вибирає

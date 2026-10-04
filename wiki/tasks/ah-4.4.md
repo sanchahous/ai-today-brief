@@ -10,6 +10,31 @@ Task: ah-4.4
 
 ## Status
 
+### Repair 2026-10-04 (T1-f10)
+
+Повторний merge `origin/main` (PR #413 уже в main) знову конфліктував у `wiki/ops/e2e-local.md`
+(дубль Sources, порожній маркер перед CI §) і `wiki/tasks/ah-4.4.md` (T1-f9 vs main без
+фрагмента). Збережено T1-f9 repair/log, одну Sources-рядок з `.github/workflows/e2e.yml`, broad/SKIP_BUILD
+абзац і CI §.
+(source: merge 2026-10-04; [PR #413](https://github.com/sanchahous/ai-today-brief/pull/413))
+
+Перевірки на `PORT=3100` (2026-10-04):
+- `npm run pr:check` — exit 0.
+- `e2e/news-search.spec.ts` — 21/21 passed (chromium/firefox/webkit).
+
+### Repair 2026-10-04 (T1-f9)
+
+Merge `origin/main` → `feat/ah-4.4-news-search` зупинився на `wiki/ops/e2e-local.md`. Конфлікт
+вирішено зі збереженням обох сторін: джерела з `.github/workflows/e2e.yml` (main), абзац про
+broad-зміни / `SKIP_BUILD=1` (PR #412) і новий розділ CI про `--ci-plan` (main). Інші файли merge
+(`.github/workflows/e2e.yml`, `scripts/e2e-affected.ts`, `wiki/ops/github-actions-cost.md`) без
+конфліктів.
+(source: `wiki/ops/e2e-local.md`; merge 2026-10-04)
+
+Перевірки на `PORT=3100` (2026-10-04):
+- `npm run pr:check` — exit 0.
+- `e2e/news-search.spec.ts` — 21/21 passed (chromium/firefox/webkit).
+
 ### Repair 2026-10-04 (T1-f8)
 
 CI Playwright smoke падав на `news-search.spec.ts` (canonical): тест очікував `https://aitodaybrief.com/en/news`, а в CI e2e `NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000` — canonical рендериться з build-time env. Виправлено через `expectedSiteUrl()` у `scripts/e2e-server-url.ts` і оновлений assert у E2E.
@@ -74,6 +99,8 @@ CI Playwright smoke падав на `news-search.spec.ts` (canonical): тест 
 
 ## Log
 
+- 2026-10-04 (T1-f10, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): повторний merge conflict у `wiki/ops/e2e-local.md` і `wiki/tasks/ah-4.4.md` — збережено T1-f9 repair, CI § і broad/SKIP_BUILD. Наступна задача епіку — AH-4.5.
+- 2026-10-04 (T1-f9, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): merge conflict у `wiki/ops/e2e-local.md` — збережено broad/SKIP_BUILD абзац (PR #412) і CI `--ci-plan` з main; `npm run pr:check` зелений на PORT=3100. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f8, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): CI canonical assert узгоджено з `NEXT_PUBLIC_SITE_URL` у e2e workflow; додано `expectedSiteUrl()` + unit test. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f7x, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): `NewsFeed` на search-маршруті отримує `key={query}` — client state скидається при новому `q`; E2E на повторний submit із форми результатів (чіп, relevance, URL без старого `sort`); видалено `e2e-affected-f4.log`. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f5x, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): усунено major findings щодо небезпечного завершення PID у `scripts/e2e-affected.ts` — видалено `taskkill`/`kill` виклики; за broad-зміни команда завершується з кодом 1, якщо сервер уже слухає. Додано ізольовані тести `scripts/e2e-affected.test.mjs` (2/2 passed). Повний гейт `npm run pr:check` пройдено (exit 0). E2E `news-search.spec.ts` (6/6), `news-feed-interaction.spec.ts` (5/5) та QA-матриця a11y `a11y-layout-matrix.spec.ts` (56/56) зелені на PORT=3100. Наступна задача епіку — AH-4.5. (source: локальний прогін 2026-10-04; `scripts/e2e-affected.ts`; `scripts/e2e-affected.test.mjs`; `wiki/tasks/ah-4.4.md`)
