@@ -14,13 +14,13 @@ function itemSlugFromHref(href: string): string | undefined {
 export function LeadGrid({
   lang,
   featured,
-  rail,
+  rail = [],
   edition,
   todayIso,
 }: {
   lang: Lang;
   featured: HomeItem | null;
-  rail: HomeItem[];
+  rail?: HomeItem[];
   edition: HomeEdition | null;
   todayIso: string;
 }) {

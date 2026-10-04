@@ -27,7 +27,7 @@ DONE. PR: [#420](https://github.com/sanchahous/ai-today-brief/pull/420). (source
 ## Checks
 
 - `npm run pr:check`: PASS (exit code 0). Включає `design:raw:check`, `ci:check` (всі тести Vitest, включно з `src/components/legal-doc.test.ts`), `typecheck` (`tsc --noEmit`), `lint` (`eslint`), `e2e:check` (`scripts/e2e-affected.ts --check`), `wiki:check`, `migrations:check`, юніт-тести скриптів (`scripts/ssg-build-scope.test.mjs`, `scripts/e2e-server-url.test.mjs`, `scripts/e2e-affected.test.mjs`) та `build:ci` (Next.js SSG prerender). (source: локальний запуск 2026-10-04)
-- `npx vitest run src/components/legal-doc.test.ts`: PASS (16 tests passed). (source: локальний запуск 2026-10-04)
+- `npx vitest run src/components/legal-doc.test.ts src/lib/home-stats.test.ts`: PASS (32 tests passed). (source: локальний запуск 2026-10-04)
 - `PORT=3101; npx playwright test e2e/policy-documents.spec.ts --project=chromium`: PASS (8 tests passed). (source: локальний запуск 2026-10-04)
 - `PORT=3101; npx playwright test e2e/policy-documents.spec.ts --project=firefox`: PASS (8 tests passed). (source: локальний запуск 2026-10-04)
 - `PORT=3101; npx playwright test e2e/policy-documents.spec.ts --project=webkit`: PASS (8 tests passed). (source: локальний запуск 2026-10-04)
@@ -38,7 +38,8 @@ DONE. PR: [#420](https://github.com/sanchahous/ai-today-brief/pull/420). (source
 
 - 2026-10-04: зафіксовано дві точки уточнення до зміни юридичної оболонки; питання передано власнику. (source: [PR #420](https://github.com/sanchahous/ai-today-brief/pull/420); локальна перевірка коду)
 - 2026-10-04: після відповіді власника реалізовано спільну reading-оболонку `PolicyPageShell`, таби з `aria-current`, TOC, хлібні крихти; текст документів і SEO дослівно збережено. (source: відповідь U0BAS595MT6; [PR #420](https://github.com/sanchahous/ai-today-brief/pull/420))
-- 2026-10-04: додано регресійні тести, оновлено селектори у Playwright E2E-тестах, додано 4 маршрути до a11y-gating. Усі перевірки (`npm run pr:check`, Vitest, Playwright matrix у Chromium/Firefox/WebKit) зелені. Задача виконана. (source: [PR #420](https://github.com/sanchahous/ai-today-brief/pull/420); локальні перевірки)
+- 2026-10-04: додано регресійні тести, оновлено селектори у Playwright E2E-тестах, додано 4 маршрути до a11y-gating. Усі перевірки (`npm run pr:check`, Vitest, Playwright matrix у Chromium/Firefox/WebKit) зелені. (source: [PR #420](https://github.com/sanchahous/ai-today-brief/pull/420); локальні перевірки)
+- 2026-10-04: усунено блокер збірки `build:ci` після злиття змін головної сторінки з `origin/main` — коли диск-кеш build memo містить дані попередньої структури без полів `rail`/`focus`/`coverage`, компоненти головної сторінки (`LeadGrid`, `FocusStrip`, `CategoryGrid`, `CategoryMixBar`) та `getHomeData` тепер мають безпечні захисні значення за замовчуванням (`EMPTY`), що запобігає TypeError під час пререндеру. `npm run pr:check` повністю зелений. (source: [PR #420](https://github.com/sanchahous/ai-today-brief/pull/420); локальний запуск `npm run pr:check`)
 
 ### epic-5.3
 
