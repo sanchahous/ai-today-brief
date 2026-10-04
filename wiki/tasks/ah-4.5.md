@@ -1,6 +1,6 @@
 # AH-4.5
 
-Summary: Підготовлено acceptance E2E та QA-матрицю; виправлено скидання URL-page під час mount і неоднозначний селектор Topics. Повторні браузерні перевірки та pr:check заблоковані Windows EPERM; G4 не підписаний.
+Summary: Підготовлено acceptance E2E та QA-матрицю; виправлено скидання URL-page, селектор Topics і замалі посилання редактора та реклами. Повторні браузерні перевірки та pr:check заблоковані Windows EPERM; G4 не підписаний.
 Sources: [картка AH-4.5](../product/after-hours-redesign-epic.md#ah-45--гейт-news-vertical-slice), [gap-plan §7](../audits/2026-09-26-design-system-gap-plan.md#7-acceptance-tasks), `e2e/news-feed-interaction.spec.ts`, `e2e/fixtures/a11y-gating.json`, локальні перевірки 2026-10-04, [PR #415](https://github.com/sanchahous/ai-today-brief/pull/415)
 Last updated: 2026-10-04
 
@@ -9,6 +9,47 @@ Last updated: 2026-10-04
 Task: ah-4.5
 
 ## Status
+
+### Repair T1-f2 — 2026-10-04
+
+**BLOCKED для runtime-перевірки; виправлення збережені.** Pre-push хабу виявив
+цілі менші за 44 px у News: посилання редактора 135×16 та реклами 156×38.
+Вісім UK-сценаріїв (Night/Day, 360/390/768/reflow-320) падали; у пакеті наведено
+122 passed і 1 skipped. Посилання редактора було inline без мінімальної висоти,
+а висота реклами залежала лише від тексту й padding.
+(source: пакет T1-f2 2026-10-04)
+
+`Byline` тепер використовує inline-flex з вертикальним вирівнюванням тексту;
+обидва посилання мають `min-h-[var(--touch-target-min)]` з наявного токена 44 px.
+Мінімум застосовано до обох мов та всіх ширин; наявна QA-матриця перевіряє їх
+без нових виключень чи послаблення assertions. URL, текст, SEO, аналітика й motion
+не змінювалися.
+(source: `src/components/byline.tsx`, `src/components/home/sponsor-card.tsx`,
+`src/app/globals.css`, `e2e/helpers/inspect-page.ts`)
+
+Перевірки repair:
+
+- До і після виправлення: `PORT=3100 node node_modules/@playwright/test/cli.js test e2e/a11y-layout-matrix.spec.ts --project=chromium --grep "news-uk uk day 390"`
+  — exit 1, `Error: spawn EPERM` до запуску сценарію.
+- `PORT=3100 npm run pr:check` — exit 1: `design:raw:check` PASS; Vitest/Vite config load
+  падає через `spawn EPERM` у `windowsSafeRealPathSync`. Наступні кроки не виконані.
+- `node node_modules/typescript/bin/tsc --noEmit` — exit 0.
+- `node node_modules/eslint/bin/eslint.js src/components/byline.tsx src/components/home/sponsor-card.tsx` — exit 0.
+- `npm run wiki:check` — exit 1: sync PASS (0 errors / 0 warnings), запуск sync-тестів
+  заблокований `spawn EPERM`; `node wiki/_tools/wiki-lint.mjs --strict` окремо — exit 0.
+- `git diff --check` — exit 0; весь diff переглянуто, виправлення обмежене двома компонентами
+  й цим фрагментом; спільні статусні файли не змінено.
+
+(source: `artifacts/_local/ah-4.5/f2-reproduce.log`, `artifacts/_local/ah-4.5/f2-e2e.log`,
+`artifacts/_local/ah-4.5/f2-pr-check.log`, `artifacts/_local/ah-4.5/f2-wiki-check.log`,
+`artifacts/_local/ah-4.5/f2-wiki-lint.log`; локальні перевірки 2026-10-04)
+
+Хабу: повторити QA-матрицю на свіжому мінімальному білді PORT=3100, потім acceptance,
+Firefox/WebKit quick, SEO compare та повний гейт і CI. Поточне середовище не дозволяє
+підтвердити runtime-результат; G4 і датоване рішення власника go лишаються відкритими.
+Наступна задача — отримати зелені автоматичні докази й рішення G4 перед фазою 5.
+(source: [картка AH-4.5](../product/after-hours-redesign-epic.md#ah-45--гейт-news-vertical-slice),
+[PR #415](https://github.com/sanchahous/ai-today-brief/pull/415))
 
 ### Repair T1-f1 — 2026-10-04
 
@@ -112,6 +153,10 @@ G4 лишається відкритим: **рішення власника «go
 
 ## Log
 
+- 2026-10-04 — T1-f2: додано мінімальну висоту з токена 44 px для посилань редактора
+  й реклами; QA до/після та pr:check заблоковані spawn EPERM.
+  (source: `src/components/byline.tsx`, `src/components/home/sponsor-card.tsx`,
+  [PR #415](https://github.com/sanchahous/ai-today-brief/pull/415), локальні перевірки 2026-10-04)
 - 2026-10-04 — T1-f1: точний heading Topics замість broad text; sync server props не скидає
   page після URL hydration; E2E page 2 доповнено reload. Runtime-перевірка заблокована EPERM.
   (source: `src/components/news/news-feed.tsx`, `e2e/news-feed-interaction.spec.ts`, [PR #415](https://github.com/sanchahous/ai-today-brief/pull/415))
