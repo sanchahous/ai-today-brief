@@ -13,14 +13,14 @@ import type { HomeCoverageSegment } from '@/lib/home';
 
 export function CategoryGrid({
   lang,
-  categories,
-  coverage,
-  coverageSampleSize,
+  categories = [],
+  coverage = [],
+  coverageSampleSize = 0,
 }: {
   lang: Lang;
-  categories: HomeCategory[];
-  coverage: HomeCoverageSegment[];
-  coverageSampleSize: number;
+  categories?: HomeCategory[];
+  coverage?: HomeCoverageSegment[];
+  coverageSampleSize?: number;
 }) {
   if (categories.length === 0 && coverage.length === 0) return null;
   const t = getStrings(lang).landing;

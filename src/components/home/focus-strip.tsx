@@ -4,7 +4,7 @@ import type { HomeFocusConcept } from '@/lib/home';
 import type { Lang } from '@/lib/site';
 import { ArrowRight } from '@/components/icons';
 
-export function FocusStrip({ lang, concepts }: { lang: Lang; concepts: HomeFocusConcept[] }) {
+export function FocusStrip({ lang, concepts = [] }: { lang: Lang; concepts?: HomeFocusConcept[] }) {
   if (concepts.length === 0) return null;
   const t = getStrings(lang).landing;
   return (

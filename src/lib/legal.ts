@@ -25,6 +25,9 @@ export interface LegalDoc {
 
 export type LegalKey = 'privacy' | 'terms' | 'ai-disclosure';
 
+export const POLICY_KEYS = ['editorial-policy', 'ai-disclosure', 'privacy', 'terms'] as const;
+export type PolicyKey = (typeof POLICY_KEYS)[number];
+
 const PRIVACY: LegalDoc = {
   title: { uk: 'Політика приватності', en: 'Privacy Policy' },
   updated: '2026-06-01',
