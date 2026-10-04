@@ -22,7 +22,7 @@ export function Byline({ lang, updated }: { lang: Lang; updated: string }) {
         {t.curatedBy}{' '}
         <Link
           href={`/${lang}/author`}
-          className="text-text hover:text-accent font-semibold no-underline transition-colors"
+          className="text-text hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center align-middle font-semibold no-underline transition-colors"
         >
           {EDITOR_NAME}
         </Link>

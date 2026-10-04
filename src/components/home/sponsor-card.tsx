@@ -43,7 +43,7 @@ export function SponsorCard({
       <Link
         href={`/${lang}/advertise`}
         onClick={() => trackEvent('ad_slot_click', { placement })}
-        className="cat-chip rounded-pill inline-flex items-center gap-1.5 border px-4 py-2 text-sm font-semibold no-underline transition-colors"
+        className="cat-chip rounded-pill inline-flex min-h-[var(--touch-target-min)] items-center gap-1.5 border px-4 py-2 text-sm font-semibold no-underline transition-colors"
         style={style}
       >
         {t.adSlotCta}
