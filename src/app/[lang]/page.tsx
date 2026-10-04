@@ -6,12 +6,18 @@ import { authorNode, PERSON_ID } from '@/lib/schema';
 import { getHomeData } from '@/lib/home';
 import { getLatestWeeklyDigest } from '@/lib/digests';
 import { HomeHero } from '@/components/home/home-hero';
+import { HomeDateline } from '@/components/home/home-dateline';
+import { LeadGrid } from '@/components/home/lead-grid';
+import { FocusStrip } from '@/components/home/focus-strip';
 import { CategoryGrid } from '@/components/home/category-grid';
 import { TopOfWeek } from '@/components/home/top-of-week';
 import { WeeklyDigestBlock } from '@/components/home/weekly-digest';
 import { TrendingTopics } from '@/components/home/trending-topics';
+import { HomePaths } from '@/components/home/home-paths';
+import { SponsorCard } from '@/components/home/sponsor-card';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 import { FaqSection } from '@/components/home/faq-section';
+import { calendarDateInZone } from '@/lib/home-stats';
 
 // ISR: 1 h timed fallback. Freshness is driven on-demand — the publish flow
 // calls revalidatePath('/', '/en', '/uk') (see api/telegram revalidateSite),
@@ -22,8 +28,8 @@ export const revalidate = 3600;
 type Params = { lang: string };
 
 const HOME_DESCRIPTION = {
-  en: 'Daily AI-engineering brief for developers, founders and tech leads. We read 120+ sources and publish only what matters — tool releases, agents, research and practical guides. In English and Ukrainian.',
-  uk: 'Щоденний бриф з AI-інженерії для розробників, фаундерів і техлідів. Читаємо 120+ джерел і публікуємо лише те, що важливо — релізи інструментів, агенти, дослідження та практичні гайди. Англійською та українською.',
+  en: 'Daily AI-engineering brief for developers, founders and tech leads. A considered selection of tool releases, agents, research and practical guides. In English and Ukrainian.',
+  uk: 'Щоденний бриф з AI-інженерії для розробників, фаундерів і техлідів. Уважний відбір: релізи інструментів, агенти, дослідження та практичні гайди. Англійською та українською.',
 } as const;
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -59,6 +65,7 @@ export default async function Home({ params }: { params: Promise<Params> }) {
   const lang: Lang = raw;
 
   const [data, weeklyDigest] = await Promise.all([getHomeData(lang), getLatestWeeklyDigest(lang)]);
+  const todayIso = calendarDateInZone(new Date());
 
   const schema = {
     '@context': 'https://schema.org',
@@ -114,13 +121,29 @@ export default async function Home({ params }: { params: Promise<Params> }) {
       <HomeHero
         lang={lang}
         categoryCount={data.categoryCount}
-        categories={data.categories}
+        storiesLast7Days={data.storiesLast7Days}
         popularQueries={data.trending.slice(0, 6).map((topic) => topic.name)}
       />
-      <CategoryGrid lang={lang} categories={data.categories} />
+      <HomeDateline lang={lang} edition={data.edition} todayIso={todayIso} />
+      <LeadGrid
+        lang={lang}
+        featured={data.featured}
+        rail={data.rail}
+        edition={data.edition}
+        todayIso={todayIso}
+      />
+      <FocusStrip lang={lang} concepts={data.focus} />
       <TopOfWeek lang={lang} featured={data.featured} secondary={data.secondary} />
+      <CategoryGrid
+        lang={lang}
+        categories={data.categories}
+        coverage={data.coverage}
+        coverageSampleSize={data.coverageSampleSize}
+      />
       <WeeklyDigestBlock lang={lang} digest={weeklyDigest} />
       <TrendingTopics lang={lang} topics={data.trending} />
+      <HomePaths lang={lang} conceptCount={data.conceptCount} />
+      <SponsorCard lang={lang} placement="home-sponsor" disclosure />
       <NewsletterBand lang={lang} />
       <FaqSection lang={lang} />
     </div>

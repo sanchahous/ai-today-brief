@@ -14,6 +14,17 @@ import {
   maxTrendForTools,
   recencyScore,
 } from '@/lib/trend-index';
+import {
+  coverageShares,
+  focusConcepts,
+  itemsOnNewestDay,
+  leadSlug,
+  mentionWindows,
+  newestCoverageSlugs,
+  shiftIsoDate,
+  sumReadMinutes,
+  type CoverageRow,
+} from '@/lib/home-stats';
 import type { IconKey } from '@/components/icons';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
@@ -64,6 +75,28 @@ export interface TrendingTopic {
   href: string;
   /** Accelerating in the news right now (GDELT rising signal) — flagged with ▲. */
   rising?: boolean;
+  /** Mentions in the latest 7 days minus the previous 7. Null when that prior week is not in the sample. */
+  delta?: number | null;
+  /** Concept hub slug when the tool name resolves. The home bars still link to the filtered feed. */
+  conceptSlug?: string | null;
+}
+
+export interface HomeEdition {
+  date: string;
+  slug: string | null;
+  readMinutes: number;
+}
+
+export interface HomeFocusConcept {
+  name: string;
+  slug: string;
+}
+
+export interface HomeCoverageSegment {
+  slug: string;
+  name: string;
+  count: number;
+  color: string | null;
 }
 
 export interface HomeData {
@@ -74,6 +107,16 @@ export interface HomeData {
   trending: TrendingTopic[];
   /** Total seeded categories — drives the hero "N categories" stat. */
   categoryCount: number;
+  /** Published items whose brief date falls in the 7 days ending on the newest edition. */
+  storiesLast7Days: number | null;
+  edition: HomeEdition | null;
+  /** Up to three items from the newest published day — the “short version” rail. */
+  rail: HomeItem[];
+  focus: HomeFocusConcept[];
+  /** Category shares inside the newest 100 published items. */
+  coverage: HomeCoverageSegment[];
+  coverageSampleSize: number;
+  conceptCount: number;
 }
 
 const EMPTY: HomeData = {
@@ -83,6 +126,13 @@ const EMPTY: HomeData = {
   categories: [],
   trending: [],
   categoryCount: 0,
+  storiesLast7Days: null,
+  edition: null,
+  rail: [],
+  focus: [],
+  coverage: [],
+  coverageSampleSize: 0,
+  conceptCount: 0,
 };
 
 /**
@@ -105,7 +155,7 @@ async function loadHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, date, edition')
+    .select('id, date, edition, slug')
     .eq('status', 'published')
     .order('date', { ascending: false })
     .order('edition', { ascending: true })
@@ -215,23 +265,8 @@ async function loadHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
     itemsByCat.set(item.categorySlug, group);
   }
 
-  // Category order by momentum: the category whose hottest story has the most
-  // momentum leads. Stable-tiebroken by the curated TOP_CATEGORY_SLUGS order, so
-  // with no signal (or ties) the curated order is preserved.
-  const categoryMomentum = new Map<string, number>();
-  for (const item of items) {
-    if (!item.categorySlug) continue;
-    const m = momentumOf(item);
-    if (m > (categoryMomentum.get(item.categorySlug) ?? 0)) {
-      categoryMomentum.set(item.categorySlug, m);
-    }
-  }
-  const orderedTopSlugs = TOP_CATEGORY_SLUGS.map((slug, i) => ({ slug, i }))
-    .sort((a, b) => (categoryMomentum.get(b.slug) ?? 0) - (categoryMomentum.get(a.slug) ?? 0) || a.i - b.i)
-    .map((x) => x.slug);
-
   const categories: HomeCategory[] = [];
-  for (const slug of orderedTopSlugs) {
+  for (const slug of TOP_CATEGORY_SLUGS) {
     const cat = catBySlug.get(slug);
     if (!cat) continue;
     const meta = categoryMeta(slug);
@@ -249,14 +284,34 @@ async function loadHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
   }
 
   const trending = await buildTrending(lang, items, rising);
+  const newestDay = itemsOnNewestDay(items);
+  const editionDate = newestDay[0]?.date ?? briefList[0]?.date ?? null;
+  const [storiesLast7Days, coverage, conceptCount] = await Promise.all([
+    countStoriesLast7Days(supabase, editionDate),
+    loadCoverage(supabase, catBySlug),
+    countConcepts(supabase),
+  ]);
 
   return {
-    briefDate: briefList[0]?.date ?? featured?.date ?? null,
+    briefDate: editionDate ?? featured?.date ?? null,
     featured,
     secondary,
     categories,
     trending,
     categoryCount,
+    storiesLast7Days,
+    edition: editionDate
+      ? {
+          date: editionDate,
+          slug: leadSlug(briefList, editionDate),
+          readMinutes: sumReadMinutes(newestDay),
+        }
+      : null,
+    rail: newestDay.slice(0, 3),
+    focus: focusConcepts(trending),
+    coverage: coverage.segments,
+    coverageSampleSize: coverage.sampleSize,
+    conceptCount,
   };
 }
 
@@ -267,31 +322,112 @@ async function buildTrending(
   items: HomeItem[],
   rising: Map<string, number>,
 ): Promise<TrendingTopic[]> {
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    for (const name of item.tools) counts.set(name, (counts.get(name) ?? 0) + 1);
-  }
-  if (counts.size === 0) return [];
+  const windows = mentionWindows(items);
+  if (windows.size === 0) return [];
 
-  // Trend-index: rank by acceleration (GDELT rising signal) on top of mention
-  // frequency, not by raw mentions alone. `rising` is the shared map fetched once
-  // in getHomeData; empty → falls straight back to mention frequency.
+  // Mentions are the latest 7 days; delta is against the previous 7 when that
+  // week is in the sample. GDELT still breaks ties. Bars open the archive search,
+  // not a concept page and not an already-applied news filter.
   const index = await getConceptNameIndex();
-  return Array.from(counts.entries())
-    .map(([name, mentions]) => {
-      const slug = index.get(name.toLowerCase());
+  return Array.from(windows.entries())
+    .map(([name, window]) => {
+      const slug = index.get(name.toLowerCase()) ?? null;
       const risingScore = rising.get(entityKeyForTool(name));
       return {
         topic: {
           name,
-          mentions,
-          href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news/search?q=${encodeURIComponent(name)}`,
+          mentions: window.mentions,
+          href: `/${lang}/news/search?q=${encodeURIComponent(name)}`,
           rising: isRising(risingScore),
+          delta: window.delta,
+          conceptSlug: slug,
         },
-        trend: blendTrend(mentions, risingScore ?? 0),
+        trend: blendTrend(window.mentions, risingScore ?? 0),
       };
     })
+    .filter((entry) => entry.topic.mentions > 0)
     .sort((a, b) => b.trend - a.trend)
-    .slice(0, 12)
-    .map((e) => e.topic);
+    .slice(0, 8)
+    .map((entry) => entry.topic);
+}
+
+async function countStoriesLast7Days(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+  newestDate: string | null,
+): Promise<number | null> {
+  if (!newestDate) return null;
+  const cutoff = shiftIsoDate(newestDate, -6);
+  if (!cutoff) return null;
+  const { data: briefs, error } = await supabase
+    .from('briefs')
+    .select('id')
+    .eq('status', 'published')
+    .gte('date', cutoff)
+    .lte('date', newestDate);
+  if (error || !briefs?.length) return error ? null : 0;
+  const { count, error: itemsError } = await supabase
+    .from('brief_items')
+    .select('id', { count: 'exact', head: true })
+    .in(
+      'brief_id',
+      briefs.map((brief) => brief.id),
+    )
+    .is('canonical_item_id', null);
+  if (itemsError || count === null) return null;
+  return count;
+}
+
+async function countConcepts(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('concepts')
+    .select('slug', { count: 'exact', head: true });
+  if (error || count === null) return 0;
+  return count;
+}
+
+async function loadCoverage(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+  catBySlug: ReadonlyMap<string, { name: string; color: string | null }>,
+): Promise<{ segments: HomeCoverageSegment[]; sampleSize: number }> {
+  const empty = { segments: [], sampleSize: 0 };
+  const { data: briefs, error } = await supabase
+    .from('briefs')
+    .select('id, date, edition')
+    .eq('status', 'published')
+    .order('date', { ascending: false })
+    .order('edition', { ascending: true })
+    .limit(40);
+  if (error || !briefs?.length) return empty;
+  const { data: rows, error: itemsError } = await supabase
+    .from('brief_items')
+    .select('brief_id, category_slug, rank')
+    .in(
+      'brief_id',
+      briefs.map((brief) => brief.id),
+    )
+    .is('canonical_item_id', null);
+  if (itemsError || !rows?.length) return empty;
+
+  const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
+  const coverageRows: CoverageRow[] = [];
+  for (const row of rows) {
+    const brief = briefById.get(row.brief_id);
+    if (!brief) continue;
+    coverageRows.push({
+      date: brief.date,
+      edition: brief.edition,
+      rank: row.rank,
+      categorySlug: row.category_slug,
+    });
+  }
+  const slugs = newestCoverageSlugs(coverageRows, 100);
+  const segments: HomeCoverageSegment[] = [];
+  for (const share of coverageShares(slugs)) {
+    const cat = catBySlug.get(share.slug);
+    if (!cat) continue;
+    segments.push({ slug: share.slug, name: cat.name, count: share.count, color: cat.color });
+  }
+  return { segments, sampleSize: slugs.length };
 }

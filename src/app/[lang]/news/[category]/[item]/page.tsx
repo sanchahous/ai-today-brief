@@ -1,9 +1,8 @@
-import { categoryColor } from '@/lib/category-meta';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { isLang, SITE_URL, type Lang } from '@/lib/site';
+import { isLang, SITE_URL, EDITOR_NAME, EDITOR_ROLE, type Lang } from '@/lib/site';
 import { authorNode, publisherNode } from '@/lib/schema';
 import { getStrings } from '@/lib/i18n';
 import { socialMeta } from '@/lib/seo';
@@ -18,15 +17,15 @@ import {
 } from '@/lib/items';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Byline } from '@/components/byline';
-import { AiDisclosureNote } from '@/components/ai-disclosure-note';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { CategoryBanner } from '@/components/category-banner';
 import { StoryBody } from '@/components/story-body';
 import { ItemShareBar } from '@/components/item-share-bar';
 import { ItemEngagementTracker } from '@/components/item-engagement-tracker';
-import { NewsletterBand } from '@/components/home/newsletter-band';
-import { Reveal } from '@/components/reveal';
-import { ArrowRight, ClockIcon, ExternalLinkIcon, PlayIcon } from '@/components/icons';
+import { NewsletterForm } from '@/components/ui/newsletter-form';
+import { VideoFacade } from '@/components/editorial/video-facade';
+import styles from '@/components/article.module.css';
+import { ArrowRight, ExternalLinkIcon } from '@/components/icons';
 
 // 24 h: item content is fixed at publish; the editor-take edit revalidates the
 // exact item path on-demand (see api/telegram handleEditorTake), so takes still
@@ -95,14 +94,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
   if (!detail) notFound();
   if (detail.canonicalPath) permanentRedirect(`/${lang}${detail.canonicalPath}`);
   const t = getStrings(lang);
-  const tNews = getStrings(lang).news;
   const pagePath = `/${lang}/news/${category}/${item}`;
-
-  const dateLabel = new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(`${detail.briefDate}T00:00:00`));
 
   const conceptIndex = await getConceptNameIndex();
   const toolLinks = detail.tools.map((name) => {
@@ -182,173 +174,172 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
 
   const videoId = youtubeVideoId(detail.youtubeUrl);
 
-  const color = categoryColor(detail.categorySlug, detail.categoryColor);
+  const impactLabels = { low: t.impactLow, medium: t.impactMedium, high: t.impactHigh };
 
   return (
-    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-10">
+    <div className="max-w-page px-gutter mx-auto w-full flex-1 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Breadcrumbs items={crumbs} />
+      <div className="max-w-reading mx-auto">
+        <Breadcrumbs items={crumbs} />
+      </div>
 
       <article>
         <ItemEngagementTracker id={detail.id} slug={item} lang={lang} />
 
-        <div className="mb-4">
-          <CategoryBadge slug={detail.categorySlug} name={detail.categoryName} color={detail.categoryColor} size="md" />
-        </div>
-
-        <header className="mb-5">
-          <h1 className="text-[clamp(2rem,5vw,3.4rem)] leading-[1.08]">{detail.title}</h1>
-          <p className="text-muted mt-4 text-[1.08rem] leading-8">{detail.summary}</p>
-        </header>
-
-        <div className="text-faint mb-4 flex flex-wrap items-center gap-2 text-[0.82rem]">
-          {detail.sourceName && <span>{detail.sourceName}</span>}
-          {detail.sourceName && (
-            <span aria-hidden className="text-faint">
-              ·
-            </span>
-          )}
-          <span>{dateLabel}</span>
-          <span aria-hidden>·</span>
-          <span className="inline-flex items-center gap-1">
-            <ClockIcon size={13} /> {detail.readMinutes} {tNews.readMin}
-          </span>
-          {detail.hasVideo && (
-            <>
-              <span aria-hidden>·</span>
-              <span
-                className="cat-fg inline-flex items-center gap-1 font-semibold"
-                style={{ '--cat-color': color } as React.CSSProperties}
-              >
-                <PlayIcon size={13} /> {t.landing.watchVideo}
+        <header className="max-w-reading mx-auto mb-8">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <CategoryBadge
+              slug={detail.categorySlug}
+              name={detail.categoryName}
+              color={detail.categoryColor}
+              size="md"
+            />
+            {detail.impactLevel && (
+              <span className="text-muted text-xs font-semibold uppercase">
+                {t.impactLabel}: {impactLabels[detail.impactLevel]}
               </span>
-            </>
-          )}
-        </div>
-
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <Byline 
-            lang={lang} 
-            initials="AI" 
-            authorName="AI Today" 
-            role={lang === 'uk' ? 'Редакція' : 'Editorial'} 
-            publishedAt={detail.briefDate} 
-            minutes={detail.readMinutes}
-            hasAiDisclosure 
-          />
-        </div>
-
-        <Reveal>
-          <div className="mb-6">
-            {heroImage ? (
-              <figure className="border-border bg-surface relative m-0 aspect-video min-h-[14rem] overflow-hidden rounded-xl border sm:min-h-[20rem]">
-                <Image
-                  src={heroImage}
-                  alt={detail.title}
-                  fill
-                  preload
-                  sizes="(max-width: 760px) 100vw, 760px"
-                  className="object-contain"
-                />
-              </figure>
-            ) : (
-              <CategoryBanner
-                name={detail.categoryName ?? 'AI'}
-                slug={detail.categorySlug}
-                color={detail.categoryColor}
-                icon={detail.categoryIcon}
-                motif={detail.rank}
-                videoBadge={detail.hasVideo}
-                videoLabel={t.landing.watchVideo}
-              />
             )}
           </div>
-        </Reveal>
+          <h1 className="text-3xl leading-tight break-words sm:text-5xl">{detail.title}</h1>
+          {detail.summary && (
+            <p className="text-muted mt-4 text-lg leading-relaxed">{detail.summary}</p>
+          )}
+          {detail.sourceName && <p className="text-muted mt-4 text-sm">{detail.sourceName}</p>}
+          <div className="mt-4">
+            <Byline
+              lang={lang}
+              initials={EDITOR_NAME.split(' ')
+                .map((part) => part[0])
+                .join('')}
+              authorName={EDITOR_NAME}
+              role={EDITOR_ROLE[lang]}
+              publishedAt={detail.briefDate}
+              minutes={detail.readMinutes}
+              hasAiDisclosure
+            />
+          </div>
+        </header>
+
+        <div className="max-w-reading mx-auto mb-8">
+          {heroImage ? (
+            <figure className="border-border bg-surface relative m-0 aspect-video overflow-hidden rounded-xl border">
+              <Image
+                src={heroImage}
+                alt={detail.title}
+                width={1280}
+                height={720}
+                preload
+                sizes="(max-width: 47.5rem) 100vw, 42.5rem"
+                className="h-full w-full object-contain"
+              />
+            </figure>
+          ) : (
+            <CategoryBanner
+              name={detail.categoryName ?? 'AI'}
+              slug={detail.categorySlug}
+              color={detail.categoryColor}
+              icon={detail.categoryIcon}
+              motif={detail.rank}
+              videoBadge={detail.hasVideo}
+              videoLabel={t.landing.watchVideo}
+            />
+          )}
+        </div>
 
         {videoId && (
-          <div className="border-border relative mb-6 aspect-video overflow-hidden rounded-xl border">
-            <iframe
-              src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+          <div className="max-w-reading mx-auto mb-8">
+            <VideoFacade
+              videoId={videoId}
+              thumbnailUrl={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
               title={detail.title}
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 h-full w-full border-0"
+              lang={lang}
             />
           </div>
         )}
 
-        <StoryBody lang={lang} detail={detail} toolLinks={toolLinks} />
-
-        {detail.sourceUrl && (
-          <a
-            href={detail.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-card border-border bg-surface text-text mt-6 inline-flex items-center gap-2 border px-3.5 py-2.5 text-[0.88rem] no-underline transition hover:border-accent"
+        <div className={styles.layout}>
+          <aside
+            className={styles.tools}
+            aria-label={lang === 'uk' ? 'Дії з матеріалом' : 'Story tools'}
           >
-            {t.itemSource}: <strong>{detail.sourceName ?? t.readOriginal}</strong>
-            <ExternalLinkIcon size={14} />
-          </a>
-        )}
+            <ItemShareBar lang={lang} pageUrl={pagePath} title={detail.title} postId={detail.id} />
+          </aside>
+          <div className={styles.body}>
+            <StoryBody lang={lang} detail={detail} toolLinks={toolLinks} />
 
-        <ItemShareBar lang={lang} pageUrl={pagePath} title={detail.title} postId={detail.id} />
+            {detail.sourceUrl && (
+              <a
+                href={detail.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-card border-border bg-surface text-text hover:border-accent mt-6 inline-flex items-center gap-2 border px-3.5 py-2.5 text-[0.88rem] no-underline transition"
+              >
+                {t.itemSource}: <strong>{detail.sourceName ?? t.readOriginal}</strong>
+                <ExternalLinkIcon size={14} />
+              </a>
+            )}
 
-        {(adjacent.prev || adjacent.next) && (
-          <nav
-            aria-label={`${t.prevStory} / ${t.nextStory}`}
-            className="mt-8 grid gap-2.5 sm:grid-cols-2"
-          >
-            {adjacent.prev ? (
-              <Link
-                href={adjacent.prev.href}
-                className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 no-underline transition"
+            {(adjacent.prev || adjacent.next) && (
+              <nav
+                aria-label={`${t.prevStory} / ${t.nextStory}`}
+                className="mt-8 grid gap-2.5 sm:grid-cols-2"
               >
-                <span className="text-faint mb-1 block text-2xs tracking-[0.06em] uppercase">
-                  ← {t.prevStory}
-                </span>
-                <span className="text-text text-[0.92rem] font-semibold leading-snug break-words">
-                  {adjacent.prev.title}
-                </span>
-              </Link>
-            ) : (
-              <span aria-hidden className="hidden sm:block" />
+                {adjacent.prev ? (
+                  <Link
+                    href={adjacent.prev.href}
+                    className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 no-underline transition"
+                  >
+                    <span className="text-faint text-2xs mb-1 block tracking-[0.06em] uppercase">
+                      ← {t.prevStory}
+                    </span>
+                    <span className="text-text text-[0.92rem] leading-snug font-semibold break-words">
+                      {adjacent.prev.title}
+                    </span>
+                  </Link>
+                ) : (
+                  <span aria-hidden className="hidden sm:block" />
+                )}
+                {adjacent.next && (
+                  <Link
+                    href={adjacent.next.href}
+                    className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 text-right no-underline transition"
+                  >
+                    <span className="text-faint text-2xs mb-1 block tracking-[0.06em] uppercase">
+                      {t.nextStory} →
+                    </span>
+                    <span className="text-text text-[0.92rem] leading-snug font-semibold break-words">
+                      {adjacent.next.title}
+                    </span>
+                  </Link>
+                )}
+              </nav>
             )}
-            {adjacent.next && (
-              <Link
-                href={adjacent.next.href}
-                className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 text-right no-underline transition"
-              >
-                <span className="text-faint mb-1 block text-2xs tracking-[0.06em] uppercase">
-                  {t.nextStory} →
-                </span>
-                <span className="text-text text-[0.92rem] font-semibold leading-snug break-words">
-                  {adjacent.next.title}
-                </span>
-              </Link>
-            )}
-          </nav>
-        )}
+          </div>
+        </div>
       </article>
 
       {related.length > 0 && (
-        <section className="mt-12" aria-labelledby="related-title">
+        <section className="max-w-reading mx-auto mt-12" aria-labelledby="related-title">
           <h2 id="related-title" className="mb-4 text-xl">
             {t.itemRelated}
           </h2>
           <ul className="m-0 grid list-none gap-2.5 p-0">
-            {related.map((story) => (
+            {related.slice(0, 3).map((story) => (
               <li key={story.id}>
                 <Link
                   href={story.href}
                   className="rounded-card border-border bg-surface hover:border-accent flex items-center gap-3 border p-3.5 no-underline transition"
                 >
-                  <CategoryBadge slug={story.categorySlug} name={story.categoryName} color={story.categoryColor} />
-                  <span className="font-serif min-w-0 flex-1 text-base font-semibold text-[color:inherit]">
+                  <CategoryBadge
+                    slug={story.categorySlug}
+                    name={story.categoryName}
+                    color={story.categoryColor}
+                  />
+                  <span className="min-w-0 flex-1 font-serif text-base font-semibold text-[color:inherit]">
                     {story.title}
                   </span>
                   <ArrowRight size={16} className="text-faint shrink-0" />
@@ -359,8 +350,8 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         </section>
       )}
 
-      <section className="mt-12">
-        <NewsletterBand lang={lang} embedded placement="item-page" />
+      <section className="max-w-reading mx-auto mt-12">
+        <NewsletterForm lang={lang} variant="inline" placement="item-page" />
       </section>
     </div>
   );
