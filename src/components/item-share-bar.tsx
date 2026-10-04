@@ -28,18 +28,27 @@ export function ItemShareBar({
   function copyLink() {
     trackShare('copy_link');
     if (navigator.clipboard) {
-      void navigator.clipboard.writeText(absolute).then(() => {
-        toast({ message: t.copied ?? 'Link copied to clipboard', tone: 'success' });
-      }).catch(() => {
-        toast({ message: lang === 'uk' ? 'Не вдалося скопіювати посилання' : 'Failed to copy link', tone: 'error' });
-      });
+      void navigator.clipboard
+        .writeText(absolute)
+        .then(() => {
+          toast({ message: t.copied ?? 'Link copied to clipboard', tone: 'success' });
+        })
+        .catch(() => {
+          toast({
+            message: lang === 'uk' ? 'Не вдалося скопіювати посилання' : 'Failed to copy link',
+            tone: 'error',
+          });
+        });
     } else {
-      toast({ message: lang === 'uk' ? 'Буфер обміну недоступний' : 'Clipboard unavailable', tone: 'info' });
+      toast({
+        message: lang === 'uk' ? 'Буфер обміну недоступний' : 'Clipboard unavailable',
+        tone: 'info',
+      });
     }
   }
 
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch">
       <span className="text-faint inline-flex items-center gap-1.5 text-[0.85rem]">
         <ShareIcon size={15} />
         {t.share}
@@ -49,7 +58,7 @@ export function ItemShareBar({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => trackShare('x')}
-        className="rounded-pill border-border text-text hover:border-accent inline-flex border px-3 py-1.5 text-sm font-medium no-underline transition"
+        className="rounded-pill border-border text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
       >
         {t.shareOnX}
       </a>
@@ -58,14 +67,14 @@ export function ItemShareBar({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => trackShare('linkedin')}
-        className="rounded-pill border-border text-text hover:border-accent inline-flex border px-3 py-1.5 text-sm font-medium no-underline transition"
+        className="rounded-pill border-border text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
       >
         {t.shareOnLinkedin}
       </a>
       <button
         type="button"
         onClick={copyLink}
-        className="rounded-pill border-border text-text hover:border-accent border px-3 py-1.5 text-sm font-medium transition"
+        className="rounded-pill border-border text-text hover:border-accent min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium transition"
       >
         {t.copyLink}
       </button>

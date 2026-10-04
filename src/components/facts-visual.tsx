@@ -18,16 +18,20 @@ export function FactsVisualBlock({ visual, color }: { visual: FactsVisual; color
               className="grid grid-cols-[minmax(96px,9rem)_minmax(0,1fr)_auto] items-center gap-3"
             >
               <span className="text-muted truncate text-[0.78rem]">{item.label}</span>
-              <span className="bg-surface-2 h-2.5 overflow-hidden rounded-pill">
+              <span className="bg-surface-2 rounded-pill h-2.5 overflow-hidden">
                 <span
-                  className="block h-full rounded-pill"
-                  style={{
-                    width: `${Math.max(6, item.ratio * 100)}%`,
-                    background: `color-mix(in srgb, ${color} 75%, var(--text))`,
-                  } as CSSProperties}
+                  className="rounded-pill block h-full"
+                  style={
+                    {
+                      width: `${Math.max(6, item.ratio * 100)}%`,
+                      background: `color-mix(in srgb, ${color} 75%, var(--text))`,
+                    } as CSSProperties
+                  }
                 />
               </span>
-              <span className="text-[0.8rem] font-semibold tabular-nums">{item.display}</span>
+              <span className="min-w-0 text-[0.8rem] font-semibold break-words tabular-nums">
+                {item.display}
+              </span>
             </div>
           ))}
         </div>
@@ -40,7 +44,7 @@ export function FactsVisualBlock({ visual, color }: { visual: FactsVisual; color
       {visual.items.map((item, i) => (
         <div
           key={item.label}
-          className={`flex flex-col gap-1 px-4 py-3.5 ${i > 0 ? 'border-border border-l' : ''}`}
+          className={`flex min-w-0 flex-col gap-1 px-4 py-3.5 break-words ${i > 0 ? 'border-border border-l' : ''}`}
         >
           <span
             className="font-serif text-xl leading-tight font-semibold"

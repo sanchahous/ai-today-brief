@@ -17,10 +17,10 @@ export type MdBlock =
   | { kind: 'heading'; level: 3 | 4; inlines: MdInline[] }
   | { kind: 'paragraph'; inlines: MdInline[] }
   | { kind: 'list'; items: MdInline[][] }
+  | { kind: 'table'; headers: MdInline[][]; rows: MdInline[][][] }
   | { kind: 'codeBlock'; language: string; code: string };
 
-const INLINE_TOKEN =
-  /(`[^`\n]+`)|(\*\*[^*\n]+?\*\*)|(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\))/g;
+const INLINE_TOKEN = /(`[^`\n]+`)|(\*\*[^*\n]+?\*\*)|(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\))/g;
 
 /** Tokenize one line/segment into inline runs. */
 export function parseInlines(text: string): MdInline[] {
@@ -45,7 +45,31 @@ export function parseInlines(text: string): MdInline[] {
   return out;
 }
 
-export function parseMarkdown(md: string): MdBlock[] {
+function tableCells(line: string): string[] {
+  let row = line.trim();
+  if (row.startsWith('|')) row = row.slice(1);
+  if (row.endsWith('|')) row = row.slice(0, -1);
+  return row.split('|').map((cell) => cell.trim());
+}
+
+function readTable(lines: string[], start: number) {
+  if (!lines[start].includes('|') || !lines[start + 1]?.includes('|')) return null;
+  const headers = tableCells(lines[start]);
+  const separator = tableCells(lines[start + 1]);
+  if (headers.length !== separator.length || !separator.every((cell) => /^:?-{3,}:?$/.test(cell)))
+    return null;
+  const rows: MdInline[][][] = [];
+  let end = start + 2;
+  while (end < lines.length && lines[end].includes('|') && lines[end].trim()) {
+    const cells = tableCells(lines[end]);
+    if (cells.length !== headers.length) break;
+    rows.push(cells.map(parseInlines));
+    end++;
+  }
+  return { headers: headers.map(parseInlines), rows, end };
+}
+
+export function parseMarkdown(md: string, { tables = false } = {}): MdBlock[] {
   const blocks: MdBlock[] = [];
   const lines = md.replace(/\r\n/g, '\n').split('\n');
 
@@ -69,6 +93,15 @@ export function parseMarkdown(md: string): MdBlock[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
     const trimmed = line.trim();
+
+    const table = tables ? readTable(lines, i) : null;
+    if (table) {
+      flushParagraph();
+      flushList();
+      blocks.push({ kind: 'table', headers: table.headers, rows: table.rows });
+      i = table.end - 1;
+      continue;
+    }
 
     const fence = trimmed.match(/^```\s*(\S*)\s*$/);
     if (fence) {
@@ -125,6 +158,10 @@ export function markdownToPlainText(md: string): string {
   return parseMarkdown(md)
     .map((b) => {
       if (b.kind === 'codeBlock') return b.code;
+      if (b.kind === 'table')
+        return [b.headers, ...b.rows]
+          .map((row) => row.map((cell) => cell.map((i) => i.text).join('')).join(' | '))
+          .join('\n');
       if (b.kind === 'list') {
         return b.items.map((item) => item.map((i) => i.text).join('')).join('\n');
       }
