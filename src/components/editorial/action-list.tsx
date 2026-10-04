@@ -22,7 +22,7 @@ export function ActionList({ lang, title, items }: { lang: Lang; title?: string;
             <div className="flex-1 mt-0.5">
               <div className="font-medium text-text">
                 {item.href ? (
-                  <a href={item.href} className="text-text hover:text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current transition-colors">
+                  <a href={item.href} className="text-text hover:text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current transition-colors inline-flex items-center min-h-[var(--touch-target-min)] -mx-2 px-2 -my-2 py-2">
                     {item.title}
                   </a>
                 ) : (

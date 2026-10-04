@@ -5,7 +5,7 @@ const CHAIN = ['loading', 'stale', 'ready', 'empty', 'recoverable', 'terminal'] 
 
 async function openCatalog(page: Page) {
   await page.goto('/ds-catalog');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Design system catalog', level: 1 })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.addStyleTag({
     content: '*, *::before, *::after { transition: none !important; animation: none !important; }',

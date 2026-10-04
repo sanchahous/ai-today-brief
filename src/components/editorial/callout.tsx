@@ -55,9 +55,9 @@ export function Callout({
           {getIcon()}
         </span>
         <div className="flex-1">
-          <h4 className="font-serif text-lg font-semibold mb-2">
+          <div className="font-serif text-lg font-semibold mb-2">
             {getTitle()}
-          </h4>
+          </div>
           <div className="reading-copy text-[0.95em] opacity-90">
             {children}
           </div>

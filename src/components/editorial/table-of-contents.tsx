@@ -36,9 +36,9 @@ export function TableOfContents({ lang, items }: { lang: Lang; items: TocItem[] 
 
   return (
     <nav aria-label={lang === 'uk' ? 'Зміст' : 'Table of Contents'}>
-      <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted">
+      <div className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted">
         {lang === 'uk' ? 'Зміст' : 'Contents'}
-      </h4>
+      </div>
       <ul className="flex flex-col gap-2.5">
         {items.map((item) => {
           const isActive = activeId === item.id;

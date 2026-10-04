@@ -5,7 +5,7 @@ async function openFields(page: Page, lang: 'en' | 'uk', theme: 'night' | 'day')
   await page.addInitScript((value) => localStorage.setItem('theme', value), theme === 'day' ? 'light' : 'dark');
   // Optional override for a local `next dev` host. Production `next start` uses the config baseURL.
   await page.goto(process.env.FIELDS_E2E_BASE ? `${process.env.FIELDS_E2E_BASE}/ds-catalog` : '/ds-catalog');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Design system catalog', level: 1 })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' });
   const scope = page.getByTestId('field-catalog');

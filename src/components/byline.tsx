@@ -35,7 +35,11 @@ export function Byline({
 
   return (
     <div className="text-muted flex flex-wrap items-center gap-2 text-[0.82rem]">
-      <Link href={`/${lang}/author`} className="hover:opacity-80 transition-opacity" aria-label={`Author ${authorName}`}>
+      <Link 
+        href={`/${lang}/author`} 
+        className="hover:opacity-80 transition-opacity inline-flex items-center justify-center min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] -mx-2" 
+        aria-label={`Author ${authorName}`}
+      >
         <span
           aria-hidden
           className="bg-accent-fill text-on-accent grid h-7 w-7 place-items-center rounded-full text-2xs font-bold"

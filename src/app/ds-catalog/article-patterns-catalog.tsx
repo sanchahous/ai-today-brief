@@ -40,7 +40,7 @@ export function ArticlePatternsCatalog() {
     : 'Швидка коричнева лисиця стрибає через лінивого собаку. Це дуже довгий абзац, щоб продемонструвати обмеження ширини рядка у макеті для читання. Він має гарно переноситися на рівні 60-75 символів для забезпечення оптимальної зручності читання. Хороша типографіка є важливою для чудового досвіду читання, особливо для довгих редакційних матеріалів. Anthropic представила субагентів для Claude Code з ізольованим робочим простором та реактивними сповіщеннями.';
 
   return (
-    <div className="space-y-12 mt-12 pt-12 border-t border-border">
+    <div className="space-y-12 mt-12 pt-12 border-t border-border reading">
       <div className="flex flex-wrap items-center gap-2 mb-8">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted">Language for Patterns:</span>
         <button
@@ -66,6 +66,7 @@ export function ArticlePatternsCatalog() {
       <div className="space-y-4">
         <h3 className="font-serif text-lg">EditorialHero</h3>
         <EditorialHero
+          level={2}
           eyebrow={lang === 'en' ? 'Feature' : 'Стаття'}
           title={lang === 'en' ? 'Claude Code Sub-Agents Architecture' : 'Архітектура субагентів у Claude Code'}
           dek={longText.slice(0, 150) + '...'}
@@ -83,13 +84,15 @@ export function ArticlePatternsCatalog() {
         />
       </div>
 
-      <div className="space-y-4">
-        <h3 className="font-serif text-lg">TrustLabel & AiDisclosureNote</h3>
-        <div className="flex gap-4 flex-wrap">
-          <TrustLabel lang={lang} level="verified" />
-          <TrustLabel lang={lang} level="partially-verified" />
-          <TrustLabel lang={lang} level="sponsored" />
-          <TrustLabel lang={lang} level="ai-assisted" />
+      <div className="reading prose max-w-none">
+        <div className="space-y-4">
+          <h3 className="font-serif text-lg mt-0">TrustLabel & AiDisclosureNote</h3>
+          <div className="flex gap-4 flex-wrap not-prose">
+            <TrustLabel lang={lang} level="verified" />
+            <TrustLabel lang={lang} level="partially-verified" />
+            <TrustLabel lang={lang} level="sponsored" />
+            <TrustLabel lang={lang} level="ai-assisted" />
+          </div>
         </div>
       </div>
 

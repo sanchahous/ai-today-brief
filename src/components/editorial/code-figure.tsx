@@ -40,7 +40,7 @@ export function CodeFigure({
           <button
             type="button"
             onClick={handleCopy}
-            className="text-xs font-medium text-muted hover:text-text transition-colors"
+            className="text-xs font-medium text-muted hover:text-text transition-colors flex items-center justify-center min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] -mx-2 -my-2"
           >
             {t.copyCode ?? 'Copy'}
           </button>
