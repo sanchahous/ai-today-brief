@@ -24,6 +24,16 @@
       "id": "news-search-idle-uk",
       "path": "/uk/news/search?q=",
       "locales": ["uk"]
+    },
+    {
+      "id": "news",
+      "path": "/en/news",
+      "locales": ["en"]
+    },
+    {
+      "id": "news-uk",
+      "path": "/uk/news",
+      "locales": ["uk"]
     }
   ]
 }
