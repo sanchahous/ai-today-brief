@@ -10,6 +10,18 @@ Task: ah-4.4
 
 ## Status
 
+### Repair 2026-10-04 (T1-f10)
+
+Повторний merge `origin/main` (PR #413 уже в main) знову конфліктував у `wiki/ops/e2e-local.md`
+(дубль Sources, порожній маркер перед CI §) і `wiki/tasks/ah-4.4.md` (T1-f9 vs main без
+фрагмента). Збережено T1-f9 repair/log, одну Sources-рядок з `.github/workflows/e2e.yml`, broad/SKIP_BUILD
+абзац і CI §.
+(source: merge 2026-10-04; [PR #413](https://github.com/sanchahous/ai-today-brief/pull/413))
+
+Перевірки на `PORT=3100` (2026-10-04):
+- `npm run pr:check` — exit 0.
+- `e2e/news-search.spec.ts` — 21/21 passed (chromium/firefox/webkit).
+
 ### Repair 2026-10-04 (T1-f9)
 
 Merge `origin/main` → `feat/ah-4.4-news-search` зупинився на `wiki/ops/e2e-local.md`. Конфлікт
@@ -87,6 +99,7 @@ CI Playwright smoke падав на `news-search.spec.ts` (canonical): тест 
 
 ## Log
 
+- 2026-10-04 (T1-f10, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): повторний merge conflict у `wiki/ops/e2e-local.md` і `wiki/tasks/ah-4.4.md` — збережено T1-f9 repair, CI § і broad/SKIP_BUILD. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f9, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): merge conflict у `wiki/ops/e2e-local.md` — збережено broad/SKIP_BUILD абзац (PR #412) і CI `--ci-plan` з main; `npm run pr:check` зелений на PORT=3100. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f8, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): CI canonical assert узгоджено з `NEXT_PUBLIC_SITE_URL` у e2e workflow; додано `expectedSiteUrl()` + unit test. Наступна задача епіку — AH-4.5.
 - 2026-10-04 (T1-f7x, [PR #412](https://github.com/sanchahous/ai-today-brief/pull/412)): `NewsFeed` на search-маршруті отримує `key={query}` — client state скидається при новому `q`; E2E на повторний submit із форми результатів (чіп, relevance, URL без старого `sort`); видалено `e2e-affected-f4.log`. Наступна задача епіку — AH-4.5.
