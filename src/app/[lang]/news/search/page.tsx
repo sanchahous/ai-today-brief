@@ -114,6 +114,7 @@ export default async function NewsSearchPage({
 
       {query ? (
         <NewsFeed
+          key={query}
           lang={lang}
           items={items}
           categories={pageData.categories}

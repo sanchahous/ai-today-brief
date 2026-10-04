@@ -114,6 +114,21 @@ export function NewsFeed({
     setReady(true);
   }, []);
 
+  // Client navigation to a new server query (e.g. second submit on `/news/search`)
+  // reuses this component instance — reset filter state from props.
+  useEffect(() => {
+    if (!isHydrated.current) return;
+    setFilters((prev) => {
+      if (prev.q === initialQuery) return prev;
+      return {
+        ...prev,
+        q: initialQuery,
+        sort: initialQuery ? 'relevance' : prev.sort === 'relevance' ? 'newest' : prev.sort,
+      };
+    });
+    setPage(initialPage);
+  }, [initialQuery, initialPage]);
+
   // Browser Back/Forward navigation listener
   useEffect(() => {
     const handlePopState = () => {

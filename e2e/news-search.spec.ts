@@ -40,6 +40,31 @@ test.describe('News search page (/[lang]/news/search)', () => {
     await expect(page.getByTestId('news-search-form')).toBeVisible();
   });
 
+  test('second query from results form resets chip, sort and URL', async ({ page }) => {
+    await page.goto('/en/news/search?q=mcp', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
+      timeout: 30_000,
+    });
+
+    const activeChips = page.getByTestId('active-filter-chips');
+    await expect(activeChips).toContainText('mcp');
+
+    const sortSelect = page.getByLabel(/sort/i);
+    await sortSelect.selectOption('oldest');
+    await expect(page).toHaveURL(/sort=oldest/);
+
+    const input = page.locator('#news-search-q');
+    await input.fill('agents');
+    await page.getByTestId('news-search-form').getByRole('button', { name: /search/i }).click();
+
+    await expect(page).toHaveURL(/q=agents/);
+    await expect(page).not.toHaveURL(/sort=oldest/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('agents');
+    await expect(activeChips).toContainText('agents');
+    await expect(activeChips).not.toContainText('mcp');
+    await expect(sortSelect).toHaveValue('relevance');
+  });
+
   test('popular query syncs the search field and back restores idle input', async ({ page }) => {
     await page.goto('/en/news/search', { waitUntil: 'domcontentloaded' });
     const input = page.locator('#news-search-q');
