@@ -9,6 +9,7 @@ const LOGIC_INCLUDE = [
   'src/lib/site.ts',
   'src/lib/hash-seed.ts',
   'src/lib/home-stats.ts',
+  'src/lib/daily-edition.ts',
   'src/lib/category-meta.ts',
   'src/lib/concept-meta.ts',
   'src/lib/news-filters.ts',

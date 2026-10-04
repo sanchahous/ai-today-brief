@@ -1,112 +1,58 @@
-import Link from 'next/link';
-import type { BriefItemCard, BriefPackSection } from '@/lib/briefs';
+import type { BriefPackSection } from '@/lib/briefs';
 import { formatPackUpdateLabel } from '@/lib/briefs';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
-import { CategoryBadge } from '@/components/ui/category-badge';
-import { Reveal } from '@/components/reveal';
-import { ArrowRight } from '@/components/icons';
-import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
+import { DailyItem } from '@/components/daily/daily-item';
+
+function packOffsets(packs: readonly BriefPackSection[]): { pack: BriefPackSection; startIndex: number }[] {
+  const sections: { pack: BriefPackSection; startIndex: number }[] = [];
+  let startIndex = 0;
+  for (const pack of packs) {
+    sections.push({ pack, startIndex });
+    startIndex += pack.items.length;
+  }
+  return sections;
+}
 
 export function BriefDailySections({
   lang,
   packs,
-  totalItems,
 }: {
   lang: Lang;
   packs: BriefPackSection[];
-  totalItems: number;
 }) {
   const t = getStrings(lang);
-  const openFull = t.news.openFull;
-
-  const sections = packs.reduce<{ pack: BriefPackSection; startIndex: number }[]>((acc, pack) => {
-    const startIndex = acc.length === 0 ? 0 : acc[acc.length - 1]!.startIndex + acc[acc.length - 1]!.pack.items.length;
-    acc.push({ pack, startIndex });
-    return acc;
-  }, []);
+  const sections = packOffsets(packs);
 
   return (
-    <div className="max-w-[760px]">
-      <p className="text-faint m-0 mb-4 text-2xs font-bold tracking-[0.1em] uppercase">
-        {t.briefItemsLabel} · {totalItems}
-      </p>
-
+    <div>
       {sections.map(({ pack, startIndex }, packIdx) => (
-        <section key={pack.slug} className={packIdx > 0 ? 'mt-10' : ''}>
-          {packIdx > 0 && (
+        <section key={pack.slug} className={packIdx > 0 ? 'mt-10' : ''} aria-labelledby={packIdx > 0 ? `pack-${pack.slug}` : undefined}>
+          {packIdx > 0 ? (
             <header className="mb-4">
-              <p className="text-accent m-0 mb-2 text-xs font-bold tracking-[0.14em] uppercase">
+              <h2 id={`pack-${pack.slug}`} className="text-accent m-0 text-xs font-bold tracking-[0.14em] uppercase">
                 {formatPackUpdateLabel(lang, pack.publishedAt)}
-              </p>
-              {pack.intro && (
-                <p className="text-muted m-0 text-[1.05rem] leading-relaxed">{pack.intro}</p>
-              )}
+              </h2>
+              {pack.intro ? <p className="text-muted m-0 mt-2 text-base leading-relaxed">{pack.intro}</p> : null}
             </header>
-          )}
+          ) : null}
 
-          <ol className="m-0 grid list-none gap-4 p-0">
+          <ol className="m-0 grid list-none gap-4 p-0" start={startIndex + 1}>
             {pack.items.map((item, itemIdx) => (
-              <BriefItemRow
+              <DailyItem
                 key={item.id}
                 lang={lang}
                 item={item}
-                displayIndex={startIndex + itemIdx}
-                openFull={openFull}
+                index={startIndex + itemIdx + 1}
+                showReadToggle
               />
             ))}
           </ol>
         </section>
       ))}
+      {sections.length === 0 ? (
+        <p className="text-muted m-0 text-sm">{t.noResults}</p>
+      ) : null}
     </div>
-  );
-}
-
-function BriefItemRow({
-  lang,
-  item,
-  displayIndex,
-  openFull,
-}: {
-  lang: Lang;
-  item: BriefItemCard;
-  displayIndex: number;
-  openFull: string;
-}) {
-  const href =
-    item.slug && item.categorySlug ? `/${lang}/news/${item.categorySlug}/${item.slug}` : `/${lang}/news`;
-
-  return (
-    <Reveal delayMs={displayIndex * 50}>
-      <li>
-        <WeeklyTopClickTracker
-          slot="featured"
-          target={{ id: item.id, slug: item.slug ?? undefined, lang }}
-        >
-          <Link
-            href={href}
-            className="card-hover rounded-card border-border bg-surface flex cursor-pointer gap-4 border p-4 no-underline transition sm:p-5"
-          >
-            <span
-              aria-hidden
-              className="text-faint font-serif min-w-[30px] text-[1.6rem] leading-none font-bold"
-            >
-              {displayIndex + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="mb-2">
-                <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
-              </div>
-              <h3 className="mb-2 text-[1.15rem] leading-snug text-[color:inherit]">{item.title}</h3>
-              <p className="text-muted mb-2 text-[0.92rem] leading-relaxed">{item.summary}</p>
-              <span className="text-accent inline-flex items-center gap-1 text-[0.8rem] font-semibold">
-                {openFull}
-                <ArrowRight size={14} />
-              </span>
-            </div>
-          </Link>
-        </WeeklyTopClickTracker>
-      </li>
-    </Reveal>
   );
 }
