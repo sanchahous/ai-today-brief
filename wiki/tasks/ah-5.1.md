@@ -24,3 +24,4 @@ Task: ah-5.1
 pm run e2e:affected passed successfully. PR: https://github.com/sanchahous/ai-today-brief/pull/418
 - 2026-10-04 (repair 2): Fixed additional layout matrix issues: CodeFigure copy button size, ActionList touch targets, added reading class to catalog to exempt inline pill links, and passed level=2 to EditorialHero to prevent H1 count violations.
 - 2026-10-04 (repair 3): Fixed heading skip violations in `ds-catalog` by changing `h4` tags to `div` inside `Callout`, `TableOfContents`, and `WhenGrid` components to prevent `h2` -> `h4` skips in the document outline.
+- 2026-10-04 (repair 4): Cleaned up unused `scratch/` files (`dump-headings.js`, `dump-headings.mjs`, `dump-skips.js`) left over from a previous session that were causing the `eslint` step of `npm run pr:check` to fail with exit code 1. `pr:check` now passes locally. PR: https://github.com/sanchahous/ai-today-brief/pull/418
