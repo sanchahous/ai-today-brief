@@ -9,7 +9,6 @@ import { ArrowRight, ClockIcon, PlayIcon } from '@/components/icons';
 import { Reveal } from '@/components/reveal';
 import { SectionHead } from '@/components/home/section-head';
 import { CategoryBadge } from '@/components/ui/category-badge';
-import { SponsorCard } from '@/components/home/sponsor-card';
 import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
 
 function formatDate(date: string, lang: Lang): string {
@@ -87,9 +86,6 @@ export function TopOfWeek({
               </WeeklyTopClickTracker>
             </Reveal>
           ))}
-          <Reveal delayMs={secondary.length * 70}>
-            <SponsorCard lang={lang} placement="home-week" />
-          </Reveal>
         </div>
       </div>
     </section>
@@ -163,7 +159,7 @@ function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: 
       className="card-hover rounded-card border-border bg-surface flex items-start gap-3 border p-4"
     >
       <span aria-hidden className="text-faint min-w-7 font-serif text-2xl leading-none font-bold">
-        {rank}
+        {String(rank).padStart(2, '0')}
       </span>
       <div className="min-w-0">
         <div className="mb-1.5 flex flex-wrap items-center gap-2">

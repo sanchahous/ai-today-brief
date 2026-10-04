@@ -8,9 +8,21 @@ import { ArrowRight, CategoryGlyph } from '@/components/icons';
 import { Reveal } from '@/components/reveal';
 import { SectionHead } from '@/components/home/section-head';
 import { CategoryHubClickTracker } from '@/components/analytics/home-click-trackers';
+import { CategoryMixBar } from '@/components/home/category-mix-bar';
+import type { HomeCoverageSegment } from '@/lib/home';
 
-export function CategoryGrid({ lang, categories }: { lang: Lang; categories: HomeCategory[] }) {
-  if (categories.length === 0) return null;
+export function CategoryGrid({
+  lang,
+  categories,
+  coverage,
+  coverageSampleSize,
+}: {
+  lang: Lang;
+  categories: HomeCategory[];
+  coverage: HomeCoverageSegment[];
+  coverageSampleSize: number;
+}) {
+  if (categories.length === 0 && coverage.length === 0) return null;
   const t = getStrings(lang).landing;
   return (
     <section aria-labelledby="cats-title" className="mx-auto w-full max-w-[1160px] px-6 py-12">
@@ -22,12 +34,16 @@ export function CategoryGrid({ lang, categories }: { lang: Lang; categories: Hom
           subtitle={t.categoriesSubtitle}
         />
       </Reveal>
-      <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-7">
+        <CategoryMixBar lang={lang} segments={coverage} sampleSize={coverageSampleSize} />
+      </div>
+      <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map((c, i) => (
-          <Reveal key={c.slug} delayMs={i * 60}>
+          <Reveal key={c.slug} delayMs={i * 60} className={i < 2 ? 'lg:col-span-2' : ''}>
             <CategoryCard
               lang={lang}
               category={c}
+              latestLimit={i < 2 ? 2 : 1}
               latestLabel={t.categoryLatest}
               ctaLabel={t.categoryCta}
               articlesLabel={t.categoryArticles}
@@ -42,12 +58,14 @@ export function CategoryGrid({ lang, categories }: { lang: Lang; categories: Hom
 function CategoryCard({
   lang,
   category,
+  latestLimit,
   latestLabel,
   ctaLabel,
   articlesLabel,
 }: {
   lang: Lang;
   category: HomeCategory;
+  latestLimit: number;
   latestLabel: string;
   ctaLabel: string;
   articlesLabel: string;
@@ -78,7 +96,7 @@ function CategoryCard({
         </p>
         {category.latest.length > 0 ? (
           <ul className="mb-4 grid gap-2">
-            {category.latest.map((it) => (
+            {category.latest.slice(0, latestLimit).map((it) => (
               <li key={it.id} className="flex gap-2">
                 <span
                   aria-hidden
