@@ -17,3 +17,10 @@ Task: ah-5.5
 ```
 
 (source: перенос ATB-67, [PR #405](https://github.com/sanchahous/ai-today-brief/pull/405))
+
+Update 2026-10-04:
+- Implemented layout reordering in `page.tsx`.
+- Updated `WeeklyHero` to include issue number, publication date, data facts, and 16:9 safe-frame (without cropping).
+- Handled SleeveArt fallback and CTA updates (including video Watch CTA).
+- Set layout order to: editorNote -> actionBoard -> video -> keyTakeaways -> stories -> metrics -> discuss -> faq -> nav.
+- Tests passed via pr:check.
