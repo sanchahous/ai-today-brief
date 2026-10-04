@@ -122,12 +122,6 @@
       "count": 1
     },
     {
-      "path": "src/components/story-body.tsx",
-      "kind": "color",
-      "value": "#3f9e58",
-      "count": 1
-    },
-    {
       "path": "src/components/subscribe-benefits-grid.tsx",
       "kind": "color",
       "value": "rgba(240,192,64,0.12)",
