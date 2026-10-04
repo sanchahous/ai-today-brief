@@ -3,52 +3,54 @@
 import Link from 'next/link';
 import { trackEvent } from '@/lib/analytics-client';
 import type { TrendingTopic } from '@/lib/home';
-import { ArrowRight, SparkleIcon } from '@/components/icons';
 
 export function TrendingTopicLink({
   topic,
   placement,
-  sizeRem,
+  maxMentions,
   mentionsLabel,
-  risingLabel,
+  deltaUpLabel,
+  deltaDownLabel,
 }: {
   topic: TrendingTopic;
   placement: string;
-  sizeRem: number;
+  maxMentions: number;
   mentionsLabel: string;
-  risingLabel: string;
+  deltaUpLabel: string;
+  deltaDownLabel: string;
 }) {
+  const delta = typeof topic.delta === 'number' ? topic.delta : null;
+  const deltaText =
+    delta === null ? '' : delta > 0 ? `${deltaUpLabel} ${delta}` : delta < 0 ? `${deltaDownLabel} ${Math.abs(delta)}` : '';
+  const width = maxMentions > 0 ? Math.max(8, (topic.mentions / maxMentions) * 100) : 0;
+
   return (
     <Link
       href={topic.href}
-      title={topic.rising ? `${risingLabel} · ${topic.mentions} ${mentionsLabel}` : `${topic.mentions} ${mentionsLabel}`}
       onClick={() =>
         trackEvent('trending_topic_click', {
           topic: topic.name,
           placement,
         })
       }
-      className="group border-border bg-surface text-text rounded-pill hover:border-accent hover:bg-surface-2 inline-flex items-center gap-1.5 border px-3.5 py-2 font-semibold transition hover:-translate-y-0.5"
-      style={{ fontSize: `${sizeRem}rem` }}
+      aria-label={
+        deltaText
+          ? `${topic.name}: ${topic.mentions} ${mentionsLabel}, ${deltaText}`
+          : `${topic.name}: ${topic.mentions} ${mentionsLabel}`
+      }
+      className="hover:border-accent grid min-h-[var(--touch-target-min)] grid-cols-[7.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-transparent px-1"
     >
-      <span aria-hidden className="text-accent inline-flex">
-        <SparkleIcon size={15} />
+      <span className="text-text truncate text-sm font-semibold">{topic.name}</span>
+      <span className="bg-surface-2 h-2.5 overflow-hidden rounded-pill">
+        <span className="bg-accent block h-full rounded-pill" style={{ width: `${width}%` }} />
       </span>
-      {topic.name}
-      {topic.rising && (
-        <span
-          className="text-accent text-[0.7em] font-bold leading-none"
-          aria-label={risingLabel}
-          title={risingLabel}
-        >
-          ▲
-        </span>
-      )}
-      <span
-        aria-hidden
-        className="text-accent inline-flex -translate-x-1 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100"
-      >
-        <ArrowRight size={14} />
+      <span className="text-faint flex items-baseline gap-2 text-xs font-semibold tabular-nums">
+        <span>{topic.mentions}</span>
+        {delta !== null && delta !== 0 ? (
+          <span className={delta > 0 ? 'text-accent' : 'text-muted'}>
+            {delta > 0 ? '▲' : '▼'} {Math.abs(delta)}
+          </span>
+        ) : null}
       </span>
     </Link>
   );

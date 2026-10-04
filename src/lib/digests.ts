@@ -7,6 +7,11 @@ import { getSupabase } from '@/lib/supabase';
 import { LANGS, type Lang } from '@/lib/site';
 import { weeklyRevisionTitlePresentation } from '@/lib/weekly-digest/display-title';
 import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
+import {
+  issueNumberFromWeekStarts,
+  weeklyFactsFromRows,
+  type WeeklyBandFacts,
+} from '@/lib/home-stats';
 
 interface WeeklySnapshot {
   title_en: string;
@@ -212,6 +217,8 @@ export interface WeeklyDigestHomeView {
   cover: WeeklyDigestImage | null;
   hasPdf: boolean;
   video: WeeklyDigestVideo | null;
+  /** Story count, read minutes and distinct sources for the published revision. Null when they cannot be read. */
+  facts: WeeklyBandFacts | null;
 }
 
 export interface PublishedPdfArtifact {
@@ -722,6 +729,43 @@ export async function getWeeklyDigest(slug: string, lang: Lang): Promise<WeeklyD
   return getWeeklyDigestCached(slug, lang);
 }
 
+async function loadWeeklyBandFacts(
+  db: SupabaseClient,
+  lang: Lang,
+  revisionId: string,
+  weekStart: string,
+): Promise<WeeklyBandFacts | null> {
+  const [items, weeks] = await Promise.all([
+    db
+      .from('weekly_digest_revision_items')
+      .select('summary_en, summary_uk, why_en, why_uk, sources, source_snapshot')
+      .eq('revision_id', revisionId),
+    db.from('weekly_digests').select('week_start').eq('status', 'published').eq('is_test', false),
+  ]);
+  if (items.error || weeks.error || !items.data) return null;
+  const rows = (items.data as Array<{
+    summary_en: string | null;
+    summary_uk: string | null;
+    why_en: string | null;
+    why_uk: string | null;
+    sources: Json | null;
+    source_snapshot: Json | null;
+  }>).map((row) => ({
+    summary: pick(lang, row.summary_en, row.summary_uk),
+    why: pick(lang, row.why_en, row.why_uk),
+    sources: row.sources,
+    snapshot: row.source_snapshot,
+  }));
+  const counted = weeklyFactsFromRows(rows);
+  const starts = ((weeks.data as Array<{ week_start: string }> | null) ?? []).map(
+    (week) => week.week_start,
+  );
+  return {
+    ...counted,
+    issueNumber: issueNumberFromWeekStarts(starts, weekStart),
+  };
+}
+
 export async function getLatestWeeklyDigest(lang: Lang): Promise<WeeklyDigestHomeView | null> {
   const typed = getSupabase();
   if (!typed) return null;
@@ -753,23 +797,25 @@ export async function getLatestWeeklyDigest(lang: Lang): Promise<WeeklyDigestHom
     const slug = (legacy.data as { slug: string } | null)?.slug;
     if (!slug) return null;
     const digest = await getWeeklyDigestCached(slug, lang);
-    return digest
-      ? {
-          id: digest.id,
-          slug: digest.slug,
-          weekStart: digest.weekStart,
-          weekEnd: digest.weekEnd,
-          title: digest.title,
-          intro: digest.intro,
-          standfirst: digest.standfirst,
-          highlights: digest.keyTakeaways.length
-            ? digest.keyTakeaways.slice(0, 5)
-            : digest.items.slice(0, 5).map((item) => item.title),
-          cover: digest.cover,
-          hasPdf: digest.hasPdf,
-          video: digest.video,
-        }
-      : null;
+    if (!digest) return null;
+    return {
+      id: digest.id,
+      slug: digest.slug,
+      weekStart: digest.weekStart,
+      weekEnd: digest.weekEnd,
+      title: digest.title,
+      intro: digest.intro,
+      standfirst: digest.standfirst,
+      highlights: digest.keyTakeaways.length
+        ? digest.keyTakeaways.slice(0, 5)
+        : digest.items.slice(0, 5).map((item) => item.title),
+      cover: digest.cover,
+      hasPdf: digest.hasPdf,
+      video: digest.video,
+      facts: digest.revisionId
+        ? await loadWeeklyBandFacts(db, lang, digest.revisionId, digest.weekStart)
+        : null,
+    };
   }
 
   const [revision, artifacts, highlights] = await Promise.all([
@@ -805,6 +851,7 @@ export async function getLatestWeeklyDigest(lang: Lang): Promise<WeeklyDigestHom
     cover: imageFromArtifact(db, localizedArtifact(artifacts, 'cover', lang), lang, title),
     hasPdf: Boolean(localeSpecificArtifact(artifacts, 'pdf', lang)),
     video: videoFromArtifacts(db, artifacts, lang),
+    facts: await loadWeeklyBandFacts(db, lang, row.published_revision_id, row.week_start),
   };
 }
 

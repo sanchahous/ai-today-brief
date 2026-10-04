@@ -98,30 +98,6 @@
       "count": 1
     },
     {
-      "path": "src/components/home/home-hero.tsx",
-      "kind": "color",
-      "value": "rgba(181,140,247,0.14)",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/home-hero.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.10)",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/home-hero.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.22)",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/home-hero.tsx",
-      "kind": "color",
-      "value": "rgba(91,201,240,0.16)",
-      "count": 1
-    },
-    {
       "path": "src/components/home/video-teaser.tsx",
       "kind": "color",
       "value": "rgba(240,192,64,0.12)",
@@ -137,18 +113,6 @@
       "path": "src/components/home/video-teaser.tsx",
       "kind": "color",
       "value": "rgba(240,192,64,0.4)",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/weekly-digest.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,.17)",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/weekly-digest.tsx",
-      "kind": "color",
-      "value": "rgba(71,228,211,.18)",
       "count": 1
     },
     {

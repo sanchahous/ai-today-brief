@@ -2,86 +2,53 @@ import Link from 'next/link';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import type { TrendingTopic } from '@/lib/home';
-import { Reveal } from '@/components/reveal';
+import { ArrowRight } from '@/components/icons';
 import { TrendingTopicLink } from '@/components/home/trending-topic-link';
 
 /**
- * Most-mentioned tools/concepts across recent briefs (FEATURE F4): a real-data
- * mention bar chart next to the weighted tag cloud. Each entry links to the
- * concept hub when one exists, else to a pre-filled archive search — the
- * hub-and-spoke internal linking SEO rewards.
+ * Mention bars for the latest seven days. Each bar opens archive search for
+ * that name — it does not toggle a filter on the news hub.
  */
 export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingTopic[] }) {
   if (topics.length === 0) return null;
   const t = getStrings(lang).landing;
-  const max = Math.max(...topics.map((x) => x.mentions));
-  const min = Math.min(...topics.map((x) => x.mentions));
-  const sizeRem = (n: number) => 0.82 + ((n - min) / (max - min || 1)) * 0.5;
-  const chartTopics = topics.slice(0, 6);
+  let max = 0;
+  for (const topic of topics) {
+    if (topic.mentions > max) max = topic.mentions;
+  }
 
   return (
     <section aria-labelledby="trending-title" className="mx-auto w-full max-w-[1160px] px-6 py-12">
-      <Reveal>
-        <p className="text-accent eyebrow">
-          {t.trendingEyebrow}
-        </p>
-        <h2 id="trending-title" className="mt-2 text-2xl sm:text-3xl">{t.trendingTitle}</h2>
-        <p className="text-muted mt-1 mb-6 max-w-xl text-sm">{t.trendingSubtitle}</p>
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
-          <MentionsChart lang={lang} topics={chartTopics} />
-          <div className="flex flex-wrap content-start gap-2.5">
-            {topics.map((topic) => (
-              <TrendingTopicLink
-                key={topic.name}
-                topic={topic}
-                placement="home"
-                sizeRem={sizeRem(topic.mentions)}
-                mentionsLabel={t.mentions}
-                risingLabel={t.rising}
-              />
-            ))}
-          </div>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-accent eyebrow">{t.trendingEyebrow}</p>
+          <h2 id="trending-title" className="mt-2 text-2xl sm:text-3xl">
+            {t.trendingTitle}
+          </h2>
+          <p className="text-muted mt-1 max-w-xl text-sm">{t.trendingSubtitle}</p>
         </div>
-      </Reveal>
-    </section>
-  );
-}
-
-/** Horizontal bars of real mention counts — the "live media" data layer. */
-function MentionsChart({ lang, topics }: { lang: Lang; topics: TrendingTopic[] }) {
-  if (topics.length < 2) return null;
-  const t = getStrings(lang).landing;
-  const max = Math.max(...topics.map((x) => x.mentions));
-
-  return (
-    <figure className="rounded-card border-border bg-surface border p-5">
-      <figcaption className="text-faint mb-4 text-2xs font-bold tracking-[0.12em] uppercase">
-        {t.trendingChartTitle}
-      </figcaption>
-      <ol className="grid gap-2.5">
+        <Link
+          href={`/${lang}/news`}
+          className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-4 py-2 text-sm font-semibold no-underline"
+        >
+          {t.weekCta}
+          <ArrowRight size={16} />
+        </Link>
+      </div>
+      <ol className="mt-6 grid max-w-3xl gap-2">
         {topics.map((topic) => (
           <li key={topic.name}>
-            <Link
-              href={topic.href}
-              className="group grid grid-cols-[7.5rem_minmax(0,1fr)_2ch] items-center gap-3"
-              aria-label={`${topic.name}: ${topic.mentions} ${t.mentions}`}
-            >
-              <span className="text-muted group-hover:text-text truncate text-xs font-semibold transition-colors">
-                {topic.name}
-              </span>
-              <span className="bg-surface-2 h-2.5 overflow-hidden rounded-pill">
-                <span
-                  className="bg-accent block h-full rounded-pill opacity-80 transition-opacity group-hover:opacity-100"
-                  style={{ width: `${Math.max(8, (topic.mentions / max) * 100)}%` }}
-                />
-              </span>
-              <span className="text-faint text-right text-xs font-semibold tabular-nums">
-                {topic.mentions}
-              </span>
-            </Link>
+            <TrendingTopicLink
+              topic={topic}
+              placement="home"
+              maxMentions={max}
+              mentionsLabel={t.mentions}
+              deltaUpLabel={t.trendDeltaUp}
+              deltaDownLabel={t.trendDeltaDown}
+            />
           </li>
         ))}
       </ol>
-    </figure>
+    </section>
   );
 }
