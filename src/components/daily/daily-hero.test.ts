@@ -29,4 +29,12 @@ describe('dailyHeroDescriptions', () => {
     expect(dailyHeroDescriptions(null)).toEqual({ excerpt: null, more: null });
     expect(dailyHeroDescriptions('   ')).toEqual({ excerpt: null, more: null });
   });
+
+  it('keeps the first paragraph visible and folds the rest', () => {
+    const intro = 'First published paragraph.\n\nSecond paragraph stays behind Show more.';
+    expect(dailyHeroDescriptions(intro)).toEqual({
+      excerpt: 'First published paragraph.',
+      more: 'Second paragraph stays behind Show more.',
+    });
+  });
 });
