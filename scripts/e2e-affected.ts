@@ -30,10 +30,11 @@
  *
  * Run:   `npm run e2e:affected`           (select + run)
  *        `npm run e2e:affected -- --dry-run`   (show the plan, run nothing)
+ *        `npm run e2e:affected -- --ci-plan`   (CI: emit mode/specs outputs, run nothing)
  *        `npm run e2e:check`              (validate the map only — fast, no build)
  */
 import { spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync, type Dirent } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync, type Dirent } from 'node:fs';
 import { resolveE2eBaseUrl, resolveE2ePort } from './e2e-server-url';
 
 // --- named specs referenced by hand-written rules (the rest are auto-discovered) ----------
@@ -64,11 +65,13 @@ const BROAD: RegExp[] = [
 // The ONLY hand-maintained edges: specs that assert via ARIA roles / DOM structure rather
 // than a data-testid, so the derived testid index can't see them. `--check` tells you when a
 // spec becomes unreachable and needs an entry here.
-const OVERRIDES: Array<{ match: RegExp; specs: string[] }> = [
+// `catchAll` entries fire for a whole tree regardless of what changed; they do NOT count as
+// "this change is mapped", so the smoke/layout canaries still run for an otherwise-unmapped file.
+const OVERRIDES: Array<{ match: RegExp; specs: string[]; catchAll?: boolean }> = [
   { match: /^src\/(?:components\/ui\/(?:button|icon-button|pill|chip|tag|badge|category-badge|actions\.module)|lib\/ui\/action-styles|app\/ds-catalog\/)/, specs: ['e2e/actions-selection.spec.ts'] },
   { match: /^src\/(?:components\/ui\/(?:field|input|textarea|select|checkbox|radio|segmented|switch|fields\.module)|lib\/ui\/field-a11y|app\/ds-catalog\/)/, specs: ['e2e/fields.spec.ts'] },
   { match: /^src\/(?:components\/ui\/(?:dialog|overlay-drawer|disclosure-nav|overlay\.module)|app\/ds-catalog\/)/, specs: ['e2e/overlays.spec.ts'] },
-  { match: /^src\/(?:app|components)\//, specs: [A11Y_MATRIX] },
+  { match: /^src\/(?:app|components)\//, specs: [A11Y_MATRIX], catchAll: true },
   { match: /^src\/components\/site-header(-chrome)?\.tsx$/, specs: [HEADER] },
   { match: /^src\/components\/header-search-field\.tsx$/, specs: [HEADER] },
   { match: /^src\/components\/site-footer\.tsx$/, specs: [FOOTER] },
@@ -243,22 +246,35 @@ function plan(
       continue;
     }
     if (/^e2e\/.+\.spec\.ts$/.test(f)) {
-      specs.add(f);
-      reasons.push(`${f} → itself`);
+      // A deleted spec is still in the diff but must not be handed to Playwright.
+      if (cov.specs.includes(f)) {
+        specs.add(f);
+        reasons.push(`${f} → itself`);
+      } else {
+        reasons.push(`${f} → skip (spec removed)`);
+      }
       continue;
     }
 
     const hit = new Set<string>();
-    for (const s of edges.get(f) ?? []) hit.add(s); // testid edges
-    for (const s of cov.routeDirToSpecs.get(dirOf(f)) ?? []) hit.add(s); // route (page) edges
-    for (const o of OVERRIDES) if (o.match.test(f)) o.specs.forEach((s) => hit.add(s));
+    const specific = new Set<string>(); // hits other than a catch-all override
+    for (const s of edges.get(f) ?? []) specific.add(s); // testid edges
+    for (const s of cov.routeDirToSpecs.get(dirOf(f)) ?? []) specific.add(s); // route (page) edges
+    for (const o of OVERRIDES) {
+      if (!o.match.test(f)) continue;
+      for (const s of o.specs) (o.catchAll ? hit : specific).add(s);
+    }
+    specific.forEach((s) => hit.add(s));
 
-    if (hit.size > 0) {
+    const isUiSource = /^src\/.+\.(tsx?|css)$/.test(f) && !/\.test\.tsx?$/.test(f);
+    if (isUiSource && specific.size === 0) {
+      // Unmapped UI file: the catch-all alone is not coverage — add the cheap canaries.
+      CORE.forEach((s) => hit.add(s));
+      hit.forEach((s) => specs.add(s));
+      reasons.push(`${f} → ${[...hit].map(baseSpec).join(', ')} (unmapped → core net)`);
+    } else if (hit.size > 0) {
       hit.forEach((s) => specs.add(s));
       reasons.push(`${f} → ${[...hit].map(baseSpec).join(', ')}`);
-    } else if (/^src\/.+\.(tsx?|css)$/.test(f) && !/\.test\.tsx?$/.test(f)) {
-      CORE.forEach((s) => specs.add(s));
-      reasons.push(`${f} → core net (smoke, layout)`);
     } else {
       reasons.push(`${f} → skip (no UI impact)`);
     }
@@ -335,10 +351,42 @@ function runPlaywright(playwrightArgs: string[]): never {
   process.exit(r.status ?? 1);
 }
 
+/**
+ * CI mode (`--ci-plan`): decide only, never build or run. Emits `run` (bool), `mode` (none | specs | all)
+ * and `specs` (space-separated) to stdout and `$GITHUB_OUTPUT`, so the workflow keeps its own
+ * install/build/run steps. Changed files come from `E2E_AFFECTED_FILES` (the PR files API —
+ * no deep clone needed). Any doubt resolves to `all`: a stale map must never skip tests.
+ */
+function emitCiPlan(mode: 'none' | 'specs' | 'all', specs: string[]): void {
+  const lines = [`run=${mode !== 'none'}`, `mode=${mode}`, `specs=${specs.join(' ')}`];
+  console.log(`\ne2e:affected --ci-plan → ${lines.join(' ')}`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\n`);
+}
+
+function runCiPlan(cov: Coverage, errors: string[]): void {
+  if (errors.length > 0) {
+    console.warn('e2e:affected --ci-plan — coverage map is out of date, running everything:');
+    for (const e of errors) console.warn(`  ✗ ${e}`);
+    emitCiPlan('all', []);
+    return;
+  }
+  const files = changedFiles();
+  const { runAll, specs, reasons } = plan(files, cov);
+  console.log(`e2e:affected --ci-plan — ${files.length} changed file(s):`);
+  for (const r of reasons) console.log(`  ${r}`);
+  if (runAll) emitCiPlan('all', []);
+  else emitCiPlan(specs.length > 0 ? 'specs' : 'none', specs);
+}
+
 // --- main ---------------------------------------------------------------------------------
 async function main(): Promise<void> {
   const cov = buildCoverage();
   const errors = validate(cov);
+
+  if (process.argv.includes('--ci-plan')) {
+    runCiPlan(cov, errors);
+    return;
+  }
 
   if (process.argv.includes('--check')) {
     if (errors.length > 0) {
