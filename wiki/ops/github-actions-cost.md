@@ -4,8 +4,9 @@ Summary: скільки Actions-хвилин палив репозиторій �
 робили, і чому після 2026-08-18 обмеженням став час очікування PR, а не гроші.
 Sources: GitHub REST live check 2026-08-18 (`/actions/runs`, `/actions/runs/{id}/timing`,
 `/actions/caches`, `/actions/permissions`), `.github/workflows/e2e.yml`, `playwright.config.ts`,
-`.github/dependabot.yml`
-Last updated: 2026-08-18
+`.github/dependabot.yml`, GitHub Actions live check 2026-10-04 (runs 37131677760, 37209797493),
+`scripts/e2e-affected.ts`
+Last updated: 2026-10-04
 
 ---
 
@@ -186,6 +187,40 @@ notes — тобто бамп потребує ручної перевірки, 
 Решта відкритого:
 - Форків поки 0. Коли з'являться — треба вирішити, чи ганяти e2e на fork-PR: секретів вони не
   отримують (`NEXT_PUBLIC_SUPABASE_URL` буде порожній), тож впадуть без користі.
+
+## 8. E2E на PR — точковий вибір спеків (2026-10-04)
+
+**Проблема.** Живий замір 2026-10-04: успішний прогін PR `Playwright smoke` тривав **~17 хв**
+(run `37131677760`), падаючий — **~39 хв** на межі `timeout-minutes: 40` (run `37209797493`).
+Інфраструктурні кроки (npm ci, кеші, `build` з `E2E_MINIMAL_PRERENDER`) разом — **1–2 хв**; весь
+час — крок «Run E2E tests»: усі 27 спеків × 3 рушії (chromium, firefox, webkit) на кожен пуш у PR,
+а в падаючому — ще й таймаути з ретраями. (source: Actions jobs live check 2026-10-04)
+
+**Що змінено.** CI тепер користується селектором `scripts/e2e-affected.ts`, який уже існував
+локально (покриття виводиться зі `data-testid` і маршрутів у спеках, а не з ручної мапи):
+
+| Подія | Що запускається |
+|---|---|
+| `pull_request` | лише спеки, зачеплені змінами; лише **chromium**; `--max-failures=5` |
+| `pull_request`, широка зміна (`globals.css`, root/locale layout, `package.json`, `e2e/helpers`, конфіги) | весь набір, але лише chromium |
+| `pull_request`, немаплений UI-файл у `src/` | `a11y-layout-matrix` + `smoke` + `layout-regression` |
+| `pull_request`, лише тести/не-UI | нічого не запускається (чек усе одно репортує зелений) |
+| `push` у `main`, `workflow_dispatch` | **повний набір на всіх трьох рушіях** — крос-браузерний бекстоп |
+
+Режим `--ci-plan` лише вирішує (пише `run`/`mode`/`specs` у `$GITHUB_OUTPUT`), а install/build/run
+лишаються кроками workflow. Список файлів береться з PR files API (його вже збирав крок
+рішення), тож додаткового deep clone немає. Будь-яке сумнівне місце — застаріла мапа
+(`e2e:check` червоний) — вирішується на користь **`all`**, а не пропуску. Видалений спек не
+передається в Playwright. Назва job `Playwright smoke` не змінилась, тож required-чек на `main`
+працює як і раніше.
+
+**Компроміс.** Регресія, що проявляється лише у firefox/webkit, тепер ловиться після мержу
+(повний прогін на `main` + Telegram-алерт при падінні), а не на PR. Зворотний шлях — прибрати
+`--project=chromium` у кроці «Run E2E tests».
+
+**Очікування (не виміряно):** типовий PR із 1–3 зачепленими спеками на одному рушії — у межах
+кількох хвилин замість 17; найгірший PR (широка зміна) — приблизно третина попереднього часу.
+Фактичне прискорення звірити на перших PR після мержу. (assumption)
 
 ## Related pages
 
