@@ -1,0 +1,241 @@
+{
+  "summary": "AH-7.2 CWV preview audit — lab Lighthouse + transfer sizes",
+  "captured_at": "2026-10-05T18:23:28.323Z",
+  "base": "https://aitodaybrief.com",
+  "label": "2026-10-05-production-baseline",
+  "method": "Lighthouse CLI performance category; TBT as INP lab proxy; JS/CSS from Playwright response content-length sum",
+  "routes": [
+    "home",
+    "news",
+    "article",
+    "daily",
+    "weekly"
+  ],
+  "reports": [
+    {
+      "page_type": "home",
+      "url": "https://aitodaybrief.com/en",
+      "transfer_bytes": {
+        "js": 272554,
+        "css": 76349,
+        "requests": 51
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1301.464,
+            "lcp_ms": 3231.231999999999,
+            "tbt_ms": 162.4999999999991,
+            "cls": 0,
+            "speed_index_ms": 2208.011113852587
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1307.7815000000003,
+            "lcp_ms": 5641.497499999999,
+            "tbt_ms": 41,
+            "cls": 0,
+            "speed_index_ms": 1582.290468005097
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "news",
+      "url": "https://aitodaybrief.com/en/news",
+      "transfer_bytes": {
+        "js": 292124,
+        "css": 30393,
+        "requests": 56
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1484.406,
+            "lcp_ms": 5595.949500000001,
+            "tbt_ms": 56,
+            "cls": 0,
+            "speed_index_ms": 1484.406
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1458.207,
+            "lcp_ms": 3217.6129999999994,
+            "tbt_ms": 49,
+            "cls": 0,
+            "speed_index_ms": 1458.207
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "article",
+      "url": "https://aitodaybrief.com/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco",
+      "transfer_bytes": {
+        "js": 293821,
+        "css": 30393,
+        "requests": 57
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1302.0865000000001,
+            "lcp_ms": 3226.8025000000002,
+            "tbt_ms": 114,
+            "cls": 0,
+            "speed_index_ms": 1563.4565703062103
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1309.4499999999998,
+            "lcp_ms": 3308.524999999999,
+            "tbt_ms": 41,
+            "cls": 0,
+            "speed_index_ms": 1309.4499999999998
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "daily",
+      "url": "https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution",
+      "transfer_bytes": {
+        "js": 283491,
+        "css": 30393,
+        "requests": 53
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1306.46,
+            "lcp_ms": 4516.120000000001,
+            "tbt_ms": 23,
+            "cls": 0,
+            "speed_index_ms": 1891.4408180026564
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1316.7250000000001,
+            "lcp_ms": 5089.485500000001,
+            "tbt_ms": 30.5,
+            "cls": 0,
+            "speed_index_ms": 1369.390516002834
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "weekly",
+      "url": "https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "transfer_bytes": {
+        "js": 283340,
+        "css": 30393,
+        "requests": 53
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1295.27,
+            "lcp_ms": 3142.618500000001,
+            "tbt_ms": 47.5,
+            "cls": 0,
+            "speed_index_ms": 1782.4535079925117
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1303.4465,
+            "lcp_ms": 3222.8105000000005,
+            "tbt_ms": 24,
+            "cls": 0,
+            "speed_index_ms": 2100.0452917789917
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    }
+  ]
+}
