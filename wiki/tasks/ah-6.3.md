@@ -2,7 +2,7 @@
 
 Summary: View Transitions між маршрутами — cross-fade контенту в `<main>`, reduced motion вимикає анімацію, фокус після навігації на H1 або `main`.
 Sources: [after-hours-redesign-epic §AH-6.3](../product/after-hours-redesign-epic.md); `node_modules/next/dist/docs/01-app/02-guides/view-transitions.md`; `artifacts/after-hours/tension.css`; [PR #434](https://github.com/sanchahous/ai-today-brief/pull/434)
-Last updated: 2026-10-05
+Last updated: 2026-10-05 (T1-f1 repair)
 
 ---
 
@@ -20,6 +20,7 @@ Task: ah-6.3
 
 ## Updates
 
+- 2026-10-05 (T1-f1): Pre-push repair — `cookie-overlay` чекає стабільного hit-test після hydration (`expect.poll`); `header-layout` мокає `/api/search` і читає значення поля з DOM у `SearchDialog.submit`; `a11y-layout-matrix` ERR_NO_BUFFER_SPACE — environmental (retry), не регресія view transitions.
 - 2026-10-05: Реалізовано AH-6.3 (ATB-56, PR #434).
   - `src/app/[lang]/template.tsx` — React `<ViewTransition default="route-crossfade">` на вміст маршруту (header/footer поза переходом).
   - `src/app/globals.css` — opacity cross-fade (`::view-transition-*`), `pointer-events: none` на overlay; reduced motion обнуляє тривалість.

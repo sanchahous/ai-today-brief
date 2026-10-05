@@ -23,7 +23,7 @@ const bottomOwner = (page: import('@playwright/test').Page) =>
       return 'search-modal';
     if (el.closest('[data-testid="mobile-menu-panel"],[data-testid="mobile-menu-backdrop"]'))
       return 'menu';
-    if (el.closest('[data-testid="cookie-consent"],[role="region"]')) return 'cookie-banner';
+    if (el.closest('[data-testid="cookie-consent"]')) return 'cookie-banner';
     return el.tagName;
   });
 
@@ -38,7 +38,8 @@ test.describe('Cookie banner vs overlays (no consent seeded)', () => {
     await page.setViewportSize(VIEWPORTS.phone390);
     await page.goto('/en', { waitUntil: 'domcontentloaded' });
     await expect(consentRegion(page)).toBeVisible({ timeout: 30_000 });
-    expect(await bottomOwner(page)).toBe('cookie-banner');
+    // Hydration paints the fixed card before compositor hit-testing catches up (~1–2 frames).
+    await expect.poll(() => bottomOwner(page), { timeout: 5_000 }).toBe('cookie-banner');
   });
 
   test('search modal renders above the cookie banner', async ({ page }) => {

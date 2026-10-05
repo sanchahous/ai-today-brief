@@ -222,9 +222,11 @@ export function SearchDialog({
     [closeSearchDialog, triggerEl],
   );
 
-  function submit(e: FormEvent) {
+  function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    navigateToSearch(query, wide ? 'dialog_desktop' : 'dialog_mobile');
+    const field = e.currentTarget.querySelector('input[type="search"]');
+    const value = field instanceof HTMLInputElement ? field.value : query;
+    navigateToSearch(value, wide ? 'dialog_desktop' : 'dialog_mobile');
   }
 
   function seeAll(source: string) {
