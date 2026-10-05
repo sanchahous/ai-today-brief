@@ -4,7 +4,91 @@
     {
       "path": "src/app/globals.css",
       "kind": "color",
+      "value": "#0d1110",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
       "value": "#141414",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "#1f231f",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "#35342a",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "#b5d8cc",
+      "count": 2
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "#b9b7ac",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "#d4b483",
+      "count": 2
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "#efe8da",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "#f0e9dc",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "rgb(10 12 11 / 0.3)",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "rgb(142 42 63 / 0.28)",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "rgb(181 216 204 / 0.2)",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "rgb(183 161 125 / 0.16)",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "rgb(212 180 131 / 0.14)",
+      "count": 1
+    },
+    {
+      "path": "src/app/globals.css",
+      "kind": "color",
+      "value": "rgb(212 180 131 / 0.45)",
       "count": 1
     },
     {

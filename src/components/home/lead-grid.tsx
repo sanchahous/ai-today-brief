@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { getStrings } from '@/lib/i18n';
 import type { HomeEdition, HomeItem } from '@/lib/home';
 import type { Lang } from '@/lib/site';
-import { ArrowRight, BrandMark } from '@/components/icons';
+import { BrandStage } from '@/components/brand/brand-stage';
+import { ArrowRight } from '@/components/icons';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
 
@@ -35,7 +36,7 @@ export function LeadGrid({
       className="mx-auto grid w-full max-w-[1160px] gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.72fr)]"
     >
       {featured ? (
-        <article className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_auto]">
+        <article className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
           <div>
             <p className="text-accent eyebrow">
               {t.leadEyebrow}
@@ -76,8 +77,8 @@ export function LeadGrid({
               </Link>
             </WeeklyTopClickTracker>
           </div>
-          <div className="text-accent hidden place-items-center md:grid" aria-hidden>
-            <BrandMark size={160} className="size-40" />
+          <div className="lead-stage min-w-0">
+            <BrandStage lang={lang} />
           </div>
         </article>
       ) : null}

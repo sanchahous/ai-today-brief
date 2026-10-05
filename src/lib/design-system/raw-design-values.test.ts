@@ -55,6 +55,7 @@ const style = { color: 'rgb(var(--rgb))', boxShadow: 'none' };`,
       'src/lib/social/render.tsx',
       'src/lib/weekly-digest/pdf.ts',
       'src/lib/brand-mark.ts',
+      'src/components/brand/brand-stage.tsx',
       'src/components/example.test.tsx',
     ])
       expect(isExcludedPath(excluded)).toBe(true);
