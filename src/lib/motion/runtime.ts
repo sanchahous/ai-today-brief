@@ -1,3 +1,4 @@
+import { closestFromEventTarget } from '@/lib/dom/event-target';
 import { createBrandSceneRegistry, runBrandStrum } from '@/lib/motion/brand-resolve';
 import { MotionBudget } from '@/lib/motion/budget';
 import { createAnimator, runGesture } from '@/lib/motion/gestures';
@@ -124,7 +125,7 @@ export function createMotionRuntime(options: { locale: string }): MotionRuntime 
     document.addEventListener(
       'click',
       (event) => {
-        const replay = (event.target as Element | null)?.closest('[data-brand-replay]');
+        const replay = closestFromEventTarget(event.target, '[data-brand-replay]');
         if (!replay || replay.getAttribute('aria-disabled') === 'true') return;
         const stage = replay.closest('.brand-stage');
         if (stage) brand.play(stage);
@@ -141,7 +142,7 @@ export function createMotionRuntime(options: { locale: string }): MotionRuntime 
       'pointerenter',
       (event) => {
         if (!pointer.matches) return;
-        const link = (event.target as Element | null)?.closest('[data-brand-strum]');
+        const link = closestFromEventTarget(event.target, '[data-brand-strum]');
         if (link) ringMark(link);
       },
       { signal, capture: true },
@@ -149,7 +150,7 @@ export function createMotionRuntime(options: { locale: string }): MotionRuntime 
     document.addEventListener(
       'focusin',
       (event) => {
-        const link = (event.target as Element | null)?.closest('[data-brand-strum]');
+        const link = closestFromEventTarget(event.target, '[data-brand-strum]');
         if (link) ringMark(link);
       },
       { signal },
@@ -160,7 +161,7 @@ export function createMotionRuntime(options: { locale: string }): MotionRuntime 
     document.addEventListener(
       'pointerup',
       (event) => {
-        const control = (event.target as Element | null)?.closest(PRESSABLE);
+        const control = closestFromEventTarget(event.target, PRESSABLE);
         if (!control || (control as HTMLButtonElement).disabled) return;
         if (control.getAttribute('aria-disabled') === 'true') return;
         runGesture(control, 'press', animate, {
@@ -176,7 +177,7 @@ export function createMotionRuntime(options: { locale: string }): MotionRuntime 
       'keydown',
       (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
-        const control = (event.target as Element | null)?.closest(PRESSABLE);
+        const control = closestFromEventTarget(event.target, PRESSABLE);
         if (!control || (control as HTMLButtonElement).disabled) return;
         if (control.getAttribute('aria-disabled') === 'true') return;
         runGesture(control, 'press', animate, {

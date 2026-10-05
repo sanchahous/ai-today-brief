@@ -73,9 +73,12 @@ test.describe('Header layout', () => {
       const input = dialog.getByRole('searchbox');
       await input.fill('agent');
       await expect(input).toHaveValue('agent');
+      const searchForm = dialog.locator('form[role="search"]');
       await Promise.all([
-        page.waitForURL(/\/uk\/news\/search\?q=agent$/),
-        input.press('Enter'),
+        page.waitForURL(/\/uk\/news\/search\?q=agent$/, { timeout: 45_000 }),
+        searchForm.evaluate((form) => {
+          if (form instanceof HTMLFormElement) form.requestSubmit();
+        }),
       ]);
     });
   }

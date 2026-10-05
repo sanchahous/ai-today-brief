@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { trackEvent } from '@/lib/analytics-client';
+import { closestFromEventTarget } from '@/lib/dom/event-target';
 import { socialProfileClickParams } from '@/lib/analytics-events';
 
 /** Wraps a server-rendered social link and reports the click to GA4. */
@@ -18,7 +19,7 @@ export function SocialLinkTracker({
     <span
       style={{ display: 'contents' }}
       onClickCapture={(e) => {
-        if ((e.target as HTMLElement | null)?.closest('a[href]')) {
+        if (closestFromEventTarget(e.target, 'a[href]')) {
           trackEvent('social_profile_click', socialProfileClickParams(network, placement));
         }
       }}
