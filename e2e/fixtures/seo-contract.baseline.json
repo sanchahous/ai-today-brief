@@ -2006,67 +2006,49 @@
     },
     {
       "path": "/en/zzz-missing",
-      "status": 200,
+      "status": 404,
       "resolvedPath": "/en/zzz-missing",
       "lang": "en",
-      "title": "AI Today Brief — The daily AI-engineering brief — for builders. · AI Today Brief",
-      "description": "The daily AI-engineering brief — for builders.",
-      "robots": "noindex",
-      "canonical": "https://aitodaybrief.com/en",
-      "hreflang": {
-        "en": "https://aitodaybrief.com/en",
-        "uk": "https://aitodaybrief.com/uk",
-        "x-default": "https://aitodaybrief.com/en"
-      },
+      "title": "Page not found · AI Today Brief",
+      "description": "The page may have moved or never existed. Search the archive or pick up where the newsroom is.",
+      "robots": "noindex, follow",
+      "canonical": null,
+      "hreflang": {},
       "openGraph": {
-        "og:title": "AI Today Brief — The daily AI-engineering brief — for builders. · AI Today Brief",
-        "og:description": "The daily AI-engineering brief — for builders.",
+        "og:title": "Page not found · AI Today Brief",
+        "og:description": "The page may have moved or never existed. Search the archive or pick up where the newsroom is.",
         "og:url": "https://aitodaybrief.com",
         "og:site_name": "AI Today Brief",
-        "og:image": "https://aitodaybrief.com/en/opengraph-image?8cfcfedc40047595",
-        "og:image:type": "image/png",
-        "og:image:width": "1200",
-        "og:image:height": "630",
-        "og:image:alt": "AI Today Brief",
         "og:type": "website"
       },
-      "twitterCard": "summary_large_image",
+      "twitterCard": "summary",
       "jsonLdTypes": [],
       "jsonLdIssues": [],
-      "h1Count": 0,
-      "mainTextLength": 0
+      "h1Count": 1,
+      "mainTextLength": 194
     },
     {
       "path": "/uk/zzz-missing",
-      "status": 200,
+      "status": 404,
       "resolvedPath": "/uk/zzz-missing",
       "lang": "en",
-      "title": "AI Today Brief — Щоденний бриф з AI-інженерії — для тих, хто будує. · AI Today Brief",
-      "description": "Щоденний бриф з AI-інженерії — для тих, хто будує.",
-      "robots": "noindex",
-      "canonical": "https://aitodaybrief.com/uk",
-      "hreflang": {
-        "en": "https://aitodaybrief.com/en",
-        "uk": "https://aitodaybrief.com/uk",
-        "x-default": "https://aitodaybrief.com/en"
-      },
+      "title": "Page not found · AI Today Brief",
+      "description": "The page may have moved or never existed. Search the archive or pick up where the newsroom is.",
+      "robots": "noindex, follow",
+      "canonical": null,
+      "hreflang": {},
       "openGraph": {
-        "og:title": "AI Today Brief — Щоденний бриф з AI-інженерії — для тих, хто будує. · AI Today Brief",
-        "og:description": "Щоденний бриф з AI-інженерії — для тих, хто будує.",
+        "og:title": "Page not found · AI Today Brief",
+        "og:description": "The page may have moved or never existed. Search the archive or pick up where the newsroom is.",
         "og:url": "https://aitodaybrief.com",
         "og:site_name": "AI Today Brief",
-        "og:image": "https://aitodaybrief.com/uk/opengraph-image?8cfcfedc40047595",
-        "og:image:type": "image/png",
-        "og:image:width": "1200",
-        "og:image:height": "630",
-        "og:image:alt": "AI Today Brief",
         "og:type": "website"
       },
-      "twitterCard": "summary_large_image",
+      "twitterCard": "summary",
       "jsonLdTypes": [],
       "jsonLdIssues": [],
-      "h1Count": 0,
-      "mainTextLength": 0
+      "h1Count": 1,
+      "mainTextLength": 194
     }
   ]
 }
