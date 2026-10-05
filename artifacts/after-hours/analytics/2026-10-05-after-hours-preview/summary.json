@@ -1,0 +1,241 @@
+{
+  "summary": "AH-7.2 CWV preview audit — lab Lighthouse + transfer sizes",
+  "captured_at": "2026-10-05T18:18:05.067Z",
+  "base": "http://localhost:3100",
+  "label": "2026-10-05-after-hours-preview",
+  "method": "Lighthouse CLI performance category; TBT as INP lab proxy; JS/CSS from Playwright response content-length sum",
+  "routes": [
+    "home",
+    "news",
+    "article",
+    "daily",
+    "weekly"
+  ],
+  "reports": [
+    {
+      "page_type": "home",
+      "url": "http://localhost:3100/en",
+      "transfer_bytes": {
+        "js": 263396,
+        "css": 78162,
+        "requests": 51
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1204.9029,
+            "lcp_ms": 4882.8207999999995,
+            "tbt_ms": 34.28177500000038,
+            "cls": 0,
+            "speed_index_ms": 1204.9029
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1204.7292,
+            "lcp_ms": 3998.458399999999,
+            "tbt_ms": 29.5,
+            "cls": 0,
+            "speed_index_ms": 1321.234940410863
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "news",
+      "url": "http://localhost:3100/en/news",
+      "transfer_bytes": {
+        "js": 282235,
+        "css": 32206,
+        "requests": 56
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1354.844,
+            "lcp_ms": 5740.946,
+            "tbt_ms": 35,
+            "cls": 0,
+            "speed_index_ms": 1354.844
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1355.3986,
+            "lcp_ms": 4167.7972,
+            "tbt_ms": 34,
+            "cls": 0,
+            "speed_index_ms": 1355.3986
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "article",
+      "url": "http://localhost:3100/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco",
+      "transfer_bytes": {
+        "js": 283877,
+        "css": 32206,
+        "requests": 56
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1204.973,
+            "lcp_ms": 4891.674000000001,
+            "tbt_ms": 33,
+            "cls": 0,
+            "speed_index_ms": 1204.973
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1204.147,
+            "lcp_ms": 3712.2205,
+            "tbt_ms": 44,
+            "cls": 0,
+            "speed_index_ms": 1204.147
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "daily",
+      "url": "http://localhost:3100/en/reasoning-token-compression-and-efficient-agent-execution",
+      "transfer_bytes": {
+        "js": 273916,
+        "css": 32206,
+        "requests": 52
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1205.7985,
+            "lcp_ms": 4541.4395,
+            "tbt_ms": 39.000000000000455,
+            "cls": 0,
+            "speed_index_ms": 1205.7985
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1204.8165,
+            "lcp_ms": 3865.7247500000003,
+            "tbt_ms": 28,
+            "cls": 0,
+            "speed_index_ms": 1357.3316828412567
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    },
+    {
+      "page_type": "weekly",
+      "url": "http://localhost:3100/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "transfer_bytes": {
+        "js": 273742,
+        "css": 32206,
+        "requests": 53
+      },
+      "devices": [
+        {
+          "device": "mobile",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1354.4235,
+            "lcp_ms": 5333.2255000000005,
+            "tbt_ms": 39.00000000000091,
+            "cls": 0,
+            "speed_index_ms": 1354.4235
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        },
+        {
+          "device": "desktop",
+          "lighthouse_version": "13.5.0",
+          "performance_score": null,
+          "metrics": {
+            "fcp_ms": 1354.5549,
+            "lcp_ms": 5171.25825,
+            "tbt_ms": 19,
+            "cls": 0,
+            "speed_index_ms": 1804.697062136689
+          },
+          "budgets": {
+            "lcp_pass": false,
+            "tbt_pass": true,
+            "cls_pass": true
+          }
+        }
+      ]
+    }
+  ]
+}
