@@ -86,6 +86,36 @@
       "locales": ["uk"]
     },
     {
+      "id": "tools-prompt-optimizer",
+      "path": "/en/tools/prompt-optimizer",
+      "locales": ["en"]
+    },
+    {
+      "id": "tools-prompt-optimizer-uk",
+      "path": "/uk/tools/prompt-optimizer",
+      "locales": ["uk"]
+    },
+    {
+      "id": "tools-settings-builder",
+      "path": "/en/tools/settings-builder",
+      "locales": ["en"]
+    },
+    {
+      "id": "tools-settings-builder-uk",
+      "path": "/uk/tools/settings-builder",
+      "locales": ["uk"]
+    },
+    {
+      "id": "tools-claude-md-generator",
+      "path": "/en/tools/claude-md-generator",
+      "locales": ["en"]
+    },
+    {
+      "id": "tools-claude-md-generator-uk",
+      "path": "/uk/tools/claude-md-generator",
+      "locales": ["uk"]
+    },
+    {
       "id": "about",
       "path": "/en/about",
       "locales": ["en"]

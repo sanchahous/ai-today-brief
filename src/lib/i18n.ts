@@ -118,7 +118,14 @@ export const STRINGS = {
       suggestText: 'Want another tool?',
       suggestLink: 'Suggest one',
     },
+    toolWorkspace: {
+      exportError: 'Copy failed. Select the output and copy manually.',
+      heuristicNote:
+        'Heuristic, not a quality score. Rules cite official guidance; your judgment decides.',
+    },
     promptOptimizer: {
+      inputTitle: 'Your prompt',
+      promptRequired: 'Paste a prompt first.',
       surfaceLabel: 'Where will you run this prompt?',
       surfaceHelp: 'Surface changes which Claude prompting rules apply.',
       surfaces: { api: 'API', 'claude-code': 'Claude Code', 'claude-ai': 'claude.ai' },
@@ -164,6 +171,8 @@ export const STRINGS = {
       citations: 'Citations',
     },
     settingsBuilder: {
+      inputTitle: 'Guardrails',
+      outputDraft: 'Choose guardrails and build to preview the file.',
       privacyPromise: '100% client-side; your settings choices never leave this browser.',
       heuristicDisclaimer:
         'This builder will output deterministic settings.json scaffolding from explicit choices, not a hidden score.',
@@ -201,6 +210,10 @@ export const STRINGS = {
       citations: 'Citations',
     },
     claudeMdGenerator: {
+      inputTitle: 'Project context',
+      outputDraftAgents: 'Your shared instructions will appear here.',
+      outputDraftClaude: 'Claude-specific wiring will appear here.',
+      projectNameRequired: 'Enter a project name.',
       privacyPromise: '100% client-side; project instructions stay in this browser.',
       heuristicDisclaimer:
         'This generator will separate portable AGENTS.md guidance from Claude-specific CLAUDE.md wiring and lint by section, not by a single health score.',
@@ -679,7 +692,14 @@ export const STRINGS = {
       suggestText: 'Потрібна інша утиліта?',
       suggestLink: 'Запропонуйте',
     },
+    toolWorkspace: {
+      exportError: 'Не вдалося скопіювати. Виділіть результат і скопіюйте вручну.',
+      heuristicNote:
+        'Евристика, а не оцінка якості. Правила посилаються на офіційний гайд; рішення — за вами.',
+    },
     promptOptimizer: {
+      inputTitle: 'Ваш промпт',
+      promptRequired: 'Спершу вставте промпт.',
       surfaceLabel: 'Де ви запускатимете цей промпт?',
       surfaceHelp: 'Поверхня визначає, які правила промптингу Claude застосовуються.',
       surfaces: { api: 'API', 'claude-code': 'Claude Code', 'claude-ai': 'claude.ai' },
@@ -725,6 +745,8 @@ export const STRINGS = {
       citations: 'Цитати',
     },
     settingsBuilder: {
+      inputTitle: 'Запобіжники',
+      outputDraft: 'Оберіть запобіжники й зберіть, щоб побачити файл.',
       privacyPromise: '100% client-side; ваші налаштування не залишають цей браузер.',
       heuristicDisclaimer:
         'Цей builder видаватиме детермінований settings.json scaffold з явних виборів, а не прихований score.',
@@ -762,6 +784,10 @@ export const STRINGS = {
       citations: 'Цитати',
     },
     claudeMdGenerator: {
+      inputTitle: 'Контекст проєкту',
+      outputDraftAgents: 'Тут з’являться спільні інструкції.',
+      outputDraftClaude: 'Тут з’явиться підключення для Claude.',
+      projectNameRequired: 'Введіть назву проєкту.',
       privacyPromise: '100% client-side; інструкції проєкту залишаються у цьому браузері.',
       heuristicDisclaimer:
         'Цей generator розділятиме портативні правила AGENTS.md і Claude-specific wiring у CLAUDE.md та лінтитиме за секціями, без єдиного health score.',
