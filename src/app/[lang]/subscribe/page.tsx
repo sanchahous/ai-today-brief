@@ -10,7 +10,6 @@ import { NewsletterForm } from '@/components/home/newsletter-form';
 import { SubscribeBenefitsGrid } from '@/components/subscribe-benefits-grid';
 import { SubscribeSampleList } from '@/components/subscribe-sample-list';
 import { FaqAccordionItem } from '@/components/home/faq-accordion-item';
-import { Reveal } from '@/components/reveal';
 
 // 24 h: near-static landing; only the sample-items strip changes day to day.
 export const revalidate = 86400;
@@ -87,15 +86,21 @@ export default async function SubscribePage({ params }: { params: Promise<Params
 
         <div className="subscribe-layout mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-10 items-start pb-12">
           <section className="subscribe-main" aria-labelledby="sub-title">
-            <Reveal>
-              <p className="eyebrow text-accent">{p.eyebrow}</p>
-              <h1 id="sub-title" className="font-serif text-[clamp(2rem,4.5vw,3.1rem)] font-bold leading-tight mt-2 mb-4 text-text">
-                {p.title}
-              </h1>
-              <p className="text-muted text-base sm:text-lg leading-relaxed max-w-xl mb-8">
-                {p.lead}
-              </p>
-            </Reveal>
+            <p className="eyebrow text-accent">{p.eyebrow}</p>
+            <h1
+              id="sub-title"
+              data-gesture="curtain"
+              className="font-serif text-[clamp(2rem,4.5vw,3.1rem)] font-bold leading-tight mt-2 mb-4 text-text"
+            >
+              {p.title}
+            </h1>
+            <p
+              data-gesture="reveal"
+              data-gesture-delay="90"
+              className="text-muted text-base sm:text-lg leading-relaxed max-w-xl mb-8"
+            >
+              {p.lead}
+            </p>
             <div>
               <NewsletterForm lang={lang} variant="full" placement="subscribe-page" />
             </div>
@@ -113,22 +118,24 @@ export default async function SubscribePage({ params }: { params: Promise<Params
         <SubscribeBenefitsGrid lang={lang} title={p.whatTitle} />
 
         <section aria-labelledby="sub-faq-title" className="section faq mt-16 mx-auto w-full max-w-3xl">
-          <Reveal>
-            <h2 id="sub-faq-title" className="text-center font-serif text-[clamp(1.5rem,3.2vw,2rem)] font-bold text-text mb-8">
-              {p.faqTitle}
-            </h2>
-            <div className="grid gap-3">
-              {SUBSCRIBE_FAQS.map((f, i) => (
-                <FaqAccordionItem
-                  key={f.q.en}
-                  question={f.q[lang]}
-                  answer={f.a[lang]}
-                  questionIndex={i}
-                  defaultOpen={i === 0}
-                />
-              ))}
-            </div>
-          </Reveal>
+          <h2
+            id="sub-faq-title"
+            data-gesture="settle"
+            className="text-center font-serif text-[clamp(1.5rem,3.2vw,2rem)] font-bold text-text mb-8"
+          >
+            {p.faqTitle}
+          </h2>
+          <div className="grid gap-3">
+            {SUBSCRIBE_FAQS.map((f, i) => (
+              <FaqAccordionItem
+                key={f.q.en}
+                question={f.q[lang]}
+                answer={f.a[lang]}
+                questionIndex={i}
+                defaultOpen={i === 0}
+              />
+            ))}
+          </div>
         </section>
       </div>
     </>

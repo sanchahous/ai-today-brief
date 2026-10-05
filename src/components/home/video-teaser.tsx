@@ -1,16 +1,14 @@
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { PlayIcon } from '@/components/icons';
-import { Reveal } from '@/components/reveal';
-
 /** Provisioned weekly-video teaser — the CTA is disabled until the channel ships. */
 export function VideoTeaser({ lang }: { lang: Lang }) {
   const t = getStrings(lang).landing;
   return (
     <section aria-labelledby="video-title" className="mx-auto w-full max-w-[1160px] px-6 py-6">
-      <Reveal>
-        <div
-          className="rounded-card border-border relative flex flex-wrap items-center gap-6 overflow-hidden border p-6 sm:p-10"
+      <div
+        data-gesture="fold"
+        className="rounded-card border-border relative flex flex-wrap items-center gap-6 overflow-hidden border p-6 sm:p-10"
           style={{
             background:
               'radial-gradient(120% 140% at 100% 0%, rgba(240,192,64,0.16), transparent 55%), var(--surface)',
@@ -42,8 +40,7 @@ export function VideoTeaser({ lang }: { lang: Lang }) {
           >
             {t.videoCta}
           </button>
-        </div>
-      </Reveal>
+      </div>
     </section>
   );
 }

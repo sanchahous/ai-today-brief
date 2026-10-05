@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Breadcrumbs, type BreadcrumbItem } from '@/components/breadcrumbs';
-import { Reveal } from '@/components/reveal';
 import { LinkTabs } from '@/components/ui/tabs';
 import { getStrings } from '@/lib/i18n';
 import { LEGAL_DOCS, POLICY_KEYS, type PolicyKey } from '@/lib/legal';
@@ -20,13 +19,15 @@ export function TrustPageShell({ crumbs, eyebrow, title, lead, children, maxWidt
   return (
     <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
       <Breadcrumbs items={crumbs} />
-      <Reveal>
-        <header className="mb-8" style={{ maxWidth }}>
-          <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{eyebrow}</p>
-          <h1 className="mt-2 text-[clamp(1.8rem,4.5vw,2.5rem)] leading-tight">{title}</h1>
-          <p className="text-muted mt-4 text-base leading-relaxed">{lead}</p>
-        </header>
-      </Reveal>
+      <header className="mb-8" style={{ maxWidth }}>
+        <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{eyebrow}</p>
+        <h1 data-gesture="curtain" className="mt-2 text-[clamp(1.8rem,4.5vw,2.5rem)] leading-tight">
+          {title}
+        </h1>
+        <p data-gesture="reveal" data-gesture-delay="90" className="text-muted mt-4 text-base leading-relaxed">
+          {lead}
+        </p>
+      </header>
       <div style={{ maxWidth }}>{children}</div>
     </div>
   );

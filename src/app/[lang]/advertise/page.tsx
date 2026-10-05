@@ -5,7 +5,6 @@ import { getStrings } from '@/lib/i18n';
 import { AD_INVENTORY } from '@/lib/marketing-content';
 import { AdvertiseInquiryCta } from '@/components/advertise-inquiry-cta';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
-import { Reveal } from '@/components/reveal';
 import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
@@ -67,15 +66,18 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
       <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10 pb-16">
         <Breadcrumbs items={crumbs} />
 
-        <Reveal>
-          <header className="page-intro max-w-2xl mt-4 mb-10">
-            <p className="eyebrow text-accent">{p.eyebrow}</p>
-            <h1 className="font-serif text-[clamp(2rem,4.5vw,3rem)] font-bold leading-tight mt-2 mb-4 text-text">
-              {p.title}
-            </h1>
-            <p className="text-muted text-base sm:text-lg leading-relaxed">{p.lead}</p>
-          </header>
-        </Reveal>
+        <header className="page-intro max-w-2xl mt-4 mb-10">
+          <p className="eyebrow text-accent">{p.eyebrow}</p>
+          <h1
+            data-gesture="curtain"
+            className="font-serif text-[clamp(2rem,4.5vw,3rem)] font-bold leading-tight mt-2 mb-4 text-text"
+          >
+            {p.title}
+          </h1>
+          <p data-gesture="reveal" data-gesture-delay="90" className="text-muted text-base sm:text-lg leading-relaxed">
+            {p.lead}
+          </p>
+        </header>
 
         <section className="section ad-grid my-10 grid grid-cols-1 lg:grid-cols-3 gap-4" aria-label={p.inventory}>
           {AD_INVENTORY.map((slot, i) => (
@@ -101,17 +103,18 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
           ))}
         </section>
 
-        <Reveal>
-          <section className="section ad-contact rounded-card border border-border bg-surface p-6 sm:p-8 mt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="max-w-xl">
-              <h2 className="font-serif text-2xl font-bold text-text mb-2">
-                {lang === 'uk' ? 'Почнімо розмову.' : 'Start a conversation.'}
-              </h2>
-              <p className="text-muted text-sm sm:text-base leading-relaxed">{p.contactBody}</p>
-            </div>
-            <AdvertiseInquiryCta email={ADVERTISE_EMAIL} label={p.contactCta} />
-          </section>
-        </Reveal>
+        <section
+          data-gesture="reveal"
+          className="section ad-contact rounded-card border border-border bg-surface p-6 sm:p-8 mt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+        >
+          <div className="max-w-xl">
+            <h2 className="font-serif text-2xl font-bold text-text mb-2">
+              {lang === 'uk' ? 'Почнімо розмову.' : 'Start a conversation.'}
+            </h2>
+            <p className="text-muted text-sm sm:text-base leading-relaxed">{p.contactBody}</p>
+          </div>
+          <AdvertiseInquiryCta email={ADVERTISE_EMAIL} label={p.contactCta} />
+        </section>
       </div>
     </>
   );

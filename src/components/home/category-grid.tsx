@@ -5,7 +5,6 @@ import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import type { HomeCategory } from '@/lib/home';
 import { ArrowRight, CategoryGlyph } from '@/components/icons';
-import { Reveal } from '@/components/reveal';
 import { SectionHead } from '@/components/home/section-head';
 import { CategoryHubClickTracker } from '@/components/analytics/home-click-trackers';
 import { CategoryMixBar } from '@/components/home/category-mix-bar';
@@ -26,20 +25,25 @@ export function CategoryGrid({
   const t = getStrings(lang).landing;
   return (
     <section aria-labelledby="cats-title" className="mx-auto w-full max-w-[1160px] px-6 py-12">
-      <Reveal>
+      <div data-gesture="settle">
         <SectionHead
           id="cats-title"
           eyebrow={t.categoriesEyebrow}
           title={t.categoriesTitle}
           subtitle={t.categoriesSubtitle}
         />
-      </Reveal>
+      </div>
       <div className="mt-7">
         <CategoryMixBar lang={lang} segments={coverage} sampleSize={coverageSampleSize} />
       </div>
       <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map((c, i) => (
-          <Reveal key={c.slug} delayMs={i * 60} className={i < 2 ? 'lg:col-span-2' : ''}>
+          <div
+            key={c.slug}
+            data-gesture="settle"
+            data-gesture-delay={String(i * 60)}
+            className={i < 2 ? 'lg:col-span-2' : ''}
+          >
             <CategoryCard
               lang={lang}
               category={c}
@@ -48,7 +52,7 @@ export function CategoryGrid({
               ctaLabel={t.categoryCta}
               articlesLabel={t.categoryArticles}
             />
-          </Reveal>
+          </div>
         ))}
       </div>
     </section>

@@ -16,7 +16,6 @@ import type { TrendingTopic } from '@/lib/home';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { trackEvent } from '@/lib/analytics-client';
-import { Reveal } from '@/components/reveal';
 import { StoryCard } from '@/components/editorial/story-card';
 import { SponsorCard } from '@/components/home/sponsor-card';
 import { SlidersIcon } from '@/components/icons';
@@ -479,13 +478,13 @@ export function NewsFeed({
           <div data-testid="news-feed-list" className="grid gap-4">
             {pageRows.map((p, i) => (
               <Fragment key={p.id}>
-                <Reveal delayMs={i * 45}>
+                <div data-gesture="index" data-gesture-delay={String(i * 45)}>
                   <StoryCard lang={lang} item={p} />
-                </Reveal>
+                </div>
                 {i === 5 && feedContext === 'hub' && (
-                  <Reveal delayMs={i * 45 + 20}>
+                  <div data-gesture="settle" data-gesture-delay={String(i * 45 + 20)}>
                     <SponsorCard lang={lang} placement="news-feed" />
-                  </Reveal>
+                  </div>
                 )}
               </Fragment>
             ))}

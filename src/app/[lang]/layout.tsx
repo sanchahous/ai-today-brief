@@ -6,6 +6,7 @@ import { CookieConsent } from '@/components/cookie-consent';
 import { AnalyticsProvider } from '@/components/analytics-provider';
 import { SocialClickCapture } from '@/components/social-click-capture';
 import { ReaderRevenue } from '@/components/reader-revenue';
+import { MotionProvider } from '@/components/motion/motion-provider';
 import { ToastProvider } from '@/components/ui/toast';
 import { getStrings } from '@/lib/i18n';
 import { LANGS, isLang, SITE_NAME, SITE_TAGLINE, SITE_URL, type Lang } from '@/lib/site';
@@ -62,6 +63,7 @@ export default async function LangLayout({
       <SocialClickCapture />
       <ReaderRevenue lang={lang} />
       <CookieConsent lang={lang} />
+      <MotionProvider locale={lang} />
     </ToastProvider>
   );
 }

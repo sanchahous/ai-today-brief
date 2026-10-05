@@ -6,7 +6,6 @@ import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import type { HomeItem } from '@/lib/home';
 import { ArrowRight, ClockIcon, PlayIcon } from '@/components/icons';
-import { Reveal } from '@/components/reveal';
 import { SectionHead } from '@/components/home/section-head';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
@@ -43,26 +42,24 @@ export function TopOfWeek({
       aria-labelledby="week-title"
       className="mx-auto w-full max-w-[1160px] scroll-mt-[var(--header-h)] px-6 py-12"
     >
-      <Reveal>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <SectionHead
-            id="week-title"
-            eyebrow={t.weekEyebrow}
-            title={t.weekTitle}
-            subtitle={t.weekSubtitle}
-          />
-          <Link
-            href={`/${lang}/news`}
-            className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center gap-2 border px-4 py-2 text-sm font-semibold transition-colors"
-          >
-            {t.weekCta}
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-      </Reveal>
+      <div data-gesture="settle" className="flex flex-wrap items-end justify-between gap-4">
+        <SectionHead
+          id="week-title"
+          eyebrow={t.weekEyebrow}
+          title={t.weekTitle}
+          subtitle={t.weekSubtitle}
+        />
+        <Link
+          href={`/${lang}/news`}
+          className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center gap-2 border px-4 py-2 text-sm font-semibold transition-colors"
+        >
+          {t.weekCta}
+          <ArrowRight size={16} />
+        </Link>
+      </div>
 
       <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <Reveal>
+        <div data-gesture="fold">
           <WeeklyTopClickTracker
             slot="featured"
             target={{
@@ -73,10 +70,10 @@ export function TopOfWeek({
           >
             <FeaturedCard lang={lang} item={featured} />
           </WeeklyTopClickTracker>
-        </Reveal>
+        </div>
         <div className="grid content-start gap-3">
           {secondary.map((it, i) => (
-            <Reveal key={it.id} delayMs={i * 70}>
+            <div key={it.id} data-gesture="index" data-gesture-delay={String(i * 70)}>
               <WeeklyTopClickTracker
                 slot="secondary"
                 rank={i + 2}
@@ -84,7 +81,7 @@ export function TopOfWeek({
               >
                 <SecondaryRow lang={lang} item={it} rank={i + 2} />
               </WeeklyTopClickTracker>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>

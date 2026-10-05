@@ -37,6 +37,7 @@ export function CategoryMixBar({
         {withCount.map((segment) => (
           <span
             key={segment.slug}
+            data-gesture="grow"
             className="min-w-[2px]"
             style={{
               width: `${(segment.count / sampleSize) * 100}%`,

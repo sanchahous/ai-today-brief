@@ -5,7 +5,6 @@ import Link from 'next/link';
 import type { HomeItem } from '@/lib/home';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
-import { Reveal } from '@/components/reveal';
 import { StoryCard } from '@/components/editorial/story-card';
 import { AccessiblePagination } from '@/components/ui/pagination';
 import { SponsorCard } from '@/components/home/sponsor-card';
@@ -117,13 +116,13 @@ export function PostFeed({
       <div className="grid gap-4">
         {rows.map((item, i) => (
           <Fragment key={item.id}>
-            <Reveal delayMs={i * 45}>
+            <div data-gesture="index" data-gesture-delay={String(i * 45)}>
               <StoryCard lang={lang} item={item} />
-            </Reveal>
+            </div>
             {weaveSponsor && i === 2 && (
-              <Reveal delayMs={i * 45 + 20}>
+              <div data-gesture="settle" data-gesture-delay={String(i * 45 + 20)}>
                 <SponsorCard lang={lang} placement="category-hub" />
-              </Reveal>
+              </div>
             )}
           </Fragment>
         ))}
