@@ -84,6 +84,10 @@ const OVERRIDES: Array<{ match: RegExp; specs: string[]; catchAll?: boolean }> =
     match: /^(?:src\/app\/\[lang\]\/weekly\/\[slug\]\/page\.tsx|src\/lib\/digests\.ts)$/,
     specs: [WEEKLY_SEO],
   },
+  {
+    match: /^src\/(?:app\/\[lang\]\/template\.tsx|components\/motion\/route-focus-main\.tsx)$/,
+    specs: ['e2e/view-transitions.spec.ts', 'e2e/motion-runtime.spec.ts'],
+  },
 ];
 
 const LOCALES = 'en|uk'; // from src/lib/i18n.ts — matches the [lang] segment in routes
