@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { BreadcrumbItem } from '@/components/breadcrumbs';
 import { trackEvent } from '@/lib/analytics-client';
 import { generateClaudeMdDocuments, type ProjectStack } from '@/lib/claude-md-generator';
@@ -58,12 +58,16 @@ export function ClaudeMdGeneratorClient({
   const agentsOutputState = deriveToolOutputState(generated, agentsCopyPhase);
   const claudeOutputState = deriveToolOutputState(generated, claudeCopyPhase);
 
+  useEffect(() => {
+    if (!projectNameError || !formRef.current) return;
+    focusFirstInvalid(formRef.current);
+  }, [projectNameError]);
+
   function handleGenerate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!projectName.trim()) {
       setProjectNameError(t.projectNameRequired);
       setGenerated(false);
-      if (formRef.current) focusFirstInvalid(formRef.current);
       return;
     }
 
@@ -175,7 +179,10 @@ export function ClaudeMdGeneratorClient({
                     copiedLabel={t.copied}
                     onCopy={() => void copyAgentsDocument()}
                     footnote={
-                      <a className="text-accent hover:underline" href="https://code.claude.com/docs/en/memory">
+                      <a
+                        className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+                        href="https://code.claude.com/docs/en/memory"
+                      >
                         {t.referenceLink}
                       </a>
                     }
@@ -203,7 +210,10 @@ export function ClaudeMdGeneratorClient({
                     copiedLabel={t.copied}
                     onCopy={() => void copyClaudeDocument()}
                     footnote={
-                      <a className="text-accent hover:underline" href="https://code.claude.com/docs/en/memory">
+                      <a
+                        className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+                        href="https://code.claude.com/docs/en/memory"
+                      >
                         {t.referenceLink}
                       </a>
                     }

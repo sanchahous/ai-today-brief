@@ -93,7 +93,10 @@ function CitationList({
       <ul className="m-0 mt-1 grid list-none gap-1 p-0 text-sm">
         {citations.map((citation) => (
           <li key={citation.url}>
-            <a className="text-accent hover:underline" href={citation.url}>
+            <a
+              className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+              href={citation.url}
+            >
               {citation.label}
             </a>
             {citation.quote[lang] ? (

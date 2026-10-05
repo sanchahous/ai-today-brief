@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { BreadcrumbItem } from '@/components/breadcrumbs';
 import { trackEvent } from '@/lib/analytics-client';
 import type { ToolWorkspaceTool } from '@/components/tools/tool-workspace';
@@ -53,12 +53,16 @@ export function PromptOptimizerClient({
   const tokenRange = useMemo(() => estimatePromptTokenRange(prompt), [prompt]);
   const outputState = result ? 'ready' : 'draft';
 
+  useEffect(() => {
+    if (!promptError || !formRef.current) return;
+    focusFirstInvalid(formRef.current);
+  }, [promptError]);
+
   function runLint(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!prompt.trim()) {
       setPromptError(t.promptRequired);
       setResult(null);
-      if (formRef.current) focusFirstInvalid(formRef.current);
       return;
     }
 
@@ -240,7 +244,10 @@ function FindingCard({ finding, lang }: { finding: PromptFinding; lang: Lang }) 
       <ul className="m-0 mt-3 grid list-none gap-1 p-0 text-sm">
         {rule.citations.map((citation) => (
           <li key={citation.url}>
-            <a className="text-accent hover:underline" href={citation.url}>
+            <a
+              className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+              href={citation.url}
+            >
               {citation.label}
             </a>
           </li>

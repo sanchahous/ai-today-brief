@@ -39,7 +39,9 @@ test.describe('Tool workspaces privacy and catalogs', () => {
     await page.goto('/en/tools/prompt-optimizer');
     await page.getByLabel('Prompt to lint').fill(secret);
     await page.getByRole('button', { name: 'Run local lint' }).click();
-    await expect(page.getByText(/issue|suggestion|info/i)).toBeVisible();
+    await expect(page.locator('.output-panel [aria-live="polite"]')).toContainText(
+      /issue, \d+ suggestion, \d+ info/,
+    );
 
     expect(leakedTextCalls, 'user prompt must not leave the page').toBe(0);
     expect(thirdPartyCalls, 'no unexpected third-party requests').toBe(0);
@@ -58,7 +60,7 @@ test.describe('Tool workspaces privacy and catalogs', () => {
 
     await page.goto('/en/tools/settings-builder');
     await page.getByRole('button', { name: 'Build settings.json' }).click();
-    await expect(page.getByRole('code')).toContainText('permissions');
+    await expect(page.locator('.output-panel pre code')).toContainText('permissions');
 
     expect(thirdPartyCalls, 'no unexpected third-party requests').toBe(0);
   });
@@ -104,6 +106,6 @@ test.describe('Tool workspaces privacy and catalogs', () => {
     const textarea = page.getByLabel('Prompt to lint');
     await expect(textarea).toBeFocused();
     await expect(textarea).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.getByRole('alert')).toContainText('Paste a prompt first');
+    await expect(page.getByRole('alert').filter({ hasText: 'Paste a prompt first' })).toBeVisible();
   });
 });
