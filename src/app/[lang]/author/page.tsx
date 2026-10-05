@@ -1,8 +1,13 @@
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/breadcrumbs';
+import { EditorAvatar, EditorLinks } from '@/components/editorial/editor-profile';
+import { CategoryBadge } from '@/components/ui/category-badge';
+import { StoryRow } from '@/components/editorial/story-row';
+import { getNewsPageData } from '@/lib/news';
+import styles from '@/components/editorial/profile-pages.module.css';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
-  CONTACT_EMAIL,
   EDITOR_NAME,
   EDITOR_PROFILE,
   EDITOR_ROLE,
@@ -22,25 +27,31 @@ type Params = { lang: string };
 const COPY = {
   en: {
     metaDescription: `${EDITOR_NAME} — editor of ${SITE_NAME}, the daily human-edited AI/engineering brief.`,
-    bio1: `${EDITOR_NAME} curates and edits every issue of ${SITE_NAME}. The pipeline reads hundreds of sources a day; the editor decides what is actually worth your time — every published story is hand-approved, checked against its primary source, and shipped in both English and Ukrainian.`,
+    bio1: `${EDITOR_NAME} curates and edits every issue of ${SITE_NAME}. The editor decides what is actually worth your time — every published story is hand-approved, checked against its primary source, and shipped in both English and Ukrainian.`,
     bio2: 'Verdicts marked “Editor’s take” on article pages are written personally, not generated. Mistakes happen — corrections are fixed in place and noted.',
-    expertiseH: 'Areas of focus',
-    linksH: 'Elsewhere',
-    byEditorH: 'How this site is edited',
+    eyebrow: 'Editor profile',
+    expertiseH: 'Coverage focus',
+    standardsH: 'Standards',
+    primary: 'Every story links to its primary source.',
+    human: 'A human editor approves the final text; AI assistance is disclosed.',
+    recentH: 'Recent stories',
+    allNews: 'All news',
     policyLink: 'Editorial policy',
     aiLink: 'How we use AI',
-    contactH: 'Corrections and tips',
   },
   uk: {
     metaDescription: `${EDITOR_NAME} — редактор ${SITE_NAME}, щоденного AI/engineering брифу з людською редактурою.`,
-    bio1: `${EDITOR_NAME} курує та редагує кожен випуск ${SITE_NAME}. Pipeline щодня читає сотні джерел; що справді варте вашого часу — вирішує редактор: кожен опублікований матеріал схвалено вручну, звірено з першоджерелом і випущено англійською та українською.`,
+    bio1: `${EDITOR_NAME} курує та редагує кожен випуск ${SITE_NAME}. Що справді варте вашого часу — вирішує редактор: кожен опублікований матеріал схвалено вручну, звірено з першоджерелом і випущено англійською та українською.`,
     bio2: 'Вердикти з позначкою «Думка редактора» на сторінках статей написані особисто, а не згенеровані. Помилки трапляються — виправлення вносяться в текст із приміткою.',
-    expertiseH: 'Теми експертизи',
-    linksH: 'Соцмережі',
-    byEditorH: 'Як редагується цей сайт',
+    eyebrow: 'Профіль редактора',
+    expertiseH: 'Фокус висвітлення',
+    standardsH: 'Стандарти',
+    primary: 'Кожен матеріал посилається на першоджерело.',
+    human: 'Редактор-людина схвалює остаточний текст; використання AI розкрито.',
+    recentH: 'Останні матеріали',
+    allNews: 'Усі новини',
     policyLink: 'Редакційна політика',
     aiLink: 'Як ми використовуємо AI',
-    contactH: 'Виправлення та новини',
   },
 } as const;
 
@@ -73,6 +84,19 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
   const lang: Lang = raw;
   const t = getStrings(lang);
   const c = COPY[lang];
+  const news = await getNewsPageData(lang);
+  const focusSlugs = new Set([
+    'agents-and-mcp',
+    'tools-and-releases',
+    'optimization',
+    'models-and-research',
+  ]);
+  const categories = news.categories.filter((category) => focusSlugs.has(category.slug));
+  const crumbs = [
+    { label: t.news.breadcrumbHome, href: `/${lang}` },
+    { label: t.about, href: `/${lang}/about` },
+    { label: EDITOR_NAME },
+  ];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -88,81 +112,80 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
   };
 
   return (
-    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
+    <div className={styles.page} data-testid="author-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <Breadcrumbs items={crumbs} className={styles.crumbs} />
 
-      <div className="flex items-center gap-4">
-        <span
-          aria-hidden
-          className="bg-accent-fill text-on-accent grid h-16 w-16 place-items-center rounded-full text-xl font-bold"
-        >
-          OK
-        </span>
+      <header className={styles.profile}>
+        <EditorAvatar large />
         <div>
-          <h1 className="m-0 text-3xl sm:text-4xl">{EDITOR_NAME}</h1>
-          <p className="text-muted m-0 mt-1">{EDITOR_ROLE[lang]} · {SITE_NAME}</p>
+          <p className={styles.eyebrow}>{c.eyebrow}</p>
+          <h1 className={styles.title}>{EDITOR_NAME}</h1>
+          <p className={styles.lede}>
+            {EDITOR_ROLE[lang]} · {SITE_NAME}
+          </p>
+          <p className={styles.lede}>{c.bio1}</p>
+          <EditorLinks lang={lang} />
         </div>
+      </header>
+
+      <div className={styles.grid}>
+        <section className={styles.panel} aria-labelledby="focus-title">
+          <h2 id="focus-title">{c.expertiseH}</h2>
+          <ul className={styles.topics}>
+            {EDITOR_PROFILE.expertise[lang].map((topic) => (
+              <li key={topic}>{topic}</li>
+            ))}
+          </ul>
+          {categories.length > 0 && (
+            <ul className={styles.categories}>
+              {categories.map((category) => (
+                <li key={category.slug}>
+                  <Link href={`/${lang}/category/${category.slug}`}>
+                    <CategoryBadge
+                      name={category.name}
+                      slug={category.slug}
+                      color={category.color}
+                      size="md"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section className={styles.panel} aria-labelledby="standards-title">
+          <h2 id="standards-title">{c.standardsH}</h2>
+          <ul className={styles.standards}>
+            <li>{c.primary}</li>
+            <li>{c.human}</li>
+            <li>{c.bio2}</li>
+          </ul>
+          <div className={styles.links}>
+            <Link href={`/${lang}/editorial-policy`}>{c.policyLink}</Link>
+            <Link href={`/${lang}/ai-disclosure`}>{c.aiLink}</Link>
+          </div>
+        </section>
       </div>
 
-      <p className="mt-8 text-lg leading-relaxed">{c.bio1}</p>
-      <p className="text-muted mt-4 leading-relaxed">{c.bio2}</p>
-
-      <section className="mt-8">
-        <h2 className="text-xl">{c.expertiseH}</h2>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {EDITOR_PROFILE.expertise[lang].map((topic) => (
-            <span
-              key={topic}
-              className="rounded-pill border-border bg-surface-2 border px-2.5 py-1 text-[0.8rem]"
-            >
-              {topic}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-xl">{c.linksH}</h2>
-        <div className="mt-3 flex flex-wrap gap-3">
-          {EDITOR_PROFILE.links.map((link) => (
-            <a
-              key={link.url}
-              className="text-accent text-sm font-medium hover:underline"
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer me"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-xl">{c.byEditorH}</h2>
-        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-          <Link className="text-accent text-sm font-medium hover:underline" href={`/${lang}/editorial-policy`}>
-            {c.policyLink}
-          </Link>
-          <Link className="text-accent text-sm font-medium hover:underline" href={`/${lang}/ai-disclosure`}>
-            {c.aiLink}
-          </Link>
-        </p>
-        <p className="text-muted mt-4 leading-relaxed">
-          <span className="text-text font-medium">{c.contactH}: </span>
-          <a className="text-accent" href={`mailto:${CONTACT_EMAIL}`}>
-            {CONTACT_EMAIL}
-          </a>
-        </p>
-        <p className="mt-3">
-          <Link className="text-accent text-sm font-medium hover:underline" href={`/${lang}/about`}>
-            {t.about} {SITE_NAME}
-          </Link>
-        </p>
-      </section>
+      {news.items.length > 0 && (
+        <section className={styles.section} aria-labelledby="recent-title">
+          <div className={styles.sectionHead}>
+            <h2 id="recent-title">{c.recentH}</h2>
+            <Link className={styles.action} href={`/${lang}/news`}>
+              {c.allNews}
+            </Link>
+          </div>
+          <div className={styles.stories}>
+            {news.items.slice(0, 3).map((item) => (
+              <StoryRow key={item.id} item={item} lang={lang} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

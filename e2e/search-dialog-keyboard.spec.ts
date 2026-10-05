@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { SearchPreviewItem } from '../src/hooks/use-search-preview';
 
 import { VIEWPORTS } from './helpers/viewports';
 
@@ -9,6 +10,24 @@ test.describe('SearchDialog keyboard and network', () => {
   test('Ctrl+K opens, Escape closes with focus return, arrows move focus, Enter opens result', async ({
     page,
   }) => {
+    // Keyboard behavior must remain testable when the search index has no matching stories.
+    const result: SearchPreviewItem = {
+      id: 'keyboard-search-fixture',
+      href: '/en/news/agents-and-mcp/keyboard-search-fixture',
+      title: 'Agent keyboard search fixture',
+      date: '2026-10-04',
+      categorySlug: 'agents-and-mcp',
+      categoryName: 'Agents & MCP',
+      categoryColor: null,
+      sourceName: 'Test fixture',
+    };
+    await page.route('**/api/search?**', async (route) => {
+      const params = new URL(route.request().url()).searchParams;
+      expect(params.get('q')).toBe('agent');
+      expect(params.get('lang')).toBe('en');
+      expect(params.get('limit')).toBe('5');
+      await route.fulfill({ json: { items: [result], total: 1 } });
+    });
     await page.setViewportSize(VIEWPORTS.desktop1280);
     await page.goto('/en', { waitUntil: 'domcontentloaded' });
     const headerTrigger = page.getByTestId('search-trigger-compact');
@@ -31,6 +50,8 @@ test.describe('SearchDialog keyboard and network', () => {
     await expect(list).toBeVisible({ timeout: 15_000 });
     const first = list.getByRole('option').first();
     await expect(first).toBeVisible();
+    await expect(first).toContainText(result.title);
+    await expect(first).toHaveAttribute('href', result.href);
 
     await page.keyboard.press('ArrowDown');
     await expect(first).toBeFocused();
@@ -41,7 +62,10 @@ test.describe('SearchDialog keyboard and network', () => {
     await page.keyboard.press('ArrowDown');
     await expect(first).toBeFocused();
 
-    await Promise.all([page.waitForURL(/\/en\/news\//), page.keyboard.press('Enter')]);
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === result.href),
+      page.keyboard.press('Enter'),
+    ]);
     await expect(d).toBeHidden();
   });
 
