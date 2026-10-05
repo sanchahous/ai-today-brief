@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { markdownToPlainText, parseInlines, parseMarkdown } from './markdown';
+import { extractToc, headingId, markdownToPlainText, parseInlines, parseMarkdown } from './markdown';
 
 describe('parseInlines', () => {
   it('tokenizes bold, code and links between plain text', () => {
@@ -94,3 +94,32 @@ describe('markdownToPlainText', () => {
     expect(text).toBe('Head\n\nBody with bold and code.\n\na\nb\n\nx()');
   });
 });
+
+describe('headingId & extractToc', () => {
+  it('generates consistent URL-safe and DOM-safe IDs', () => {
+    expect(headingId('The core difference: where the agent lives')).toBe(
+      'the-core-difference-where-the-agent-lives',
+    );
+    expect(headingId('Ключова різниця: де живе агент')).toBe(
+      'ключова-різниця-де-живе-агент',
+    );
+  });
+
+  it('extracts TOC items from markdown headings', () => {
+    const md = [
+      '### Section One',
+      'Some text',
+      '#### Sub Section',
+      'More text',
+      '### Section Two',
+    ].join('\n');
+
+    const toc = extractToc(md);
+    expect(toc).toEqual([
+      { id: 'section-one', title: 'Section One', level: 2 },
+      { id: 'sub-section', title: 'Sub Section', level: 3 },
+      { id: 'section-two', title: 'Section Two', level: 2 },
+    ]);
+  });
+});
+

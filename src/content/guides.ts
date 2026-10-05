@@ -13,6 +13,11 @@ import type { Lang } from '@/lib/site';
  */
 export interface Guide {
   slug: string;
+  format: 'comparison' | 'benchmark';
+  level: Record<Lang, string>;
+  read: number;
+  sections: number;
+  outcome: Record<Lang, string>;
   title: Record<Lang, string>;
   description: Record<Lang, string>;
   /** ISO date of the editor's last fact pass — shown on the page + schema. */
@@ -22,6 +27,17 @@ export interface Guide {
 
 const CLAUDE_CODE_VS_CURSOR_VS_CODEX: Guide = {
   slug: 'claude-code-vs-cursor-vs-codex',
+  format: 'comparison',
+  level: {
+    en: 'Decision guide',
+    uk: 'Гайд для рішення',
+  },
+  read: 12,
+  sections: 6,
+  outcome: {
+    en: 'Pick the agent whose structural bet matches your bottleneck.',
+    uk: 'Оберіть агента, чия структурна ставка відповідає вашому вузькому місцю.',
+  },
   title: {
     en: 'Claude Code vs Cursor vs Codex: which AI coding agent fits your workflow',
     uk: 'Claude Code vs Cursor vs Codex: який AI-агент для коду під ваш workflow',
@@ -107,6 +123,17 @@ Claude Code спирається на відкриті поверхні розш
 
 const AOB_BENCHMARK: Guide = {
   slug: 'atb-orchestration-bench',
+  format: 'benchmark',
+  level: {
+    en: 'Reference',
+    uk: 'Довідник',
+  },
+  read: 15,
+  sections: 8,
+  outcome: {
+    en: 'Read an agent result by its conditions, not its rank.',
+    uk: 'Читайте результат агента за умовами, а не за місцем у рейтингу.',
+  },
   title: {
     en: 'ATB Orchestration Bench: our reproducible agent-delivery benchmark',
     uk: 'ATB Orchestration Bench: наш відтворюваний бенчмарк агентної розробки',
