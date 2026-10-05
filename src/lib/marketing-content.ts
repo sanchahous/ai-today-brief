@@ -9,30 +9,68 @@ export interface SubscribeBenefit {
   body: Bi;
 }
 
-/** Subscribe landing value props (ported from prototype; no fabricated metrics). */
+/** Subscribe landing value props (4 confirmed After Hours benefits). */
 export const SUBSCRIBE_BENEFITS: SubscribeBenefit[] = [
   {
     icon: 'optimization',
-    title: { uk: '5 хвилин замість годин', en: '5 minutes, not hours' },
+    title: { uk: 'П’ять хвилин', en: 'Five minutes' },
     body: {
-      uk: 'Один лист щоранку з топ-новинами та аналізом. Ми читаємо сотні джерел, щоб ви не мусили.',
-      en: 'One email each morning with the top stories and analysis. We read hundreds of sources so you don’t have to.',
+      uk: 'Скінченне читання — без нескінченної стрічки.',
+      en: 'A finite read that ends — no infinite feed.',
+    },
+  },
+  {
+    icon: 'tutorials',
+    title: { uk: 'Джерела в кожній історії', en: 'Sources on every story' },
+    body: {
+      uk: 'Першоджерела, а не скриншоти скриншотів.',
+      en: 'Primary links, not screenshots of screenshots.',
     },
   },
   {
     icon: 'tools',
-    title: { uk: 'Сигнал, а не шум', en: 'Signal, not noise' },
+    title: { uk: 'Одна річ для практики', en: 'One thing to try' },
     body: {
-      uk: 'Лише те, що змінює вашу роботу: релізи інструментів, агенти, дослідження та практичні гайди.',
-      en: 'Only what changes your work: tool releases, agents, research and practical guides.',
+      uk: 'Практичний крок того ж дня.',
+      en: 'A practical step you can take the same day.',
     },
   },
   {
     icon: 'career',
-    title: { uk: 'Без спаму, повний контроль', en: 'No spam, full control' },
+    title: { uk: 'Тижнева перспектива', en: 'Weekly perspective' },
     body: {
-      uk: 'Підтвердження через double opt-in, відписка в один клік, жодного продажу даних третім сторонам.',
-      en: 'Double opt-in confirmation, one-click unsubscribe, and we never sell your data to third parties.',
+      uk: 'Щопонеділка: тиждень у зв’язку, з action board.',
+      en: 'Mondays: the week connected, with an action board.',
+    },
+  },
+];
+
+export interface SubscribeFaq {
+  q: Bi;
+  a: Bi;
+}
+
+/** Confirmed FAQ items for the subscribe page (verified schedule: daily + Monday weekly). */
+export const SUBSCRIBE_FAQS: SubscribeFaq[] = [
+  {
+    q: { en: 'How often will I hear from you?', uk: 'Як часто ви пишете?' },
+    a: {
+      en: 'One daily email Monday–Saturday and the weekly edition on Mondays. You can pause either.',
+      uk: 'Один лист щодня з понеділка по суботу і тижневик щопонеділка. Будь-який можна призупинити.',
+    },
+  },
+  {
+    q: { en: 'Is it really free?', uk: 'Це справді безкоштовно?' },
+    a: {
+      en: 'Yes. Sponsored placements keep it free and are always labelled.',
+      uk: 'Так. Спонсорські розміщення тримають його безкоштовним і завжди позначені.',
+    },
+  },
+  {
+    q: { en: 'What if I subscribe twice?', uk: 'Що, як я підпишусь двічі?' },
+    a: {
+      en: 'Nothing breaks — we will just remind you that you are already on the list, without revealing anything to anyone else.',
+      uk: 'Нічого не зламається — ми лише нагадаємо, що ви вже в списку, нічого не розкриваючи іншим.',
     },
   },
 ];
@@ -42,7 +80,7 @@ export interface AudienceStat {
   label: Bi;
 }
 
-/** Media-kit audience highlights — qualitative, not fabricated list metrics. */
+/** Qualitative media-kit audience highlights (unverified numbers excluded per I-6). */
 export const AUDIENCE_STATS: AudienceStat[] = [
   { value: 'Daily', label: { uk: 'Щоденний бриф', en: 'Daily brief' } },
   { value: 'EN · UK', label: { uk: 'Двомовні випуски', en: 'Bilingual editions' } },
@@ -60,28 +98,37 @@ export interface AdSlot {
   name: Bi;
   placement: Bi;
   note: Bi;
+  exampleLabel: Bi;
 }
 
+/** Real sponsor inventory formats from After Hours prototype & configuration. */
 export const AD_INVENTORY: AdSlot[] = [
   {
-    name: { uk: 'Основний спонсор розсилки', en: 'Primary newsletter sponsor' },
-    placement: { uk: 'Email · над згином', en: 'Email · above the fold' },
-    note: { uk: '1 на випуск · нативний блок із disclosure', en: '1 per issue · native, disclosed' },
+    name: { uk: 'Слот у щоденному брифі', en: 'Daily brief slot' },
+    placement: { uk: 'Сайт і email', en: 'Web and email' },
+    note: {
+      uk: 'Одна позначена картка після третьої історії, сайт і email.',
+      en: 'One labelled card after the third story, web and email.',
+    },
+    exampleLabel: { uk: 'Спонсорське · приклад', en: 'Sponsored · example' },
   },
   {
-    name: { uk: 'Deep-dive розміщення', en: 'Deep-dive placement' },
-    placement: { uk: 'Email + сайт', en: 'Email + site' },
-    note: { uk: 'Розгорнутий формат · 3–6× ставки', en: 'Long-form · 3–6× the primary rate' },
+    name: { uk: 'Партнер тижневика', en: 'Weekly edition partner' },
+    placement: { uk: 'Тижневий випуск', en: 'Weekly edition' },
+    note: {
+      uk: 'Рядок на обкладинці й картка перед action board.',
+      en: 'A line on the cover and a card before the action board.',
+    },
+    exampleLabel: { uk: 'Спонсорське · приклад', en: 'Sponsored · example' },
   },
   {
-    name: { uk: 'Нативний слот у фіді', en: 'Native feed unit' },
-    placement: { uk: 'Сайт · стрічка новин', en: 'Site · news feed' },
-    note: { uk: 'Позначено «Партнерський», із трекінгом CTR', en: 'Labelled “Sponsored”, CTR-tracked' },
-  },
-  {
-    name: { uk: 'Слот на сторінці матеріалу', en: 'Item-page slot' },
-    placement: { uk: 'Сайт · перманлінк', en: 'Site · permalink' },
-    note: { uk: 'Контекстне розміщення за темою', en: 'Contextual, by topic' },
+    name: { uk: 'Спонсор Toolbox', en: 'Toolbox sponsor' },
+    placement: { uk: 'Сторінка утиліти', en: 'Tool page' },
+    note: {
+      uk: 'Тиха згадка на сторінці утиліти протягом місяця.',
+      en: 'A quiet mention on one tool page for a month.',
+    },
+    exampleLabel: { uk: 'Спонсорське · приклад', en: 'Sponsored · example' },
   },
 ];
 

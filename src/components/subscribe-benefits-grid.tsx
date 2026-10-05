@@ -5,26 +5,30 @@ import { Reveal } from '@/components/reveal';
 
 export function SubscribeBenefitsGrid({ lang, title }: { lang: Lang; title: string }) {
   return (
-    <section className="mt-14">
+    <section className="section mt-16" aria-labelledby="benefits-title">
       <Reveal>
-        <h2 className="text-center text-[clamp(1.35rem,3.2vw,1.9rem)]">{title}</h2>
+        <h2 id="benefits-title" className="text-center font-serif text-[clamp(1.5rem,3.2vw,2rem)] font-bold text-text">
+          {title}
+        </h2>
       </Reveal>
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="benefit-grid mt-8 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
         {SUBSCRIBE_BENEFITS.map((b, i) => (
-          <Reveal key={b.title.en} delayMs={i * 60}>
-            <article className="rounded-card border-border bg-surface h-full border p-5">
-              <span
-                aria-hidden
-                className="text-accent mb-4 grid h-11 w-11 place-items-center rounded-xl border border-[rgba(240,192,64,0.35)] bg-[rgba(240,192,64,0.12)]"
-              >
-                <CategoryGlyph icon={b.icon} size={22} strokeWidth={1.6} />
-              </span>
-              <h3 className="text-lg">{b.title[lang]}</h3>
-              <p className="text-muted mt-2 text-sm leading-relaxed">{b.body[lang]}</p>
-            </article>
-          </Reveal>
+          <li key={b.title.en}>
+            <Reveal delayMs={i * 60}>
+              <article className="rounded-card border-border bg-surface h-full border p-6 flex flex-col gap-3">
+                <span
+                  aria-hidden
+                  className="text-accent mb-1 grid h-12 w-12 place-items-center rounded-full bg-accent/10"
+                >
+                  <CategoryGlyph icon={b.icon} size={24} strokeWidth={1.6} />
+                </span>
+                <strong className="font-serif text-xl font-normal text-text">{b.title[lang]}</strong>
+                <span className="text-muted text-sm leading-relaxed">{b.body[lang]}</span>
+              </article>
+            </Reveal>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
