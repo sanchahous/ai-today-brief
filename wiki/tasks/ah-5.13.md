@@ -30,3 +30,4 @@ Task: ah-5.13
   - Скорочено baseline сирих значень через `npm run design:raw:prune`.
   - Unit-тести `src/lib/subscribe-page.test.ts` та `src/lib/marketing-content.test.ts` пройдено (9 тестів).
   - Повний гейт `npm run pr:check` пройдено на 100% зелено. SEO-diff 0 проти baseline на обох маршрутах.
+- 2026-10-05 (repair T1-f1): Push відхилено через флейк `net::ERR_NO_BUFFER_SPACE` у `e2e/a11y-layout-matrix.spec.ts` (`news-search-q-uk uk day 390`) — Windows-ресурс під навантаженням 272+ E2E, не регресія subscribe/advertise. Targeted retry тесту пройшов; повторний `npm run pr:check` (PORT=3104) — exit 0. Змін коду не потрібно.
