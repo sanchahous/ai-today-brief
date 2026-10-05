@@ -7,6 +7,7 @@ import { AnalyticsProvider } from '@/components/analytics-provider';
 import { SocialClickCapture } from '@/components/social-click-capture';
 import { ReaderRevenue } from '@/components/reader-revenue';
 import { MotionProvider } from '@/components/motion/motion-provider';
+import { RouteFocusMain } from '@/components/motion/route-focus-main';
 import { ToastProvider } from '@/components/ui/toast';
 import { getStrings } from '@/lib/i18n';
 import { LANGS, isLang, SITE_NAME, SITE_TAGLINE, SITE_URL, type Lang } from '@/lib/site';
@@ -55,7 +56,7 @@ export default async function LangLayout({
         {t.skipToContent}
       </a>
       <SiteHeader lang={lang} />
-      <main id="main-content" lang={lang} className="flex-1">
+      <main id="main-content" lang={lang} className="flex-1" tabIndex={-1}>
         {children}
       </main>
       <SiteFooter lang={lang} />
@@ -64,6 +65,7 @@ export default async function LangLayout({
       <ReaderRevenue lang={lang} />
       <CookieConsent lang={lang} />
       <MotionProvider locale={lang} />
+      <RouteFocusMain />
     </ToastProvider>
   );
 }

@@ -722,6 +722,12 @@ html[data-tension-motion='off'] *::after {
   transition: none !important;
   scroll-behavior: auto !important;
 }
+/* View-transition pseudo-elements are not descendants of * — kill WAAPI entries (AH-6.3 / motion-runtime). */
+html[data-tension-motion='off']::view-transition-group(*),
+html[data-tension-motion='off']::view-transition-old(*),
+html[data-tension-motion='off']::view-transition-new(*) {
+  animation: none !important;
+}
 
 /* ── skeleton shimmer (pure CSS — no JS animation libs) ───────────────────── */
 .skeleton {
@@ -1060,6 +1066,27 @@ html[data-tension-motion='off'] *::after {
   color: var(--accent);
 }
 
+/* Route view transitions (AH-6.3): opacity cross-fade only — no shared-element morph. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(.route-crossfade) {
+  animation: var(--duration-fast) var(--ease-soft) both route-crossfade-out;
+}
+::view-transition-new(.route-crossfade) {
+  animation: var(--duration-standard) var(--ease-soft) both route-crossfade-in;
+}
+@keyframes route-crossfade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes route-crossfade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1067,6 +1094,11 @@ html[data-tension-motion='off'] *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
   .skeleton::after {
     animation: none;

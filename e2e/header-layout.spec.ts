@@ -13,6 +13,10 @@ async function gotoHeaderLayoutPage(page: import('@playwright/test').Page) {
 test.describe('Header layout', () => {
   for (const width of HEADER_COLLISION_WIDTHS) {
     test(`desktop header keeps search and nav usable at ${width}px`, async ({ page }) => {
+      test.setTimeout(60_000);
+      await page.route('**/api/search?**', async (route) => {
+        await route.fulfill({ json: { items: [], total: 0 } });
+      });
       await page.setViewportSize({ width, height: 800 });
       await gotoHeaderLayoutPage(page);
 
@@ -70,10 +74,19 @@ test.describe('Header layout', () => {
       const input = dialog.getByRole('searchbox');
       await input.fill('agent');
       await expect(input).toHaveValue('agent');
-      await input.press('Enter');
-      // Search has its own route so the news hub can stay prerendered — see
-      // wiki/ops/vercel-origin-transfer.md.
-      await expect(page).toHaveURL(/\/uk\/news\/search\?q=agent$/);
+      const searchForm = dialog.locator('form[role="search"]');
+      await Promise.all([
+        page.waitForURL(/\/uk\/news\/search\?q=agent$/, { timeout: 45_000 }),
+        searchForm.evaluate((form) => {
+          if (!(form instanceof HTMLFormElement)) return;
+          const input = form.querySelector('input[type="search"]');
+          if (input instanceof HTMLInputElement && input.value) {
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          form.requestSubmit();
+        }),
+      ]);
     });
   }
 

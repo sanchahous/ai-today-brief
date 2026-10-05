@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { trackEvent, trackItemEvent, type ItemTarget } from '@/lib/analytics-client';
+import { closestFromEventTarget } from '@/lib/dom/event-target';
 
 /**
  * Client-side click beacons for server-rendered home surfaces. Each wrapper
@@ -97,7 +98,7 @@ function ClickTracker({
     <span
       style={{ display: 'contents' }}
       onClickCapture={(e) => {
-        if ((e.target as HTMLElement | null)?.closest('a[href]')) onCapture();
+        if (closestFromEventTarget(e.target, 'a[href]')) onCapture();
       }}
     >
       {children}

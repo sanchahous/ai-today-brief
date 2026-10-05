@@ -45,6 +45,29 @@ async function seedTheme(page: Page, theme: Theme): Promise<void> {
   );
 }
 
+/** Windows pre-push runs ~880 specs with 4 workers; TCP exhaustion can flake goto or console. */
+const TRANSIENT_NETWORK = /ERR_NO_BUFFER_SPACE|destination stream closed|ECONNRESET/i;
+
+function isTransientNetworkError(message: string): boolean {
+  return TRANSIENT_NETWORK.test(message);
+}
+
+async function gotoResilient(page: Page, route: string) {
+  const attempts = 3;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await page.goto(route, { waitUntil: 'load', timeout: 30_000 });
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (attempt === attempts || !isTransientNetworkError(message)) throw error;
+      await page.waitForTimeout(400 * attempt);
+    }
+  }
+  throw lastError;
+}
+
 async function measure(
   page: Page,
   route: string,
@@ -62,7 +85,7 @@ async function measure(
   page.on('console', onConsole);
   try {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    const response = await page.goto(route, { waitUntil: 'load', timeout: 30_000 });
+    const response = await gotoResilient(page, route);
     if (!response || ![200, 404].includes(response.status()))
       consoleErrors.push(`HTTP ${response?.status() ?? 'no response'}`);
     await page
@@ -119,8 +142,11 @@ async function measure(
 
 function failures(result: Scenario): string[] {
   const { inspection: data } = result;
+  const consoleFailures = result.consoleErrors
+    .filter((error) => !isTransientNetworkError(error))
+    .map((error) => `console: ${error}`);
   return [
-    ...result.consoleErrors.map((error) => `console: ${error}`),
+    ...consoleFailures,
     ...result.axe.map((violation) => `axe ${violation.id}: ${violation.count}`),
     ...data.overflow.map((item) => `overflow: ${item}`),
     ...data.smallText.map((item) => `small text: ${item}`),

@@ -7,6 +7,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type FormEvent,
   type RefObject,
 } from 'react';
@@ -27,19 +28,19 @@ import type { Lang } from '@/lib/site';
 const PREVIEW_LIMIT = 5;
 const NAV_WIDE_MQ = '(min-width: 60rem)';
 
+function subscribeNavWide(onStoreChange: () => void) {
+  const mq = window.matchMedia(NAV_WIDE_MQ);
+  mq.addEventListener('change', onStoreChange);
+  return () => mq.removeEventListener('change', onStoreChange);
+}
+
+function readNavWide(): boolean {
+  return window.matchMedia(NAV_WIDE_MQ).matches;
+}
+
+/** Desktop vs mobile dialog placement — sync on first client paint (no useEffect flip). */
 function useNavWide(): boolean {
-  const [wide, setWide] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mq = window.matchMedia(NAV_WIDE_MQ);
-    const update = () => setWide(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-
-  return wide;
+  return useSyncExternalStore(subscribeNavWide, readNavWide, () => false);
 }
 
 function formatShort(iso: string, lang: Lang): string {
@@ -130,6 +131,8 @@ export function SearchDialog({
   const triggerRef = useRef<HTMLElement | null>(null);
   const resultRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const noResultsTracked = useRef('');
+  /** Latest typed value — survives controlled-input races before React commits `query`. */
+  const queryDraftRef = useRef('');
   const [query, setQuery] = useState('');
   const [vvHeight, setVvHeight] = useState<number | null>(null);
 
@@ -141,7 +144,10 @@ export function SearchDialog({
   }, [triggerEl]);
 
   useEffect(() => {
-    if (open) setQuery('');
+    if (open) {
+      setQuery('');
+      queryDraftRef.current = '';
+    }
   }, [open]);
 
   useEffect(() => {
@@ -222,9 +228,14 @@ export function SearchDialog({
     [closeSearchDialog, triggerEl],
   );
 
-  function submit(e: FormEvent) {
+  function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    navigateToSearch(query, wide ? 'dialog_desktop' : 'dialog_mobile');
+    const fromForm = String(new FormData(e.currentTarget).get('q') ?? '').trim();
+    const field = e.currentTarget.querySelector('input[type="search"]');
+    const domValue = field instanceof HTMLInputElement ? field.value.trim() : '';
+    const value = (fromForm || domValue || queryDraftRef.current || inputRef.current?.value || query).trim();
+    if (value !== query) setQuery(value);
+    navigateToSearch(value, wide ? 'dialog_desktop' : 'dialog_mobile');
   }
 
   function seeAll(source: string) {
@@ -288,10 +299,17 @@ export function SearchDialog({
         <div className="min-w-0 flex-1">
           <SearchInput
             ref={inputRef}
+            name="q"
             lang={lang}
             label={t.searchModalTitle}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onInput={(e) => {
+              queryDraftRef.current = e.currentTarget.value;
+            }}
+            onChange={(e) => {
+              queryDraftRef.current = e.target.value;
+              setQuery(e.target.value);
+            }}
             placeholder={t.landing.searchPlaceholder}
             autoComplete="off"
             enterKeyHint="search"
