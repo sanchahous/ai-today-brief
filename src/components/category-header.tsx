@@ -13,6 +13,8 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
   const color = categoryColor(hub.slug, hub.color);
   const catStyle = { '--cat-color': color } as CSSProperties;
   const countLabel = pluralLabel(hub.items.length, lang, 'stories');
+  const primerConcepts = hub.primerConcepts ?? [];
+  const subtopics = hub.subtopics ?? [];
 
   return (
     <div className="mb-8">
@@ -45,13 +47,13 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
             {hub.items.length} {countLabel}
             {hub.updatedDaily ? ` · ${t.updatedDaily}` : ''}
           </p>
-          {hub.subtopics.length > 0 && (
+          {subtopics.length > 0 && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <span className="text-faint text-[0.78rem] font-mono uppercase tracking-[var(--tracking-eyebrow)]">
                 {t.subtopicsLabel}:
               </span>
               <ul className="flex flex-wrap items-center gap-2 list-none p-0 m-0" aria-label={t.subtopicsLabel}>
-                {hub.subtopics.map((st) => (
+                {subtopics.map((st) => (
                   <li key={st}>
                     <Link
                       href={`/${lang}/news/search?q=${encodeURIComponent(st)}`}
@@ -68,14 +70,22 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
         </div>
       </header>
 
-      {(hub.primerConcepts.length > 0 || hub.relatedGuide) && (
-        <CategoryPrimer lang={lang} hub={hub} />
+      {(primerConcepts.length > 0 || hub.relatedGuide) && (
+        <CategoryPrimer lang={lang} hub={hub} primerConcepts={primerConcepts} />
       )}
     </div>
   );
 }
 
-export function CategoryPrimer({ lang, hub }: { lang: Lang; hub: CategoryHubView }) {
+export function CategoryPrimer({
+  lang,
+  hub,
+  primerConcepts = hub.primerConcepts ?? [],
+}: {
+  lang: Lang;
+  hub: CategoryHubView;
+  primerConcepts?: CategoryHubView['primerConcepts'];
+}) {
   const t = getStrings(lang);
   return (
     <section
@@ -86,9 +96,9 @@ export function CategoryPrimer({ lang, hub }: { lang: Lang; hub: CategoryHubView
         <h2 id="primer-title" className="eyebrow text-accent m-0 text-xs font-bold uppercase tracking-[var(--tracking-eyebrow)]">
           {t.primerTitle}
         </h2>
-        {hub.primerConcepts.length > 0 && (
+        {primerConcepts.length > 0 && (
           <ul className="m-0 flex list-none flex-wrap items-center gap-2 p-0">
-            {hub.primerConcepts.map((concept) => (
+            {primerConcepts.map((concept) => (
               <li key={concept.slug}>
                 <Tag href={`/${lang}/concepts/${concept.slug}`} size="sm">
                   {concept.name}

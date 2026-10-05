@@ -109,4 +109,13 @@ describe('CategoryHeader', () => {
     expect(markup).not.toContain('/en/guides/');
     expect(markup).not.toContain('Related guide');
   });
+
+  it('renders without crashing when primerConcepts is missing (stale build memo)', () => {
+    const staleHub = { ...sampleHub, primerConcepts: undefined } as unknown as CategoryHubView;
+    const markup = renderToStaticMarkup(
+      createElement(CategoryHeader, { lang: 'en', hub: staleHub }),
+    );
+    expect(markup).toContain('Agents &amp; MCP');
+    expect(markup).not.toContain('/en/concepts/');
+  });
 });

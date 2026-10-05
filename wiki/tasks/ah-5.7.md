@@ -16,6 +16,14 @@ Task: ah-5.7
 
 PR: https://github.com/sanchahous/ai-today-brief/pull/425
 
+## Repair T1-f1 (2026-10-05) — CI Playwright smoke / SSG prerender
+
+**Cause:** Vercel restores `.next/cache/atb-public-content` between builds; stale `category-hub` memo entries lacked new `primerConcepts` field → `TypeError` on prerender `/uk/category/tools-and-releases`.
+
+**Fix:** Bump `cachePublicRead` key to `category-hub-v2`; guard `primerConcepts`/`subtopics` in `CategoryHeader` with `?? []`; test stale-memo shape.
+
+- `PORT=3101 npm run pr:check` — **PASS** (re-run after fix).
+
 ## Status
 
 ### epic-5.3

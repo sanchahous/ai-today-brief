@@ -268,7 +268,8 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
   };
 }
 
-export const getCategoryHub = cachePublicRead('category-hub', loadCategoryHub);
+// v2: primerConcepts + relatedGuide + updatedDaily on hub payload (AH-5.7).
+export const getCategoryHub = cachePublicRead('category-hub-v2', loadCategoryHub);
 
 async function loadCategoryItems(slug: string, lang: Lang, limit = 60): Promise<NewsCard[]> {
   const supabase = getSupabase();
