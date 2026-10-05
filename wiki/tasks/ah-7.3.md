@@ -10,7 +10,7 @@ Task: ah-7.3
 
 ## Status
 
-DONE (repair T1-f2). PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438). Оркестратор: commit repair diff + push.
+DONE (repair T1-f3). PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438). Оркестратор: commit wiki diff + push (код без змін).
 
 ### epic-5.3
 
@@ -32,6 +32,7 @@ DONE (repair T1-f2). PR: [#438](https://github.com/sanchahous/ai-today-brief/pul
   - Наступна задача епіку — **AH-7.4** (реліз і моніторинг).
 - 2026-10-05 (repair T1-f1): `category-colours.spec.ts` — селектор `.cat-*` → `[style*="--cat-color"]` після CSS-модулів AH-7.3; залишки `cat-chip`/`cat-band`/`cat-icon-box` у компонентах → `category-presentation.module.css`. `PORT=3101 npm run e2e:affected` 888 passed (1 flaky author-uk retry green); `pr:check` exit 0.
 - 2026-10-05 (repair T1-f2): pre-push `theme.spec.ts` en dark 768 — `ERR_NO_BUFFER_SPACE` під 4 workers (TCP exhaustion, не регресія теми). `theme.spec.ts`: фільтр transient network console errors (як `a11y-layout-matrix.spec.ts`).
+- 2026-10-05 (repair T1-f3): CI Playwright smoke run `37363135064` — job **cancelled** після 15 хв без логів (не тестовий фейл). Локально: `PORT=3101 npm run pr:check` exit 0 (~124 s); `PORT=3101 npm run e2e:affected` 883 passed / 5 skipped (~4.5 min). Re-run `gh run rerun 37363135064` → success (2026-10-05T20:02:38Z). `globals.css` 1053→929 рядків (−124); головний CSS chunk `1iu-avujcrpwd.css` ≈138.7 KB після `build:ci`.
 
 ## AC evidence
 
@@ -39,5 +40,5 @@ DONE (repair T1-f2). PR: [#438](https://github.com/sanchahous/ai-today-brief/pul
 |---|---|
 | `grep` deprecated-токенів = 0 | `DEPRECATED_TOKEN_PATTERNS` у `tokens.ts`; Vitest `deprecated token aliases` — 0 hits під `src/`. |
 | Видалені файли не імпортуються | `video-teaser`, `post-card`, `category-thumb` видалені; `rg` по `src/` — 0 імпортів. |
-| CSS-бандл менший | `globals.css` скорочено (~200 рядків legacy); точне число — у PR body після `build:ci`. |
-| E2E 3 браузери | `category-colours.spec.ts`: селектор оновлено з `.cat-*` на `[style*="--cat-color"]` після CSS-модулів; залишки `cat-chip`/`cat-band`/`cat-icon-box` → `category-presentation.module.css`. Локально: `PORT=3101 npm run e2e:affected` + `pr:check`. |
+| CSS-бандл менший | `globals.css` 1053→929 рядків (−124); головний CSS chunk ≈138.7 KB (`build:ci`). |
+| E2E 3 браузери | PR: chromium affected suite (globals.css → mode=all). Re-run CI run `37363135064` success. Локально: `PORT=3101 npm run e2e:affected` 883 passed. Повний 3-engine matrix — на push-to-main. |
