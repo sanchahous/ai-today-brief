@@ -34,6 +34,7 @@ export function isExcludedPath(path: string): boolean {
       path.startsWith(dir),
     ) ||
     path.endsWith('/brand-mark.ts') ||
+    path.startsWith('src/components/brand/') ||
     /(?:^|\/)(?:opengraph-image|twitter-image)\.[cm]?[jt]sx?$/.test(path) ||
     /\.(?:test|spec)\.[jt]sx?$/.test(path)
   );
