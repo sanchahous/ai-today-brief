@@ -519,6 +519,196 @@ html[data-tension] {
   border-color: var(--signal) !important;
 }
 
+/* ── THE RESOLVE — brand stage (theme-stable lit scene on --stage) ─────── */
+.brand-stage {
+  position: relative;
+  min-height: 420px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse at 62% 18%, #35342a 0, transparent 58%),
+    radial-gradient(ellipse at 10% 110%, rgb(142 42 63 / 0.28), transparent 55%),
+    linear-gradient(150deg, #1f231f, #0d1110 72%);
+  color: #efe8da;
+  contain: layout paint;
+  box-shadow: var(--shadow-2);
+}
+.brand-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(183 161 125 / 0.16);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.brand-stage > svg {
+  position: absolute;
+  inset: 76px 0 96px;
+  width: 100%;
+  height: calc(100% - 172px);
+  overflow: visible;
+}
+[data-tension-motion="off"] .brand-replay {
+  display: none;
+}
+.rs-rib,
+.rs-ribs {
+  transform-box: view-box;
+  transform-origin: 270px 399px;
+}
+.rs-shadow {
+  transform-box: view-box;
+  transform-origin: 270px 410px;
+}
+.rs-bridge {
+  transform-box: view-box;
+  transform-origin: 265px 319px;
+}
+.rs-dot,
+.rs-halo,
+.rs-ripple {
+  transform-box: view-box;
+  transform-origin: 412px 107px;
+}
+.rs-ripple {
+  opacity: 0;
+}
+.rs-sheen {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.brand-kicker {
+  position: absolute;
+  top: 20px;
+  left: 22px;
+  color: #d4b483;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.18em;
+}
+.brand-phases {
+  position: absolute;
+  top: 46px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: #b5d8cc;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.brand-phases [data-phase] {
+  opacity: 0.55;
+}
+.brand-phases [data-phase="2"] {
+  opacity: 1;
+}
+.brand-progress {
+  flex-basis: 100%;
+  height: 1px;
+  background: rgb(181 216 204 / 0.2);
+}
+.brand-progress i {
+  display: block;
+  height: 100%;
+  background: #b5d8cc;
+  transform-origin: left;
+}
+.brand-caption {
+  position: absolute;
+  left: 22px;
+  right: 76px;
+  bottom: 22px;
+  margin: 0;
+  color: #f0e9dc;
+}
+.brand-line {
+  display: block;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.875rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+html[lang="uk"] .brand-line {
+  letter-spacing: -0.01em;
+}
+.brand-line > span {
+  display: block;
+}
+.brand-caption small {
+  display: block;
+  margin-top: 10px;
+  color: #b9b7ac;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.14em;
+}
+.brand-replay {
+  position: absolute;
+  right: 18px;
+  bottom: 22px;
+  display: grid;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+  border: 1px solid rgb(212 180 131 / 0.45);
+  border-radius: 50%;
+  background: rgb(10 12 11 / 0.3);
+  color: #d4b483;
+  transition:
+    background-color var(--fast),
+    transform var(--standard) var(--ease-release);
+}
+.brand-replay:hover {
+  background: rgb(212 180 131 / 0.14);
+}
+.brand-replay:hover .icon {
+  transform: rotate(-60deg);
+}
+.brand-replay .icon {
+  transition: transform var(--standard) var(--ease-release);
+}
+.brand-replay:disabled,
+.brand-replay[aria-disabled="true"] {
+  opacity: 0.4;
+}
+html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .rs-rib {
+  opacity: 0;
+}
+html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .rs-dot,
+html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .rs-halo,
+html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .rs-bridge,
+html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .rs-leader,
+html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .brand-line > span {
+  opacity: 0;
+}
+.lead-stage .brand-stage {
+  min-height: 460px;
+}
+@media (max-width: 47.5em) {
+  .brand-stage,
+  .lead-stage .brand-stage {
+    min-height: 400px;
+  }
+  .brand-stage > svg {
+    inset: 72px 0 104px;
+    height: calc(100% - 176px);
+  }
+  .brand-phases {
+    gap: 6px 10px;
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   html[data-tension-motion='on'] [data-variant='primary']:not([data-variant='outline']):not([data-variant='ghost']) {
     overflow: hidden;
