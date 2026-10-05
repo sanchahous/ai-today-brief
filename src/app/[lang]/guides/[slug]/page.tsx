@@ -3,9 +3,14 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getGuide, GUIDES } from '@/content/guides';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
+import { ReadingLayout, TableOfContents } from '@/components/editorial';
 import { MarkdownBody } from '@/components/markdown-body';
+import { Byline } from '@/components/byline';
+import { GuideToolsAside } from '@/components/guides/guide-tools-aside';
+import { CheckIcon } from '@/components/guides/guide-icons';
+import { extractToc } from '@/lib/markdown';
 import { getStrings } from '@/lib/i18n';
-import { EDITOR_NAME, isLang, LANGS, SITE_URL, type Lang } from '@/lib/site';
+import { EDITOR_NAME, EDITOR_ROLE, isLang, LANGS, SITE_URL, type Lang } from '@/lib/site';
 import { authorNode, publisherNode } from '@/lib/schema';
 import { socialMeta } from '@/lib/seo';
 import { PageEngagementTracker } from '@/components/analytics/page-engagement-tracker';
@@ -60,11 +65,15 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
   if (!guide) notFound();
   const t = getStrings(lang);
 
-  const verifiedLabel = new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
+  const dateFmt = new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(new Date(`${guide.lastVerified}T00:00:00`));
+  });
+
+  const verifiedLabel = dateFmt.format(new Date(`${guide.lastVerified}T00:00:00`));
+
+  const firstPubLabel = dateFmt.format(new Date('2026-06-11T00:00:00'));
 
   const crumbs = [
     { label: t.news.breadcrumbHome, href: `/${lang}` },
@@ -91,33 +100,114 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
     ],
   };
 
+  const tocItems = [
+    ...extractToc(guide.body[lang]),
+    {
+      id: 'changelog',
+      title: 'Changelog',
+      level: 2,
+    },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-10">
+    <div className="w-full flex-1 py-8 sm:py-10">
       <PageEngagementTracker pageType="guide" slug={slug} lang={lang} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Breadcrumbs items={crumbs} />
+      <div className="mx-auto max-w-[1200px] px-4 md:px-6 lg:px-8 xl:px-10 mb-8 sm:mb-10">
+        <Breadcrumbs items={crumbs} />
 
-      <article>
-        <h1 className="mb-3 text-[clamp(1.7rem,4vw,2.5rem)] leading-[1.15]">{guide.title[lang]}</h1>
-        <p className="text-faint mb-6 text-[0.82rem]">
-          {t.lastVerifiedLabel}: <strong className="text-muted">{verifiedLabel}</strong> ·{' '}
-          {t.editedBy} {EDITOR_NAME}
-        </p>
+        <header className="mt-6 max-w-[800px]">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-muted">
+              {guide.level[lang]}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-pill border border-signal/55 bg-surface px-2.5 py-1 text-2xs font-medium text-signal">
+              <CheckIcon size={14} className="text-signal" />
+              <span>
+                {t.lastVerifiedLabel} <time dateTime={guide.lastVerified}>{verifiedLabel}</time>
+              </span>
+            </span>
+          </div>
 
-        <p className="mb-6 text-[1.08rem] leading-[1.7]">{guide.description[lang]}</p>
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-text mb-4 leading-tight">
+            {guide.title[lang]}
+          </h1>
 
-        <MarkdownBody markdown={guide.body[lang]} />
-      </article>
+          <p className="text-lg sm:text-xl text-muted leading-relaxed mb-6 max-w-[70ch]">
+            {guide.description[lang]}
+          </p>
 
-      <p className="mt-10">
-        <Link className="text-accent text-sm font-medium hover:underline" href={`/${lang}/guides`}>
-          ← {t.allGuides}
-        </Link>
-      </p>
+          <Byline
+            lang={lang}
+            initials="OK"
+            authorName={EDITOR_NAME}
+            role={EDITOR_ROLE[lang]}
+            publishedAt={guide.lastVerified}
+            updatedAt={guide.lastVerified}
+            minutes={guide.read}
+          />
+        </header>
+      </div>
+
+      <ReadingLayout
+        toc={<TableOfContents lang={lang} items={tocItems} />}
+        content={
+          <article>
+            <MarkdownBody markdown={guide.body[lang]} lang={lang} />
+
+            <section
+              id="changelog"
+              aria-labelledby="changelog-title"
+              className="mt-12 pt-8 border-t border-border"
+            >
+              <h2 id="changelog-title" className="font-serif text-2xl font-bold mb-4 text-text">
+                Changelog
+              </h2>
+              <ol className="divide-y divide-border list-none p-0 m-0">
+                <li className="grid grid-cols-[140px_1fr] gap-4 py-3 text-sm">
+                  <time dateTime={guide.lastVerified} className="font-mono text-xs text-faint">
+                    {verifiedLabel}
+                  </time>
+                  <span className="text-text">
+                    {lang === 'uk'
+                      ? 'Повторно перевірено; структурних змін немає.'
+                      : 'Re-verified; no structural changes.'}
+                  </span>
+                </li>
+                <li className="grid grid-cols-[140px_1fr] gap-4 py-3 text-sm">
+                  <time dateTime="2026-06-11" className="font-mono text-xs text-faint">
+                    {firstPubLabel}
+                  </time>
+                  <span className="text-text">
+                    {lang === 'uk' ? 'Перша публікація.' : 'First published.'}
+                  </span>
+                </li>
+              </ol>
+            </section>
+
+            <div className="mt-8 pt-6 border-t border-border lg:hidden">
+              <Link
+                className="text-accent text-sm font-medium hover:underline inline-flex items-center gap-1.5 min-h-[44px]"
+                href={`/${lang}/guides`}
+              >
+                ← {t.allGuides}
+              </Link>
+            </div>
+          </article>
+        }
+        tools={
+          <GuideToolsAside
+            lang={lang}
+            slug={slug}
+            readMinutes={guide.read}
+            sectionsCount={guide.sections}
+          />
+        }
+      />
     </div>
   );
 }

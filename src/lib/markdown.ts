@@ -170,3 +170,35 @@ export function markdownToPlainText(md: string): string {
     .join('\n\n')
     .trim();
 }
+
+/** Generate URL-safe and DOM-safe ID from heading text. */
+export function headingId(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export interface MarkdownTocItem {
+  id: string;
+  title: string;
+  level: number;
+}
+
+/** Extract table of contents from markdown headings. */
+export function extractToc(markdown: string): MarkdownTocItem[] {
+  const blocks = parseMarkdown(markdown);
+  const items: MarkdownTocItem[] = [];
+  for (const block of blocks) {
+    if (block.kind === 'heading') {
+      const title = block.inlines.map((i) => i.text).join('');
+      const id = headingId(title);
+      items.push({
+        id,
+        title,
+        level: block.level === 3 ? 2 : 3,
+      });
+    }
+  }
+  return items;
+}
