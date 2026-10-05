@@ -83,7 +83,7 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
           {AD_INVENTORY.map((slot, i) => (
             <article
               key={slot.name.en}
-              className="ad-card rounded-card border border-dashed border-border-strong bg-surface p-6 flex flex-col gap-3 justify-between"
+              className="ad-card rounded-card border border-dashed border-line-strong bg-surface p-6 flex flex-col gap-3 justify-between"
             >
               <div>
                 <span className="font-serif text-3xl sm:text-4xl font-bold text-accent leading-none">
@@ -94,7 +94,7 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
                 </h2>
                 <p className="text-muted text-sm leading-relaxed">{slot.note[lang]}</p>
               </div>
-              <div className="pt-3 border-t border-border/50">
+              <div className="pt-3 border-t border-line/50">
                 <span className="text-faint font-mono text-2xs uppercase tracking-wider font-medium">
                   {slot.exampleLabel[lang]}
                 </span>
@@ -105,7 +105,7 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
 
         <section
           data-gesture="reveal"
-          className="section ad-contact rounded-card border border-border bg-surface p-6 sm:p-8 mt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+          className="section ad-contact rounded-card border border-line bg-surface p-6 sm:p-8 mt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
         >
           <div className="max-w-xl">
             <h2 className="font-serif text-2xl font-bold text-text mb-2">

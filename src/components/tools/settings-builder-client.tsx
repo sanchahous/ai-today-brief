@@ -206,7 +206,7 @@ export function SettingsBuilderClient({
           footnote={t.outputHelp}
         >
           <pre
-            className="border-border bg-surface-2 max-h-[620px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed"
+            className="border-line bg-raised max-h-[620px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed"
             tabIndex={0}
             aria-readonly="true"
           >

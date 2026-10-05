@@ -37,7 +37,7 @@ export function Accordion({
     });
 
   return (
-    <div className={`border-border divide-border divide-y border-y ${className}`}>
+    <div className={`border-line divide-border divide-y border-y ${className}`}>
       {items.map((item) => {
         const expanded = open.includes(item.id);
         return (

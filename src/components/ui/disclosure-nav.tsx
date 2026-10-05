@@ -48,7 +48,7 @@ export function DisclosureNav({ label, links, closeLabel }: DisclosureNavProps) 
       <button
         ref={triggerRef}
         type="button"
-        className="bg-surface border-border text-text min-h-[var(--touch-target-min)] rounded-lg border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
+        className="bg-surface border-line text-text min-h-[var(--touch-target-min)] rounded-lg border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
@@ -69,14 +69,14 @@ export function DisclosureNav({ label, links, closeLabel }: DisclosureNavProps) 
         id={panelId}
         aria-label={label}
         hidden={!open}
-        className="bg-raised border-border rounded-card absolute top-full left-0 z-[var(--z-dropdown)] mt-2 min-w-56 border p-2 shadow-[var(--shadow-pop)]"
+        className="bg-raised border-line rounded-card absolute top-full left-0 z-[var(--z-dropdown)] mt-2 min-w-56 border p-2 shadow-[var(--shadow-pop)]"
       >
         <ul className="m-0 flex list-none flex-col gap-1 p-0">
           {links.map((link) => (
             <li key={link.id}>
               <a
                 href={link.href}
-                className="text-text hover:bg-surface-2 focus-visible:bg-surface-2 flex min-h-[var(--touch-target-min)] items-center rounded-md px-3 text-sm no-underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
+                className="text-text hover:bg-raised focus-visible:bg-raised flex min-h-[var(--touch-target-min)] items-center rounded-md px-3 text-sm no-underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
                 onClick={() => setOpen(false)}
               >
                 {link.label}

@@ -25,7 +25,7 @@ export function HomeHero({
   const stats = mastheadStats({ storiesLast7Days, categoryCount });
 
   return (
-    <section aria-labelledby="hero-title" className="border-border-soft border-b">
+    <section aria-labelledby="hero-title" className="border-line-soft border-b">
       <div className="relative mx-auto w-full max-w-[1160px] px-6 pt-[4.5rem] pb-14">
         <p className="text-accent eyebrow">{t.heroEyebrow}</p>
         <h1
@@ -63,7 +63,7 @@ export function HomeHero({
           <HeroCtaClickTracker target="week">
             <a
               href="#week"
-              className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-5 py-3 text-sm font-semibold transition-colors"
+              className="rounded-pill border-line text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-5 py-3 text-sm font-semibold transition-colors"
             >
               {t.ctaSecondary}
             </a>

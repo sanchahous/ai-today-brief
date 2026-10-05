@@ -336,7 +336,7 @@ export function SearchDialog({
         {resultCountLabel}
       </p>
 
-      <div className="border-border mt-2 shrink-0 border-t" />
+      <div className="border-line mt-2 shrink-0 border-t" />
 
       <div
         className={`mt-3 min-h-0 flex-1 ${wide ? 'max-h-[min(50vh,420px)] overflow-y-auto' : 'flex flex-1 flex-col overflow-hidden'}`}
@@ -349,7 +349,7 @@ export function SearchDialog({
                 key={topic.name}
                 type="button"
                 onClick={() => onSuggest(topic.name)}
-                className="border-border bg-surface text-muted rounded-pill hover:border-accent hover:text-text touch-manipulation border px-3 py-1.5 text-sm transition-colors"
+                className="border-line bg-surface text-muted rounded-pill hover:border-accent hover:text-text touch-manipulation border px-3 py-1.5 text-sm transition-colors"
               >
                 {topic.name}
               </button>
@@ -432,7 +432,7 @@ export function SearchDialog({
       panelTestId="search-dialog-panel"
       backdropTestId="search-dialog-backdrop"
       overlayClassName={wide ? undefined : 'bg-bg'}
-      panelClassName={wide ? 'border-border border p-0' : 'bg-bg p-0'}
+      panelClassName={wide ? 'border-line border p-0' : 'bg-bg p-0'}
     >
       {panelInner}
     </OverlayDrawer>

@@ -28,7 +28,7 @@ export function HomeDateline({
   const label = edition.date === todayIso ? t.datelineToday : t.datelineLatest;
 
   return (
-    <div className="border-border-soft mx-auto flex w-full max-w-[1160px] flex-wrap items-baseline justify-between gap-3 border-b px-6 py-4">
+    <div className="border-line-soft mx-auto flex w-full max-w-[1160px] flex-wrap items-baseline justify-between gap-3 border-b px-6 py-4">
       <p className="text-muted text-sm">
         <strong className="text-text">{label}</strong>
         <span aria-hidden> · </span>

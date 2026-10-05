@@ -9,6 +9,8 @@ import { SectionHead } from '@/components/home/section-head';
 import { CategoryHubClickTracker } from '@/components/analytics/home-click-trackers';
 import { CategoryMixBar } from '@/components/home/category-mix-bar';
 import type { HomeCoverageSegment } from '@/lib/home';
+import catStyles from '@/components/category-presentation.module.css';
+import cardStyles from '@/components/interactive-card.module.css';
 
 export function CategoryGrid({
   lang,
@@ -77,7 +79,7 @@ function CategoryCard({
   const color = categoryColor(category.slug, category.color);
   const catStyle = { '--cat-color': color } as CSSProperties;
   return (
-    <article className="card-hover rounded-card border-border bg-surface flex h-full flex-col overflow-hidden border">
+    <article className={`${cardStyles.card} rounded-card border-line bg-surface flex h-full flex-col overflow-hidden border`}>
       <div className="cat-band flex items-center gap-3 p-4" style={catStyle}>
         <span
           aria-hidden
@@ -88,7 +90,7 @@ function CategoryCard({
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-lg leading-tight">{category.name}</h3>
-          <p className="cat-fg mt-1 text-sm font-medium" style={catStyle}>
+          <p className={`${catStyles.fg} mt-1 text-sm font-medium`} style={catStyle}>
             {category.tagline}
           </p>
         </div>
@@ -126,7 +128,7 @@ function CategoryCard({
           <CategoryHubClickTracker slug={category.slug} lang={lang}>
             <Link
               href={`/${lang}/category/${category.slug}`}
-              className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center gap-1.5 border px-4 py-2 text-sm font-semibold transition-colors"
+              className="rounded-pill border-line text-text hover:border-accent hover:text-accent inline-flex items-center gap-1.5 border px-4 py-2 text-sm font-semibold transition-colors"
             >
               {ctaLabel}
               <ArrowRight size={16} />

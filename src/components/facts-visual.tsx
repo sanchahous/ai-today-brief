@@ -10,7 +10,7 @@ import type { FactsVisual } from '@/lib/facts-visual';
 export function FactsVisualBlock({ visual, color }: { visual: FactsVisual; color: string }) {
   if (visual.kind === 'comparison') {
     return (
-      <div aria-hidden className="border-border border-b px-4 py-3.5">
+      <div aria-hidden className="border-line border-b px-4 py-3.5">
         <div className="grid gap-2">
           {visual.items.map((item) => (
             <div
@@ -18,7 +18,7 @@ export function FactsVisualBlock({ visual, color }: { visual: FactsVisual; color
               className="grid grid-cols-[minmax(96px,9rem)_minmax(0,1fr)_auto] items-center gap-3"
             >
               <span className="text-muted truncate text-[0.78rem]">{item.label}</span>
-              <span className="bg-surface-2 rounded-pill h-2.5 overflow-hidden">
+              <span className="bg-raised rounded-pill h-2.5 overflow-hidden">
                 <span
                   className="rounded-pill block h-full"
                   style={
@@ -40,11 +40,11 @@ export function FactsVisualBlock({ visual, color }: { visual: FactsVisual; color
   }
 
   return (
-    <div aria-hidden className="border-border grid grid-cols-2 border-b sm:grid-cols-4">
+    <div aria-hidden className="border-line grid grid-cols-2 border-b sm:grid-cols-4">
       {visual.items.map((item, i) => (
         <div
           key={item.label}
-          className={`flex min-w-0 flex-col gap-1 px-4 py-3.5 break-words ${i > 0 ? 'border-border border-l' : ''}`}
+          className={`flex min-w-0 flex-col gap-1 px-4 py-3.5 break-words ${i > 0 ? 'border-line border-l' : ''}`}
         >
           <span
             className="font-serif text-xl leading-tight font-semibold"

@@ -23,8 +23,8 @@ export function SettingsCatalog({ lang }: { lang: Lang }) {
         </h3>
         <div className="mt-4 grid gap-3">
           {GRAMMAR_REFERENCE.map((row) => (
-            <article key={row.pattern} className="rounded-card border-border bg-surface border p-4">
-              <code className="bg-surface-2 rounded px-2 py-1 text-sm">{row.pattern}</code>
+            <article key={row.pattern} className="rounded-card border-line bg-surface border p-4">
+              <code className="bg-raised rounded px-2 py-1 text-sm">{row.pattern}</code>
               <p className="text-muted m-0 mt-3 text-sm leading-relaxed">{row.meaning[lang]}</p>
               <CitationList citations={row.citations} lang={lang} label={t.citations} />
             </article>
@@ -38,7 +38,7 @@ export function SettingsCatalog({ lang }: { lang: Lang }) {
         </h3>
         <div className="mt-4 grid gap-4">
           {HOOK_RECIPES.map((recipe) => (
-            <article key={recipe.id} className="rounded-card border-border bg-surface border p-4">
+            <article key={recipe.id} className="rounded-card border-line bg-surface border p-4">
               <p className="text-faint m-0 font-mono text-2xs">{recipe.id}</p>
               <h4 className="m-0 mt-1 text-[1.05rem]">{recipe.title[lang]}</h4>
               <p className="text-muted m-0 mt-2 text-sm leading-relaxed">{recipe.useCase[lang]}</p>
@@ -57,7 +57,7 @@ export function SettingsCatalog({ lang }: { lang: Lang }) {
                 </div>
               </dl>
               {recipe.command ? (
-                <pre className="border-border bg-surface-2 mt-3 overflow-x-auto rounded-lg border p-3 text-xs whitespace-pre-wrap">
+                <pre className="border-line bg-raised mt-3 overflow-x-auto rounded-lg border p-3 text-xs whitespace-pre-wrap">
                   <code>{recipe.command}</code>
                 </pre>
               ) : null}
@@ -74,11 +74,11 @@ export function SettingsCatalog({ lang }: { lang: Lang }) {
         </h3>
         <div className="mt-4 grid gap-3">
           {SCOPE_HIERARCHY.map((row) => (
-            <article key={row.scope} className="rounded-card border-border bg-surface border p-4">
+            <article key={row.scope} className="rounded-card border-line bg-surface border p-4">
               <p className="text-faint m-0 text-2xs font-semibold tracking-[0.12em] uppercase">
                 #{row.precedence} · {row.scope}
               </p>
-              <code className="mt-2 inline-block rounded bg-surface-2 px-2 py-1 text-sm">
+              <code className="mt-2 inline-block rounded bg-raised px-2 py-1 text-sm">
                 {row.path}
               </code>
               <p className="text-muted m-0 mt-3 text-sm leading-relaxed">{row.note[lang]}</p>
@@ -109,7 +109,7 @@ function CitationList({
         {citations.map((citation) => (
           <li key={citation.url}>
             <a
-              className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+              className="text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
               href={citation.url}
             >
               {citation.label}

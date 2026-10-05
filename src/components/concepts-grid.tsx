@@ -3,6 +3,7 @@ import { conceptIcon } from '@/lib/concept-meta';
 import type { ConceptSummary } from '@/lib/concepts';
 import type { Lang } from '@/lib/site';
 import { ArrowRight, CategoryGlyph } from '@/components/icons';
+import cardStyles from '@/components/interactive-card.module.css';
 
 function prettyType(type: string): string {
   return type.charAt(0).toUpperCase() + type.slice(1);
@@ -19,7 +20,7 @@ export function ConceptsGrid({ lang, concepts }: { lang: Lang; concepts: Concept
           href={`/${lang}/concepts/${c.slug}`}
           data-gesture="settle"
           data-gesture-delay={String(i * 40)}
-          className="card-hover rounded-card border-border bg-surface flex h-full flex-col border p-5 no-underline transition"
+          className={`${cardStyles.card} rounded-card border-line bg-surface flex h-full flex-col border p-5 no-underline transition`}
         >
           <div className="mb-3 flex items-center gap-3">
             <span

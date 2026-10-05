@@ -18,7 +18,7 @@ export function SubscribeBenefitsGrid({ lang, title }: { lang: Lang; title: stri
             <article
               data-gesture="settle"
               data-gesture-delay={String(i * 60)}
-              className="rounded-card border-border bg-surface flex h-full flex-col gap-3 border p-6"
+              className="rounded-card border-line bg-surface flex h-full flex-col gap-3 border p-6"
             >
               <span
                 aria-hidden

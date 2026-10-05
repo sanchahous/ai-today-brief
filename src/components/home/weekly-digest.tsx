@@ -62,8 +62,8 @@ export function WeeklyDigestBlock({
             ) : null}
 
             {more || digest.highlights.length ? (
-              <details className="border-border group mt-5 w-full border-t pt-4">
-                <summary className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill inline-flex list-none items-center gap-2 border px-4 py-2.5 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
+              <details className="border-line group mt-5 w-full border-t pt-4">
+                <summary className="border-line bg-surface text-text hover:border-accent hover:text-accent rounded-pill inline-flex list-none items-center gap-2 border px-4 py-2.5 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
                   <span className="group-open:hidden">{copy.showMore}</span>
                   <span className="hidden group-open:inline">{copy.showLess}</span>
                   <span
@@ -173,7 +173,7 @@ export function WeeklyDigestBlock({
         </div>
 
         {digest.video ? (
-          <div className="border-border-soft mt-9 border-t pt-8">
+          <div className="border-line-soft mt-9 border-t pt-8">
             <div className="mb-4">
               <p className="text-accent eyebrow">
                 {copy.watch}

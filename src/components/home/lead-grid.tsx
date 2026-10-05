@@ -70,7 +70,7 @@ export function LeadGrid({
               </p>
               <Link
                 href={featured.href}
-                className="rounded-pill border-border text-text hover:border-accent hover:text-accent mt-5 inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-5 py-3 text-sm font-semibold no-underline"
+                className="rounded-pill border-line text-text hover:border-accent hover:text-accent mt-5 inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-5 py-3 text-sm font-semibold no-underline"
               >
                 {t.leadCta}
                 <ArrowRight size={16} />
@@ -84,7 +84,7 @@ export function LeadGrid({
       ) : null}
 
       {rail.length > 0 ? (
-        <aside aria-labelledby="rail-title" className="border-border bg-surface rounded-card border p-5">
+        <aside aria-labelledby="rail-title" className="border-line bg-surface rounded-card border p-5">
           <p className="text-accent eyebrow">{t.railEyebrow}</p>
           <h2 id="rail-title" className="mt-2 text-2xl">
             {t.railTitle}

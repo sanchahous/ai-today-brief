@@ -50,7 +50,7 @@ export function DigestCard({
       : `${lang === 'uk' ? 'Бриф за' : 'Brief for'} ${dateStr}`;
       
     return (
-      <Link href={href} className="group flex flex-col rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent">
+      <Link href={href} className="group flex flex-col rounded-xl border border-line bg-surface p-5 transition-colors hover:border-accent">
         <h3 className="mb-2 font-serif text-lg font-semibold text-text group-hover:text-accent transition-colors">
           {title}
         </h3>
@@ -75,8 +75,8 @@ export function DigestCard({
 
   // Weekly
   return (
-    <Link href={href} className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-accent">
-      <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-border">
+    <Link href={href} className="group flex flex-col overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-accent">
+      <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-line">
         {imageUrl ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={imageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />

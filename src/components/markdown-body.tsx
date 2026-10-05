@@ -11,7 +11,7 @@ function Inlines({ inlines }: { inlines: MdInline[] }) {
           return (
             <code
               key={i}
-              className="bg-surface-2 border-border rounded border px-1 py-0.5 font-mono text-[0.85em]"
+              className="bg-raised border-line rounded border px-1 py-0.5 font-mono text-[0.85em]"
             >
               {run.text}
             </code>
@@ -23,7 +23,7 @@ function Inlines({ inlines }: { inlines: MdInline[] }) {
               href={run.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+              className="text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
             >
               {run.text}
             </a>
@@ -58,7 +58,7 @@ export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang
                 <thead>
                   <tr>
                     {block.headers.map((cell, j) => (
-                      <th key={j} scope="col" className="border-border border p-3 text-left">
+                      <th key={j} scope="col" className="border-line border p-3 text-left">
                         <Inlines inlines={cell} />
                       </th>
                     ))}
@@ -68,7 +68,7 @@ export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang
                   {block.rows.map((row, j) => (
                     <tr key={j}>
                       {row.map((cell, k) => (
-                        <td key={k} className="border-border border p-3">
+                        <td key={k} className="border-line border p-3">
                           <Inlines inlines={cell} />
                         </td>
                       ))}
@@ -110,7 +110,7 @@ export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang
                 tabIndex={0}
                 role="region"
                 aria-label={lang === 'uk' ? 'Блок коду' : 'Code block'}
-                className="bg-surface-2 border-border overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] leading-relaxed sm:text-[14px]"
+                className="bg-raised border-line overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] leading-relaxed sm:text-[14px]"
                 data-language={block.language}
               >
                 <code>{block.code}</code>

@@ -32,7 +32,7 @@ export function CategoryMixBar({
       <div
         role="img"
         aria-label={`${caption}: ${withCount.map((segment) => `${segment.name} — ${segment.count}`).join(', ')}`}
-        className="border-border-soft flex h-3 w-full overflow-hidden rounded-pill border"
+        className="border-line-soft flex h-3 w-full overflow-hidden rounded-pill border"
       >
         {withCount.map((segment) => (
           <span

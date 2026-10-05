@@ -19,7 +19,7 @@ export function SourceList({ lang, sources }: { lang: Lang; sources: SourceItem[
   });
 
   return (
-    <div className="border-border bg-surface rounded-xl border p-4 sm:p-6">
+    <div className="border-line bg-surface rounded-xl border p-4 sm:p-6">
       <h3 className="mb-4 font-serif text-lg font-semibold">{t.news.sourcesCited || (lang === 'uk' ? 'Джерела' : 'Sources')}</h3>
       <ul className="space-y-4">
         {sources.map((source) => {
@@ -37,7 +37,7 @@ export function SourceList({ lang, sources }: { lang: Lang; sources: SourceItem[
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-text hover:text-accent mt-1 block font-medium underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current transition-colors"
+                className="text-text hover:text-accent mt-1 block font-medium underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current transition-colors"
               >
                 {source.title}
               </a>

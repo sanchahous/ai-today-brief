@@ -180,7 +180,7 @@ export function ClaudeMdGeneratorClient({
                     onCopy={() => void copyAgentsDocument()}
                     footnote={
                       <a
-                        className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+                        className="text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
                         href="https://code.claude.com/docs/en/memory"
                       >
                         {t.referenceLink}
@@ -188,7 +188,7 @@ export function ClaudeMdGeneratorClient({
                     }
                   >
                     <pre
-                      className="border-border bg-surface-2 max-h-[390px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed"
+                      className="border-line bg-raised max-h-[390px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed"
                       tabIndex={0}
                       aria-readonly="true"
                     >
@@ -211,7 +211,7 @@ export function ClaudeMdGeneratorClient({
                     onCopy={() => void copyClaudeDocument()}
                     footnote={
                       <a
-                        className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+                        className="text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
                         href="https://code.claude.com/docs/en/memory"
                       >
                         {t.referenceLink}
@@ -219,7 +219,7 @@ export function ClaudeMdGeneratorClient({
                     }
                   >
                     <pre
-                      className="border-border bg-surface-2 max-h-[390px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed"
+                      className="border-line bg-raised max-h-[390px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed"
                       tabIndex={0}
                       aria-readonly="true"
                     >

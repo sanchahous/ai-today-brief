@@ -188,7 +188,7 @@ export function StoryCard(
   const HeadingTag = layout === 'row' ? 'h3' : 'h2';
 
   const actionBtnClass =
-    'relative z-10 inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-pill border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition hover:border-accent hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus)]';
+    'relative z-10 inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-pill border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted transition hover:border-accent hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus)]';
 
   const hasMedia = layout !== 'withoutImage';
 
@@ -201,7 +201,7 @@ export function StoryCard(
       {hasMedia && (
         <div className={`story-card-media ${styles.storyCardMedia}`} aria-hidden="true" tabIndex={-1}>
           {item.imageUrl ? (
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--surface-2)]">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--raised)]">
               <Image
                 src={item.imageUrl}
                 alt=""

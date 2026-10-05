@@ -3,7 +3,7 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'border-transparent bg-accent-fill text-on-accent font-semibold',
-  secondary: 'border-line-strong bg-surface-2 text-text',
+  secondary: 'border-line-strong bg-raised text-text',
   outline: 'border-line-strong bg-transparent text-text',
   ghost: 'border-transparent bg-transparent text-muted',
 };

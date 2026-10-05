@@ -1,0 +1,43 @@
+.page {
+  display: grid;
+  justify-items: start;
+  gap: 0;
+}
+
+.code {
+  color: var(--line-strong, var(--line));
+  font-family: var(--font-display), serif;
+  font-size: clamp(6rem, 4rem + 8vw, 11rem);
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  margin: 0;
+}
+
+.code span {
+  color: var(--signal);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-floor, 44px);
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

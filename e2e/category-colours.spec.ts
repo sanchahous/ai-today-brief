@@ -27,7 +27,7 @@ test.describe('category colour gate', () => {
         await page.goto(route.path);
         await expect(page.locator('main h1')).toBeVisible();
         if (route.key === '/news' || route.key.startsWith('/category/'))
-          await expect(page.getByTestId('post-card').or(page.getByTestId('story-card')).first()).toBeVisible();
+          await expect(page.getByTestId('story-card').first()).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
         await expect(page.locator('main h1')).toHaveCount(1);
         const scopes = page.locator(CATEGORY_SCOPE);
@@ -57,7 +57,7 @@ test.describe('category colour gate', () => {
     for (const item of result.items) expect(categoryColor(item.categorySlug, item.categoryColor)).toMatch(/^var\(--cat-/);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/en/news');
-    await expect(page.getByTestId('post-card').or(page.getByTestId('story-card')).first()).toBeVisible();
+    await expect(page.getByTestId('story-card').first()).toBeVisible();
     await page.getByTestId('search-trigger-compact').click();
     const dialog = page.getByRole('dialog', { name: /^search$/i });
     await expect(dialog).toBeVisible();

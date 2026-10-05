@@ -24,7 +24,7 @@ export function ActionCatalog() {
   const [chipClicks, setChipClicks] = useState(0);
   const t = COPY[lang];
   return (
-    <section id="action-catalog" data-testid="action-catalog" aria-labelledby="action-catalog-title" className="border-border border-t py-8" lang={lang}>
+    <section id="action-catalog" data-testid="action-catalog" aria-labelledby="action-catalog-title" className="border-line border-t py-8" lang={lang}>
       <h2 id="action-catalog-title" className="mb-4 font-serif text-xl">{t.title}</h2>
       <div className="mb-4 flex flex-wrap gap-2">
         <Pill pressed={lang === 'en'} onClick={() => setLang('en')}>EN</Pill>

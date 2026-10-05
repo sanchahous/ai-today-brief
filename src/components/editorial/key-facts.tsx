@@ -13,7 +13,7 @@ export function KeyFacts({ lang, title, facts }: { lang: Lang; title?: string; f
       <h3 className="mb-4 font-serif text-xl font-semibold">{heading}</h3>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
         {facts.map((fact, i) => (
-          <div key={i} className="flex flex-col border-t border-border pt-3">
+          <div key={i} className="flex flex-col border-t border-line pt-3">
             <dt className="text-sm font-semibold text-text">{fact.term}</dt>
             <dd className="mt-1 text-sm text-muted">{fact.definition}</dd>
           </div>

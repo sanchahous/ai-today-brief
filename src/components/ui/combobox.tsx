@@ -127,14 +127,14 @@ export function Combobox({
           setOpen(true);
         }}
         onKeyDown={onKeyDown}
-        className="bg-surface border-border text-text min-h-[44px] w-full rounded-lg border px-3.5 text-sm outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
+        className="bg-surface border-line text-text min-h-[44px] w-full rounded-lg border px-3.5 text-sm outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
       />
       <ul
         id={listId}
         role="listbox"
         aria-label={label}
         hidden={!open}
-        className="bg-raised border-border rounded-card absolute top-full right-0 left-0 z-[var(--z-dropdown)] mt-2 max-h-64 overflow-y-auto border p-1 shadow-[var(--shadow-pop)]"
+        className="bg-raised border-line rounded-card absolute top-full right-0 left-0 z-[var(--z-dropdown)] mt-2 max-h-64 overflow-y-auto border p-1 shadow-[var(--shadow-pop)]"
       >
         {shown.map((option, i) => (
           <li
@@ -150,7 +150,7 @@ export function Combobox({
             }}
             onMouseMove={() => !option.disabled && setActive(i)}
             className={`flex min-h-[44px] cursor-pointer items-center justify-between rounded-md px-3 text-sm aria-disabled:cursor-not-allowed aria-disabled:opacity-50 ${
-              i === active ? 'bg-surface-2' : ''
+              i === active ? 'bg-raised' : ''
             } ${option.value === value ? 'text-accent font-semibold' : 'text-text'}`}
           >
             {option.label}

@@ -30,7 +30,7 @@ export function VideoFacade({
     `?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=${lang}&hl=${lang}`;
 
   return (
-    <div className="border-border bg-surface rounded-card relative aspect-video overflow-hidden border">
+    <div className="border-line bg-surface rounded-card relative aspect-video overflow-hidden border">
       {active ? (
         <iframe
           ref={frameRef}

@@ -57,7 +57,7 @@ export function DigestsNowPlaying({
       {daily ? (
         <Link
           href={daily.href}
-          className="border-border bg-surface hover:border-accent rounded-card group flex flex-col border p-5 no-underline transition-colors"
+          className="border-line bg-surface hover:border-accent rounded-card group flex flex-col border p-5 no-underline transition-colors"
         >
           <span className="text-accent text-xs font-bold tracking-wide uppercase">{t.dailyKicker}</span>
           <span className="mt-4 flex items-start gap-4">
@@ -93,9 +93,9 @@ export function DigestsNowPlaying({
       {weekly ? (
         <Link
           href={`/${lang}/weekly/${weekly.slug}`}
-          className="border-border bg-surface hover:border-accent rounded-card group grid gap-4 overflow-hidden border p-5 no-underline transition-colors sm:grid-cols-[7rem_minmax(0,1fr)]"
+          className="border-line bg-surface hover:border-accent rounded-card group grid gap-4 overflow-hidden border p-5 no-underline transition-colors sm:grid-cols-[7rem_minmax(0,1fr)]"
         >
-          <div className="border-border relative aspect-square overflow-hidden rounded-lg border">
+          <div className="border-line relative aspect-square overflow-hidden rounded-lg border">
             {weekly.cover ? (
               <Image
                 src={weekly.cover.url}

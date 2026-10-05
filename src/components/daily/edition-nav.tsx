@@ -6,7 +6,7 @@ import type { Lang } from '@/lib/site';
 import { ArrowRight } from '@/components/icons';
 
 const linkClass =
-  'rounded-card border-border bg-surface hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] flex min-h-[var(--touch-target-min)] flex-1 flex-col justify-center gap-1 border p-4 no-underline';
+  'rounded-card border-line bg-surface hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] flex min-h-[var(--touch-target-min)] flex-1 flex-col justify-center gap-1 border p-4 no-underline';
 
 /**
  * Previous / all / next from published edition-1 rows.

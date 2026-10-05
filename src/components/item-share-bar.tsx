@@ -58,7 +58,7 @@ export function ItemShareBar({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => trackShare('x')}
-        className="rounded-pill border-border text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
+        className="rounded-pill border-line text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
       >
         {t.shareOnX}
       </a>
@@ -67,14 +67,14 @@ export function ItemShareBar({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => trackShare('linkedin')}
-        className="rounded-pill border-border text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
+        className="rounded-pill border-line text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
       >
         {t.shareOnLinkedin}
       </a>
       <button
         type="button"
         onClick={copyLink}
-        className="rounded-pill border-border text-text hover:border-accent min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium transition"
+        className="rounded-pill border-line text-text hover:border-accent min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium transition"
       >
         {t.copyLink}
       </button>

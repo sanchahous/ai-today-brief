@@ -29,14 +29,14 @@ export function NewsletterCatalog() {
           <button
             type="button"
             onClick={() => setLang('en')}
-            className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${lang === 'en' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${lang === 'en' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-line text-muted hover:text-text'}`}
           >
             English
           </button>
           <button
             type="button"
             onClick={() => setLang('uk')}
-            className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${lang === 'uk' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${lang === 'uk' ? 'bg-accent-fill text-on-accent border-transparent' : 'border-line text-muted hover:text-text'}`}
           >
             Українська
           </button>
@@ -49,7 +49,7 @@ export function NewsletterCatalog() {
               key={v}
               type="button"
               onClick={() => setSelectedVariant(v)}
-              className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${selectedVariant === v ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
+              className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${selectedVariant === v ? 'bg-accent-fill text-on-accent border-transparent' : 'border-line text-muted hover:text-text'}`}
             >
               {v}
             </button>
@@ -63,7 +63,7 @@ export function NewsletterCatalog() {
               key={s}
               type="button"
               onClick={() => setSelectedStatus(s)}
-              className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${selectedStatus === s ? 'bg-accent-fill text-on-accent border-transparent' : 'border-border text-muted hover:text-text'}`}
+              className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium border transition-colors ${selectedStatus === s ? 'bg-accent-fill text-on-accent border-transparent' : 'border-line text-muted hover:text-text'}`}
             >
               {s}
             </button>
@@ -71,7 +71,7 @@ export function NewsletterCatalog() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-surface p-6">
+      <div className="rounded-lg border border-line bg-surface p-6">
         <h3 className="text-muted mb-4 text-xs font-bold uppercase tracking-wider">
           Specimen: variant = {selectedVariant} · state = {selectedStatus} · lang = {lang}
         </h3>

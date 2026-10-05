@@ -28,7 +28,7 @@ export function RuleCatalog({ lang }: { lang: Lang }) {
                 {rules.map((rule) => (
                   <article
                     key={rule.id}
-                    className="rounded-card border-border bg-surface border p-4"
+                    className="rounded-card border-line bg-surface border p-4"
                   >
                     <p className="text-faint m-0 font-mono text-2xs">{rule.id}</p>
                     <h4 className="m-0 mt-1 text-[1.05rem]">{rule.title[lang]}</h4>
@@ -59,13 +59,13 @@ export function StaticSnippetCatalog({ lang }: { lang: Lang }) {
       </h2>
       <div className="mt-5 grid gap-3">
         {OFFICIAL_PROMPT_SNIPPETS.map((snippet) => (
-          <article key={snippet.id} className="rounded-card border-border bg-surface border p-4">
+          <article key={snippet.id} className="rounded-card border-line bg-surface border p-4">
             <p className="text-faint m-0 text-2xs tracking-[0.12em] uppercase">
               {t.placementLabels[snippet.placement]}
             </p>
             <h3 className="m-0 mt-1 text-[1.05rem]">{snippet.title[lang]}</h3>
             <p className="text-muted m-0 mt-2 text-sm leading-relaxed">{snippet.purpose[lang]}</p>
-            <pre className="border-border bg-surface-2 mt-3 overflow-x-auto rounded-lg border p-3 text-xs leading-relaxed whitespace-pre-wrap">
+            <pre className="border-line bg-raised mt-3 overflow-x-auto rounded-lg border p-3 text-xs leading-relaxed whitespace-pre-wrap">
               <code>{snippet.snippet}</code>
             </pre>
             <CitationList lang={lang} citations={snippet.citations} label={t.citations} />
@@ -94,7 +94,7 @@ function CitationList({
         {citations.map((citation) => (
           <li key={citation.url}>
             <a
-              className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+              className="text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
               href={citation.url}
             >
               {citation.label}

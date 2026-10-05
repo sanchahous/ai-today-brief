@@ -174,7 +174,7 @@ function ModelRecommendation({
   labels: ReturnType<typeof getStrings>['promptOptimizer'];
 }) {
   return (
-    <article className="rounded-lg border border-border bg-bg p-4">
+    <article className="rounded-lg border border-line bg-bg p-4">
       <h3 className="m-0 text-lg">{labels.modelRecommendation}</h3>
       <p className="m-0 mt-2 text-sm">
         <strong>{labels.recommendedModel}:</strong> {modelLabels[result.recommendation.model]}
@@ -224,7 +224,7 @@ function FindingCard({ finding, lang }: { finding: PromptFinding; lang: Lang }) 
   if (!rule) return null;
 
   return (
-    <article className="rounded-lg border border-border bg-bg p-4">
+    <article className="rounded-lg border border-line bg-bg p-4">
       <p className="text-faint m-0 font-mono text-2xs">{finding.ruleId}</p>
       <h4 className="m-0 mt-1">{rule.title[lang]}</h4>
       <p className="text-muted m-0 mt-2 text-sm leading-relaxed">{rule.recommendation[lang]}</p>
@@ -245,7 +245,7 @@ function FindingCard({ finding, lang }: { finding: PromptFinding; lang: Lang }) 
         {rule.citations.map((citation) => (
           <li key={citation.url}>
             <a
-              className="text-accent underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+              className="text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
               href={citation.url}
             >
               {citation.label}

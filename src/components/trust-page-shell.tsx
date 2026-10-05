@@ -90,7 +90,7 @@ export function PolicyPageShell({
           activeTabId={policyKey}
           ariaLabel={lang === 'uk' ? 'Політики' : 'Policies'}
           wrap
-          className="border-border mb-8 border-b pb-4"
+          className="border-line mb-8 border-b pb-4"
         />
         <div className="tablet:grid-cols-[minmax(0,1fr)_minmax(0,var(--reading))] tablet:gap-12 grid min-w-0 gap-8">
           <aside className="min-w-0">

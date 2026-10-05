@@ -70,7 +70,7 @@ function SheetDemo({
       <button
         ref={trigger}
         type="button"
-        className="bg-surface border-border text-text min-h-[var(--touch-target-min)] rounded-lg border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
+        className="bg-surface border-line text-text min-h-[var(--touch-target-min)] rounded-lg border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={panelId}
@@ -108,7 +108,7 @@ export function OverlayCatalog() {
       data-ready={ready ? 'true' : 'false'}
       lang={lang}
       aria-labelledby="overlay-catalog-title"
-      className="border-border border-t py-8"
+      className="border-line border-t py-8"
     >
       <h2 id="overlay-catalog-title" className="mb-4 font-serif text-xl">
         {copy.title}

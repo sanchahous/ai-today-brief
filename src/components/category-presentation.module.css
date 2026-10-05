@@ -1,0 +1,44 @@
+/* Category colour consumers — theme-stable tints via --cat-color (AH-1.4). */
+.fg {
+  color: var(--cat-color);
+}
+
+.badge {
+  color: var(--cat-color);
+  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--cat-color) 34%, transparent);
+}
+
+.chip {
+  color: var(--cat-color);
+  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--cat-color) 33%, transparent);
+}
+
+.band {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
+    var(--surface)
+  );
+  border-bottom: 1px solid color-mix(in srgb, var(--cat-color) 6%, var(--surface));
+}
+
+.iconBox {
+  color: var(--cat-color);
+  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--cat-color) 33%, transparent);
+}
+
+.header {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
+    var(--surface)
+  );
+  border: 1px solid color-mix(in srgb, var(--cat-color) 27%, transparent);
+}
+
+.dot {
+  background: var(--cat-color);
+}

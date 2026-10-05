@@ -1,6 +1,7 @@
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { NewsletterForm } from '@/components/home/newsletter-form';
+import styles from './newsletter-band.module.css';
 
 /**
  * Email-digest band (FEATURE F1). Social proof (subscriber count) is omitted on
@@ -31,7 +32,7 @@ export function NewsletterBand({
     <section aria-labelledby={showHeader ? 'newsletter-title' : undefined} className={outer}>
       <div
         data-gesture="fold"
-        className={`newsletter-card-bg rounded-card border-border relative overflow-hidden border ${innerPadding}`}
+        className={`${styles.cardBg} rounded-card border-line relative overflow-hidden border ${innerPadding}`}
       >
         {showHeader ? (
           <>

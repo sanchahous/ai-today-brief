@@ -75,7 +75,7 @@ export function Dialog({
       placement={placementFor(variant)}
       triggerRef={triggerRef}
       initialFocusRef={initialFocusRef}
-      panelClassName="border-border border"
+      panelClassName="border-line border"
       panelTestId={panelTestId}
       backdropTestId={backdropTestId}
     >

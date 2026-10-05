@@ -68,7 +68,7 @@ export function ToolWorkspaceTemplate({
 
       <header className="tool-head max-w-[56.25rem] pt-6 sm:pt-8 pb-2">
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-mono font-semibold tracking-wider uppercase text-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-mono font-semibold tracking-wider uppercase text-foreground">
             <span className="h-2 w-2 rounded-full bg-signal" aria-hidden="true" />
             {tool.status === 'live' ? t.toolsPage.liveStatus : t.toolsPage.comingSoonStatus}
           </span>
@@ -95,7 +95,7 @@ export function ToolWorkspaceTemplate({
 
       <div className="workbench grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <section
-          className="workbench-panel relative rounded-2xl border border-border bg-surface p-5 sm:p-8 shadow-sm"
+          className="workbench-panel relative rounded-2xl border border-line bg-surface p-5 sm:p-8 shadow-sm"
           aria-labelledby="workbench-input-title"
         >
           <h2
@@ -114,7 +114,7 @@ export function ToolWorkspaceTemplate({
         </section>
 
         <section
-          className="workbench-panel output-panel relative rounded-2xl border border-border bg-surface p-5 sm:p-8 shadow-sm"
+          className="workbench-panel output-panel relative rounded-2xl border border-line bg-surface p-5 sm:p-8 shadow-sm"
           aria-labelledby="workbench-output-title"
         >
           <h2

@@ -21,7 +21,7 @@ export interface DropdownMenuProps {
 }
 
 const ITEM_CLASS =
-  'hover:bg-surface-2 focus-visible:bg-surface-2 flex min-h-[44px] w-full items-center rounded-md px-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
+  'hover:bg-raised focus-visible:bg-raised flex min-h-[44px] w-full items-center rounded-md px-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
 
 function MenuList({
   items,

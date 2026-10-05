@@ -49,7 +49,7 @@ export function SearchTrigger({
         aria-haspopup="dialog"
         aria-label={label}
         aria-keyshortcuts="Control+K Meta+K"
-        className={`border-border bg-surface text-faint hover:border-accent flex w-full touch-manipulation items-center gap-3 rounded-pill border px-4 py-3 text-left text-base ${className}`}
+        className={`border-line bg-surface text-faint hover:border-accent flex w-full touch-manipulation items-center gap-3 rounded-pill border px-4 py-3 text-left text-base ${className}`}
       >
         <SearchIcon size={18} />
         <span className="truncate">{label}</span>
@@ -66,7 +66,7 @@ export function SearchTrigger({
         aria-haspopup="dialog"
         aria-label={t.searchOpen}
         aria-keyshortcuts="Control+K Meta+K"
-        className={`border-border bg-surface focus-visible:border-accent flex w-full min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${className}`}
+        className={`border-line bg-surface focus-visible:border-accent flex w-full min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${className}`}
       >
         <span aria-hidden className="text-muted shrink-0">
           <SearchIcon size={18} />
@@ -87,7 +87,7 @@ export function SearchTrigger({
       aria-haspopup="dialog"
       aria-label={t.searchOpen}
       aria-keyshortcuts="Control+K Meta+K"
-      className={`border-border bg-surface focus-visible:border-accent flex max-w-[clamp(10rem,24vw,26rem)] min-w-[10rem] items-center gap-2 rounded-lg border px-3 py-2 text-left lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl ${className}`}
+      className={`border-line bg-surface focus-visible:border-accent flex max-w-[clamp(10rem,24vw,26rem)] min-w-[10rem] items-center gap-2 rounded-lg border px-3 py-2 text-left lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl ${className}`}
     >
       <span aria-hidden className="text-muted shrink-0">
         <SearchIcon size={18} />

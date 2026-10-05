@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const RESOLVERS = new Set(['categoryColor', 'categoryArtColor', 'resolveCategoryColor']);
 const SLUG_PROP = new Map([
-  ['CategoryBadge', 'slug'], ['CategoryThumb', 'slug'], ['CategoryBanner', 'slug'],
+  ['CategoryBadge', 'slug'], ['CategoryBanner', 'slug'],
   ['FilterChip', 'categorySlug'],
 ]);
 

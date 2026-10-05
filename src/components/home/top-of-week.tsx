@@ -9,6 +9,8 @@ import { ArrowRight, ClockIcon, PlayIcon } from '@/components/icons';
 import { SectionHead } from '@/components/home/section-head';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
+import catStyles from '@/components/category-presentation.module.css';
+import cardStyles from '@/components/interactive-card.module.css';
 
 function formatDate(date: string, lang: Lang): string {
   const d = date.length === 10 ? new Date(`${date}T00:00:00`) : new Date(date);
@@ -51,7 +53,7 @@ export function TopOfWeek({
         />
         <Link
           href={`/${lang}/news`}
-          className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center gap-2 border px-4 py-2 text-sm font-semibold transition-colors"
+          className="rounded-pill border-line text-text hover:border-accent hover:text-accent inline-flex items-center gap-2 border px-4 py-2 text-sm font-semibold transition-colors"
         >
           {t.weekCta}
           <ArrowRight size={16} />
@@ -95,10 +97,10 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
   return (
     <Link
       href={item.href}
-      className="card-hover rounded-card border-border bg-surface block h-full overflow-hidden border"
+      className={`${cardStyles.card} rounded-card border-line bg-surface block h-full overflow-hidden border`}
     >
       {item.imageUrl && (
-        <div className="border-border-soft relative aspect-[16/9] w-full border-b">
+        <div className="border-line-soft relative aspect-[16/9] w-full border-b">
           <Image
             src={item.imageUrl}
             alt=""
@@ -118,7 +120,7 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
         <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
         {item.hasVideo && (
           <span
-            className="cat-fg ml-auto inline-flex items-center gap-1 text-xs font-semibold"
+            className={`${catStyles.fg} ml-auto inline-flex items-center gap-1 text-xs font-semibold`}
             style={{ '--cat-color': color } as CSSProperties}
           >
             <PlayIcon size={15} />
@@ -153,7 +155,7 @@ function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: 
   return (
     <Link
       href={item.href}
-      className="card-hover rounded-card border-border bg-surface flex items-start gap-3 border p-4"
+      className={`${cardStyles.card} rounded-card border-line bg-surface flex items-start gap-3 border p-4`}
     >
       <span aria-hidden className="text-faint min-w-7 font-serif text-2xl leading-none font-bold">
         {String(rank).padStart(2, '0')}
@@ -162,7 +164,7 @@ function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: 
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
           {item.hasVideo && (
-            <span className="cat-fg inline-flex" style={{ '--cat-color': color } as CSSProperties}>
+            <span className={`${catStyles.fg} inline-flex`} style={{ '--cat-color': color } as CSSProperties}>
               <PlayIcon size={14} />
             </span>
           )}

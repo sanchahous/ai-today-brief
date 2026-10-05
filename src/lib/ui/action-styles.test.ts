@@ -3,7 +3,7 @@ import { actionClassName } from './action-styles';
 
 describe('action class composition', () => {
   it('keeps the default secondary and caller-provided layout classes', () => {
-    expect(actionClassName()).toContain('bg-surface-2');
+    expect(actionClassName()).toContain('bg-raised');
     expect(actionClassName({ className: 'w-full' })).toContain('w-full');
   });
   it.each(['primary', 'secondary', 'outline', 'ghost'] as const)('composes %s in every control size without missing classes', (variant) => {

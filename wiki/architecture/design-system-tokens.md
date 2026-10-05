@@ -1,6 +1,6 @@
-# Дизайн-система After Hours: архітектура токенів і governance (v2.1.0)
+# Дизайн-система After Hours: архітектура токенів і governance (v3.0.0)
 
-Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v2.1.0 (міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
+Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v3.0.0 (major AH-7.3: прибрано legacy-аліаси `--bg-soft`, `--surface-2`, `--border`, `--border-soft`; міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
 Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29.
 Last updated: 2026-10-03
 
@@ -21,10 +21,10 @@ Foundations (v1.0.0)
 │   ├── Typography (Inter, Fraunces, Georgia, Consolas)
 │   └── Motion (fast: 160ms, standard: 320ms, entrance: 640ms)
 ├── 2. Semantic Tokens (ролі з підтримкою тем Night / Day)
-│   ├── Surfaces: --bg, --bg-soft, --surface, --surface-2
+│   ├── Surfaces: --bg, --bg-deep, --surface, --raised, --overlay
 │   ├── Content: --text, --muted, --faint
 │   ├── Actions & Signals: --accent (brass), --on-accent, --signal (celadon)
-│   └── Feedback: --error, --success, --border, --border-soft
+│   └── Feedback: --error, --success, --line, --line-soft
 └── 3. Component Tokens
     ├── Control sizes: sm (36px), md (44px), lg (52px)
     ├── Touch target minimum: ≥ 44×44px (WCAG 2.2 AA)
@@ -61,11 +61,11 @@ fallback невідомих. Day color-mix overrides прибрано.
 | Legacy-значення у globals.css | Новий семантичний токен | Night значення | Day значення |
 |---|---|---|---|
 | `#0f0f0f` | `var(--bg)` | `#171918` | `#efe8da` |
-| `#141414` | `var(--bg-soft)` | `#131514` | `#e6ddcc` |
+| `#141414` | `var(--bg-deep)` | `#131514` | `#e6ddcc` |
 | `#1a1a1a` | `var(--surface)` | `#1f2321` | `#f7f2e8` |
-| `#202020` | `var(--surface-2)` | `#282d29` | `#e6ddcc` |
-| `#2a2a2a` | `var(--border)` | `#3b413c` | `#d6cebf` |
-| `#232323` | `var(--border-soft)`| `#2d332f` | `#e2dacb` |
+| `#202020` | `var(--raised)` | `#282d29` | `#fdfaf4` |
+| `#2a2a2a` | `var(--line)` | `#3b413c` | `#d6cebf` |
+| `#232323` | `var(--line-soft)`| `#2d332f` | `#e2dacb` |
 | `#e8e8e8` | `var(--text)` | `#f0e9dc` | `#1d211d` |
 | `#a3a3a3` | `var(--muted)` | `#b9b7ac` | `#4d5148` |
 | `#6a6a6a` | `var(--faint)` | `#a3a197` | `#5a5e54` |
@@ -82,7 +82,8 @@ fallback невідомих. Day color-mix overrides прибрано.
    - Patch: виправлення контрастності або коригування відтінку в межах ±5% яскравості.
    - Minor: додавання нових токенів або компонентних ролей без ламання наявних інтерфейсів.
    - Major: перейменування чи видалення токенів, зміна шкали типографіки чи сітки.
-3. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
+3. **Changelog v3.0.0 (2026-10-05, major, AH-7.3):** видалено legacy-аліаси `--bg-soft` → `--bg-deep`, `--surface-2` → `--raised`/`--overlay`, `--border` → `--line`, `--border-soft` → `--line-soft`; Tailwind `sm/md/lg/xl` вирівняно з D5; legacy CSS-класи з `globals.css` перенесено в CSS-модулі; видалено невикористані `video-teaser`, `post-card`, `category-thumb`.
+4. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
 4. **Продовження v2.1.0 (2026-09-30, AH-1.2):** єдиний контраст-гейт 2.0 (222 пари замість 158) і сім токенів прототипу, яких бракувало в коді: `--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`, `--selection-text` (Night і Day; споживачі з'являться з компонентами фази 2 і 3). Візуально нічого не змінюється.
 5. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: стандартні `sm/md/lg/xl` Tailwind. Значення `--header-h` оновлено в AH-3.3.
 6. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
@@ -149,14 +150,13 @@ Ratchet після AH-1.4: 30 кольорових входжень (було 42
 | Токен | Роль і використання | Код-мапінг |
 |---|---|---|
 | `--bg` | фон сторінки | `SEMANTIC_TOKENS.<тема>.bg` |
-| `--bg-soft` | заглиблений фон, підвал | `bgSoft` |
+| `--bg-deep` | заглиблений фон, підвал | `bgDeep` |
 | `--stage` | завжди темна «сцена» (банери, hero) | `stage` |
 | `--surface` | картки й панелі | `surface` |
-| `--surface-2` | вторинна поверхня: чіпи, вставки | `surface2` |
-| `--raised` | піднята поверхня: popover, toast | `raised` |
-| `--overlay` | шар над raised: tooltip, меню | `overlay` |
-| `--border` | декоративна лінія | `border` |
-| `--border-soft` | м'який розділювач | `borderSoft` |
+| `--raised` | піднята поверхня: popover, toast, hover | `raised` |
+| `--overlay` | шар над raised: tooltip, меню, inset Day | `overlay` |
+| `--line` | декоративна лінія | `line` |
+| `--line-soft` | м'який розділювач | `lineSoft` |
 | `--line-strong` | межа елемента керування (≥ 3:1) | `lineStrong` |
 | `--text` | основний текст | `text` |
 | `--muted` | другорядний текст | `muted` |
@@ -349,10 +349,14 @@ AH-1.5 підключає локальні OFL subset-и через `next/font/l
 
 ### 7.10 Брейкпоінти (D5, варіант A)
 
-Значення прототипу в rem, щоб розкладка реагувала на збільшення шрифту в браузері. Tailwind будує з них `min-width` варіанти (`tablet:` від 60rem); `max-width` запити прототипу — `max-tablet:` (Tailwind порівнює строго «менше», тож межа відрізняється на 1px від прототипу). Стандартні `sm/md/lg/xl` не перевизначено до AH-7.3. Header і news-layout перемикаються на `tablet` (960px) з AH-3.3; решта discovery-шаблонів — в AH-4.3. Контракт для e2e — `e2e/helpers/viewports.ts` (`NAV_COMPACT_LAST` 959 / `NAV_WIDE_FIRST` 960).
+Значення прототипу в rem, щоб розкладка реагувала на збільшення шрифту в браузері. Tailwind будує з них `min-width` варіанти (`tablet:` від 60rem); `max-width` запити прототипу — `max-tablet:` (Tailwind порівнює строго «менше», тож межа відрізняється на 1px від прототипу). Стандартні `sm/md/lg/xl` вирівняно з D5 з AH-7.3 (3.0.0). Header і news-layout перемикаються на `tablet` (960px) з AH-3.3; решта discovery-шаблонів — в AH-4.3. Контракт для e2e — `e2e/helpers/viewports.ts` (`NAV_COMPACT_LAST` 959 / `NAV_WIDE_FIRST` 960).
 
 | Токен | Значення | px за замовчуванням |
 |---|---|---|
+| `--breakpoint-sm` | 25rem | 400 |
+| `--breakpoint-md` | 47.5rem | 760 |
+| `--breakpoint-lg` | 60rem | 960 |
+| `--breakpoint-xl` | 80rem | 1280 |
 | `--breakpoint-compact` | 23.75rem | 380 |
 | `--breakpoint-narrow` | 25rem | 400 |
 | `--breakpoint-phone` | 47.5rem | 760 |

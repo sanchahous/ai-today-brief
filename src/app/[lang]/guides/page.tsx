@@ -184,7 +184,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
       />
 
       {/* ── Library Hero ── */}
-      <header className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-8 lg:gap-12 items-end pb-12 sm:pb-16 border-b border-border">
+      <header className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-8 lg:gap-12 items-end pb-12 sm:pb-16 border-b border-line">
         <div>
           <div className="text-2xs font-semibold uppercase tracking-wider text-accent mb-3">
             {lang === 'uk' ? 'Практична бібліотека' : 'The practical library'}
@@ -212,7 +212,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
         </div>
 
         <ul className="grid gap-3 list-none p-0 m-0">
-          <li className="flex gap-4 p-4 rounded-lg border border-border bg-surface">
+          <li className="flex gap-4 p-4 rounded-lg border border-line bg-surface">
             <CalendarIcon className="text-accent mt-0.5 shrink-0" size={20} />
             <span className="grid gap-0.5 text-sm text-muted">
               <strong className="text-text font-semibold">
@@ -225,7 +225,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
               </span>
             </span>
           </li>
-          <li className="flex gap-4 p-4 rounded-lg border border-border bg-surface">
+          <li className="flex gap-4 p-4 rounded-lg border border-line bg-surface">
             <LayersIcon className="text-accent mt-0.5 shrink-0" size={20} />
             <span className="grid gap-0.5 text-sm text-muted">
               <strong className="text-text font-semibold">
@@ -238,7 +238,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
               </span>
             </span>
           </li>
-          <li className="flex gap-4 p-4 rounded-lg border border-border bg-surface">
+          <li className="flex gap-4 p-4 rounded-lg border border-line bg-surface">
             <FileTextIcon className="text-accent mt-0.5 shrink-0" size={20} />
             <span className="grid gap-0.5 text-sm text-muted">
               <strong className="text-text font-semibold">
@@ -254,12 +254,12 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
 
       {/* ── Feature Block 1: Comparison ── */}
       <section
-        className="mt-12 sm:mt-16 rounded-2xl border border-border bg-surface p-6 sm:p-8 lg:p-10 shadow-sm"
+        className="mt-12 sm:mt-16 rounded-2xl border border-line bg-surface p-6 sm:p-8 lg:p-10 shadow-sm"
         aria-labelledby="g1-title"
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div>
-            <span className="inline-flex items-center rounded-pill border border-border bg-surface px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-muted mb-3">
+            <span className="inline-flex items-center rounded-pill border border-line bg-surface px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-muted mb-3">
               {lang === 'uk' ? 'Порівняння' : 'Comparison'}
             </span>
             <h2 id="g1-title" className="font-serif text-2xl sm:text-3xl font-bold text-text mb-3 leading-snug">
@@ -309,13 +309,13 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
 
           <div>
             <div
-              className="overflow-hidden rounded-xl border border-border bg-surface"
+              className="overflow-hidden rounded-xl border border-line bg-surface"
               role="img"
               aria-label={
                 lang === 'uk' ? 'Прев’ю матриці порівняння' : 'Preview of the comparison matrix'
               }
             >
-              <div className="grid grid-cols-[minmax(88px,0.9fr)_repeat(3,minmax(0,1fr))] border-b border-border bg-surface p-3 sm:p-4 text-accent font-serif text-sm sm:text-base font-bold">
+              <div className="grid grid-cols-[minmax(88px,0.9fr)_repeat(3,minmax(0,1fr))] border-b border-line bg-surface p-3 sm:p-4 text-accent font-serif text-sm sm:text-base font-bold">
                 <span />
                 <span>Claude Code</span>
                 <span>Cursor</span>
@@ -324,7 +324,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
               {comparisonRows.map((row, idx) => (
                 <div
                   key={idx}
-                  className="grid grid-cols-[minmax(88px,0.9fr)_repeat(3,minmax(0,1fr))] border-b border-border last:border-b-0"
+                  className="grid grid-cols-[minmax(88px,0.9fr)_repeat(3,minmax(0,1fr))] border-b border-line last:border-b-0"
                 >
                   <span className="p-3 sm:p-4 text-faint font-mono text-2xs uppercase tracking-wider">
                     {row.key}
@@ -347,13 +347,13 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
 
       {/* ── Feature Block 2: Benchmark (is-alt) ── */}
       <section
-        className="mt-8 rounded-2xl border border-border bg-surface p-6 sm:p-8 lg:p-10 shadow-sm"
+        className="mt-8 rounded-2xl border border-line bg-surface p-6 sm:p-8 lg:p-10 shadow-sm"
         aria-labelledby="g2-title"
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="order-2 lg:order-1">
-            <div className="rounded-xl border border-border bg-surface p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-border">
+            <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-line">
                 <span className="inline-flex items-center gap-1.5 rounded-pill border border-signal/55 bg-surface text-signal px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wider">
                   <CheckIcon size={12} className="text-signal" />
                   <span>{lang === 'uk' ? 'Протокол v1 зафіксовано' : 'Protocol v1 frozen'}</span>
@@ -364,14 +364,14 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
                 {benchDimensions.map((dim) => (
                   <li
                     key={dim.id}
-                    className="flex items-center gap-2 p-2 rounded-md bg-surface text-xs text-text border border-border/50"
+                    className="flex items-center gap-2 p-2 rounded-md bg-surface text-xs text-text border border-line/50"
                   >
                     <span className="font-mono text-2xs text-accent font-semibold">{dim.id}</span>
                     <span className="truncate">{lang === 'uk' ? dim.uk : dim.en}</span>
                   </li>
                 ))}
               </ol>
-              <p className="mt-4 pt-3 border-t border-border text-xs text-faint m-0">
+              <p className="mt-4 pt-3 border-t border-line text-xs text-faint m-0">
                 {lang === 'uk'
                   ? 'Реальні логи прогонів та профіль вимірів — у гайді. Жодних демонстраційних оцінок.'
                   : 'Real run logs and dimension profiles live in the guide. No illustrative estimates.'}
@@ -380,7 +380,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
           </div>
 
           <div className="order-1 lg:order-2">
-            <span className="inline-flex items-center rounded-pill border border-border bg-surface px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-muted mb-3">
+            <span className="inline-flex items-center rounded-pill border border-line bg-surface px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-muted mb-3">
               {lang === 'uk' ? 'Бенчмарк' : 'Benchmark'}
             </span>
             <h2 id="g2-title" className="font-serif text-2xl sm:text-3xl font-bold text-text mb-3 leading-snug">
@@ -421,7 +421,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
             </ul>
             <Link
               href={`/${lang}/guides/${bench.slug}`}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-border bg-surface px-5 py-2.5 font-semibold text-sm text-text hover:border-accent hover:text-accent transition-colors"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-line bg-surface px-5 py-2.5 font-semibold text-sm text-text hover:border-accent hover:text-accent transition-colors"
             >
               <span>{lang === 'uk' ? 'Переглянути бенчмарк' : 'See the benchmark'}</span>
               <ArrowRight size={16} />
@@ -440,7 +440,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
             <li key={idx}>
               <Link
                 href={card.href}
-                className="group flex flex-col justify-between h-full rounded-xl border border-border bg-surface p-5 text-text hover:border-accent hover:shadow-sm transition-all min-h-[44px]"
+                className="group flex flex-col justify-between h-full rounded-xl border border-line bg-surface p-5 text-text hover:border-accent hover:shadow-sm transition-all min-h-[44px]"
               >
                 <div>
                   <div className="w-12 h-12 rounded-lg bg-accent/10 text-accent grid place-items-center mb-4 group-hover:scale-105 transition-transform">
@@ -472,7 +472,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
           {cycleSteps.map((c) => (
             <li
               key={c.step}
-              className="flex flex-col gap-2 p-5 rounded-xl border border-border bg-surface"
+              className="flex flex-col gap-2 p-5 rounded-xl border border-line bg-surface"
             >
               <span className="font-mono text-2xs text-accent font-semibold">{c.step}</span>
               <strong className="font-serif text-xl font-normal text-text">{c.title}</strong>
@@ -488,14 +488,14 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
           {lang === 'uk' ? 'Усі гайди' : 'All guides'}
         </h2>
         <div
-          className="overflow-x-auto rounded-xl border border-border bg-surface"
+          className="overflow-x-auto rounded-xl border border-line bg-surface"
           role="region"
           aria-labelledby="all-guides-title"
           tabIndex={0}
         >
           <table className="w-full border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-border bg-surface-2">
+              <tr className="border-b border-line bg-raised">
                 <th scope="col" className="p-4 font-semibold text-muted text-xs uppercase tracking-wider">
                   {lang === 'uk' ? 'Гайд' : 'Guide'}
                 </th>
@@ -512,7 +512,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
             </thead>
             <tbody className="divide-y divide-border">
               {GUIDES.map((g) => (
-                <tr key={g.slug} className="hover:bg-surface-2/50 transition-colors">
+                <tr key={g.slug} className="hover:bg-raised/50 transition-colors">
                   <th scope="row" className="p-4 font-normal">
                     <Link
                       href={`/${lang}/guides/${g.slug}`}

@@ -82,9 +82,9 @@ function Step({ id, title, children }: { id: string; title: string; children: Re
 
 function ReadyCard({ copy }: { copy: Copy }) {
   return (
-    <div className="rounded-card border-border bg-surface border p-4">
+    <div className="rounded-card border-line bg-surface border p-4">
       <div className="post-grid">
-        <span className="bg-surface-2 block h-24 w-24 rounded-card" aria-hidden="true" />
+        <span className="bg-raised block h-24 w-24 rounded-card" aria-hidden="true" />
         <div>
           <p className="text-muted m-0 text-sm">{copy.exampleKicker}</p>
           <p className="font-serif text-text m-0 mt-2 text-xl">{copy.exampleTitle}</p>
@@ -160,7 +160,7 @@ export function FeedbackCatalog() {
       data-ready={ready ? 'true' : 'false'}
       lang={lang}
       aria-labelledby="feedback-catalog-title"
-      className="border-border border-t py-8"
+      className="border-line border-t py-8"
     >
       <h2 id="feedback-catalog-title" className="mb-4 font-serif text-xl">
         {copy.title}

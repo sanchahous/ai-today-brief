@@ -117,7 +117,7 @@ export function DailyHero({ brief, lang }: { brief: DailyBriefView; lang: Lang }
           ) : null}
           {more ? (
             <details className="group mt-4 max-w-[70ch]">
-              <summary className="rounded-pill border-border bg-surface text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] list-none items-center gap-2 border px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+              <summary className="rounded-pill border-line bg-surface text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] list-none items-center gap-2 border px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
                 <span className="group-open:hidden">{t.briefShowMore}</span>
                 <span className="hidden group-open:inline">{t.briefShowLess}</span>
               </summary>

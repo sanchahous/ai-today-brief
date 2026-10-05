@@ -41,7 +41,7 @@ export function TrendingTopicLink({
       className="hover:border-accent grid min-h-[var(--touch-target-min)] grid-cols-[7.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-transparent px-1"
     >
       <span className="text-text truncate text-sm font-semibold">{topic.name}</span>
-      <span className="bg-surface-2 h-2.5 overflow-hidden rounded-pill">
+      <span className="bg-raised h-2.5 overflow-hidden rounded-pill">
         <span className="bg-accent block h-full rounded-pill" style={{ width: `${width}%` }} />
       </span>
       <span className="text-faint flex items-baseline gap-2 text-xs font-semibold tabular-nums">

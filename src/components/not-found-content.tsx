@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { NotFoundSearch } from '@/components/not-found-search';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
+import styles from './not-found.module.css';
 
 /** 404 main column — used inside `[lang]` layout or the root not-found shell. */
 export function NotFoundContent({ lang }: { lang: Lang }) {
@@ -14,8 +15,8 @@ export function NotFoundContent({ lang }: { lang: Lang }) {
   ];
 
   return (
-    <section className="not-found-page mx-auto w-full max-w-[51.25rem] flex-1 px-6 py-16 md:py-24" aria-labelledby="nf-title">
-      <p className="nf-code" aria-hidden="true">
+    <section className={`${styles.page} mx-auto w-full max-w-[51.25rem] flex-1 px-6 py-16 md:py-24`} aria-labelledby="nf-title">
+      <p className={styles.code} aria-hidden="true">
         4<span>0</span>4
       </p>
 
@@ -35,9 +36,9 @@ export function NotFoundContent({ lang }: { lang: Lang }) {
         button={t.search}
       />
 
-      <nav aria-label={t.notFoundSuggestedPages} className="nf-links mt-8">
+      <nav aria-label={t.notFoundSuggestedPages} className={`${styles.links} mt-8`}>
         {suggestedLinks.map((link) => (
-          <Link key={link.href} href={link.href} className="nf-link">
+          <Link key={link.href} href={link.href} className={styles.link}>
             {link.label}
           </Link>
         ))}

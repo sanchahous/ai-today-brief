@@ -26,7 +26,7 @@ export function ConceptOtherChips({
 
   if (variant === 'rail') {
     return (
-      <section className="rounded-card border-border bg-surface border p-4" aria-labelledby={headingId}>
+      <section className="rounded-card border-line bg-surface border p-4" aria-labelledby={headingId}>
         <h2 id={headingId} className="m-0 mb-3 text-sm font-semibold">
           {heading}
         </h2>

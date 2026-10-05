@@ -13,6 +13,7 @@ import { SearchTrigger } from '@/components/search/search-trigger';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { IconButton } from '@/components/ui/icon-button';
+import catStyles from '@/components/category-presentation.module.css';
 import { BrandMark, CategoryGlyph, CloseIcon, MenuIcon, ArrowRight, SearchIcon } from '@/components/icons';
 import type { IconKey } from '@/components/icons';
 import type { TrendingTopic } from '@/lib/home';
@@ -147,7 +148,7 @@ export function SiteHeaderChrome({
   }
 
   return (
-    <header className="site-header-shell sticky top-0 tablet:-top-[4.75rem] z-50 flex h-(--header-h) flex-col border-b border-border bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]">
+    <header className="site-header-shell sticky top-0 tablet:-top-[4.75rem] z-50 flex h-(--header-h) flex-col border-b border-line bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]">
       <div className="mx-auto flex min-h-0 w-full max-w-page flex-1 items-center gap-2 px-gutter phone:gap-6 tablet:h-[4.75rem] tablet:flex-none">
         <Link href={`/${lang}`} data-brand-strum aria-label={`${SITE_NAME} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] min-w-0 items-center gap-2.5 whitespace-nowrap py-2 text-[1.0625rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text compact:text-[1.1875rem] phone:gap-3 phone:text-[1.4375rem]">
           <BrandMark size={40} className="size-[30px] shrink-0 compact:size-[34px] phone:size-10" />
@@ -259,7 +260,7 @@ export function SiteHeaderChrome({
                 />
               </button>
               {catsOpen ? (
-                <div className="absolute top-[calc(100%+8px)] left-1/2 z-[70] -translate-x-1/2 w-[min(560px,92vw)] p-3 border border-border bg-raised shadow-pop rounded-md">
+                <div className="absolute top-[calc(100%+8px)] left-1/2 z-[70] -translate-x-1/2 w-[min(560px,92vw)] p-3 border border-line bg-raised shadow-pop rounded-md">
                   <ul
                     role="listbox"
                     aria-label={t.navCategories}
@@ -274,7 +275,7 @@ export function SiteHeaderChrome({
                           className="text-text hover:bg-surface focus-visible:bg-surface flex min-h-[44px] items-center gap-2.5 rounded-sm px-2.5 py-2 text-[0.875rem] no-underline transition-colors duration-200"
                         >
                           <span
-                            className="cat-fg inline-flex shrink-0"
+                            className={`${catStyles.fg} inline-flex shrink-0`}
                             style={{ '--cat-color': categoryColor(c.slug, c.color) } as React.CSSProperties}
                           >
                             <CategoryGlyph icon={c.icon} size={18} strokeWidth={1.7} />
@@ -368,10 +369,10 @@ export function SiteHeaderChrome({
                        <Link
                           href={`/${lang}/category/${c.slug}`}
                           onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 min-h-[44px] text-base text-text no-underline hover:bg-surface-2"
+                          className="flex items-center gap-3 px-4 py-3 min-h-[44px] text-base text-text no-underline hover:bg-raised"
                        >
                           <span
-                             className="cat-fg inline-flex shrink-0"
+                             className={`${catStyles.fg} inline-flex shrink-0`}
                              style={{ '--cat-color': categoryColor(c.slug, c.color) } as CSSProperties}
                           >
                              <CategoryGlyph icon={c.icon} size={20} strokeWidth={1.7} />

@@ -74,7 +74,7 @@
   opacity: 0.55;
 }
 .control[aria-readonly='true'] {
-  background: var(--surface-2);
+  background: var(--raised);
 }
 .textarea {
   display: block;
@@ -168,7 +168,7 @@
 }
 .choice input[aria-invalid='true'] + .mark { border-color: var(--error); }
 .choice:has(input:disabled) { cursor: not-allowed; opacity: 0.55; }
-.choice:has(input[aria-readonly='true']) { background: var(--surface-2); }
+.choice:has(input[aria-readonly='true']) { background: var(--raised); }
 .glyph {
   display: inline-flex;
   flex: 0 0 auto;
@@ -292,7 +292,7 @@
   }
 }
 @media (hover: hover) and (pointer: fine) {
-  .choice:not(:has(input:disabled)):hover { background: var(--surface-2); }
+  .choice:not(:has(input:disabled)):hover { background: var(--raised); }
   .clear:hover { color: var(--text); }
 }
 @media (prefers-reduced-motion: reduce) {

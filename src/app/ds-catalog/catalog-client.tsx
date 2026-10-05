@@ -30,12 +30,12 @@ const TOOLS = [
 ];
 
 const TRIGGER =
-  'bg-surface border-border text-text min-h-[44px] rounded-lg border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]';
+  'bg-surface border-line text-text min-h-[44px] rounded-lg border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)]';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const headingId = `h-${encodeURIComponent(title)}`;
   return (
-    <section aria-labelledby={headingId} className="border-border border-t py-8">
+    <section aria-labelledby={headingId} className="border-line border-t py-8">
       <h2 id={headingId} className="mb-4 font-serif text-xl">
         {title}
       </h2>
@@ -202,7 +202,7 @@ export function CatalogClient() {
           >
             <label className="text-sm">
               Email
-              <input type="email" className="bg-surface border-border mt-1 block min-h-[44px] w-full rounded-lg border px-3" />
+              <input type="email" className="bg-surface border-line mt-1 block min-h-[44px] w-full rounded-lg border px-3" />
             </label>
           </Dialog>
         </Section>

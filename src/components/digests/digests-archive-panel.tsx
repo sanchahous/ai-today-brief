@@ -115,7 +115,7 @@ function DigestsCalendar({
 }) {
   const t = COPY[lang];
   return (
-    <div className="border-border bg-surface rounded-card border p-4">
+    <div className="border-line bg-surface rounded-card border p-4">
       <table className="w-full border-collapse text-center text-sm">
         <caption className="mb-3 text-left font-serif text-lg font-semibold">{caption}</caption>
         <thead>
@@ -198,7 +198,7 @@ function DigestsCalendar({
 function TimelineRow({ lang, entry }: { lang: Lang; entry: DigestTimelineEntry }) {
   if (entry.kind === 'daily') {
     return (
-      <li className="border-border border-b py-4 last:border-b-0">
+      <li className="border-line border-b py-4 last:border-b-0">
         <Link href={entry.href} className="grid gap-4 no-underline sm:grid-cols-[5rem_minmax(0,1fr)_auto]">
           <span className="text-text grid leading-tight">
             <strong className="font-serif text-3xl">{entry.dayNumber}</strong>
@@ -216,12 +216,12 @@ function TimelineRow({ lang, entry }: { lang: Lang; entry: DigestTimelineEntry }
   }
 
   return (
-    <li className="border-border border-b py-4 last:border-b-0">
+    <li className="border-line border-b py-4 last:border-b-0">
       <Link
         href={entry.href}
         className="grid gap-4 no-underline sm:grid-cols-[5rem_minmax(0,1fr)_auto]"
       >
-        <span className="border-border relative hidden h-20 w-20 overflow-hidden rounded-md border sm:block">
+        <span className="border-line relative hidden h-20 w-20 overflow-hidden rounded-md border sm:block">
           <SleeveArt seed={entry.slug} />
         </span>
         <span className="sm:col-start-2">
@@ -414,7 +414,7 @@ export function DigestsArchivePanel({
               </section>
             ))
           ) : (
-            <p className="text-muted border-border rounded-card border border-dashed p-6 text-sm">
+            <p className="text-muted border-line rounded-card border border-dashed p-6 text-sm">
               {lang === 'uk' ? 'Немає випусків для цього фільтра.' : 'No editions match this filter.'}
             </p>
           )}
@@ -425,7 +425,7 @@ export function DigestsArchivePanel({
               type="button"
               onClick={() => void loadMore()}
               disabled={loadingMore}
-              className="border-border text-text hover:border-accent hover:text-accent rounded-pill inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-5 py-2.5 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] disabled:opacity-60"
+              className="border-line text-text hover:border-accent hover:text-accent rounded-pill inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-5 py-2.5 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] disabled:opacity-60"
             >
               {loadingMore ? t.loading : t.showEarlier}
               <ArrowDown size={18} aria-hidden />

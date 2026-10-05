@@ -21,12 +21,12 @@ export function EmptyState({
     <div
       role="region"
       aria-label={title}
-      className={`rounded-card border-border/80 bg-surface/50 flex flex-col items-center justify-center border border-dashed px-6 py-14 text-center ${className}`}
+      className={`rounded-card border-line/80 bg-surface/50 flex flex-col items-center justify-center border border-dashed px-6 py-14 text-center ${className}`}
     >
       {icon && (
         <div
           aria-hidden="true"
-          className="text-muted bg-surface-2 mb-4 flex size-12 items-center justify-center rounded-full"
+          className="text-muted bg-raised mb-4 flex size-12 items-center justify-center rounded-full"
         >
           {icon}
         </div>

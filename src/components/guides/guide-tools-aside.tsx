@@ -99,7 +99,7 @@ export function GuideToolsAside({
   return (
     <div className="flex flex-col gap-3">
       {/* Format note */}
-      <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="rounded-lg border border-line bg-surface p-4">
         <div className="text-2xs font-semibold uppercase tracking-wider text-accent mb-1">
           {lang === 'uk' ? 'Гайд' : 'Guide'}
         </div>
@@ -114,7 +114,7 @@ export function GuideToolsAside({
         type="button"
         onClick={toggleSave}
         aria-pressed={mounted ? saved : false}
-        className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text hover:border-accent hover:text-accent transition-colors"
+        className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 py-2.5 text-sm font-medium text-text hover:border-accent hover:text-accent transition-colors"
       >
         <Bookmark size={16} filled={mounted ? saved : false} />
         <span>
@@ -132,7 +132,7 @@ export function GuideToolsAside({
       <button
         type="button"
         onClick={copyLink}
-        className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text hover:border-accent hover:text-accent transition-colors"
+        className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 py-2.5 text-sm font-medium text-text hover:border-accent hover:text-accent transition-colors"
       >
         <LinkIcon size={16} />
         <span>{lang === 'uk' ? 'Копіювати' : 'Copy link'}</span>

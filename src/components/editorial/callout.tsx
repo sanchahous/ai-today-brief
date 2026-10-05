@@ -48,7 +48,7 @@ export function Callout({
     <aside className={`my-6 rounded-xl border p-4 sm:p-5 ${
       variant === 'limits' ? 'border-warning/30 bg-warning/5 text-warning-contrast' :
       variant === 'editor-take' ? 'border-accent/30 bg-accent/5' :
-      'border-border bg-surface-2'
+      'border-line bg-raised'
     }`}>
       <div className="flex items-start gap-3">
         <span aria-hidden className="text-xl leading-none select-none mt-0.5">
