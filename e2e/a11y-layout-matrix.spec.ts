@@ -45,8 +45,11 @@ async function seedTheme(page: Page, theme: Theme): Promise<void> {
   );
 }
 
-/** Windows pre-push runs ~880 specs with 4 workers; TCP exhaustion can flake goto or console. */
-const TRANSIENT_NETWORK = /ERR_NO_BUFFER_SPACE|destination stream closed|ECONNRESET/i;
+/** Windows pre-push runs ~880 specs with 4 workers; TCP exhaustion can flake goto or console.
+ * Firefox also reports the image CDN's rejected Cloudflare __cf_bm cookie as a console error.
+ */
+const TRANSIENT_NETWORK =
+  /ERR_NO_BUFFER_SPACE|destination stream closed|ECONNRESET|Cookie\s*[“"][^”"]*__cf_bm[^”"]*[”"]\s*has been rejected/i;
 
 function isTransientNetworkError(message: string): boolean {
   return TRANSIENT_NETWORK.test(message);
