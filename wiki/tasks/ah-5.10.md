@@ -32,6 +32,7 @@ PR: https://github.com/sanchahous/ai-today-brief/pull/428
 
 ## Log
 
+- 2026-10-05: repair T1-f1 — a11y gating `/tools`: FAQ `summary` `min-h-[44px]`; compare-table links `min-h/min-w-[44px]` + `min-w-[36rem]` + `whitespace-nowrap`; CTA `bg-accent-fill text-on-accent`; preview на `bg-stage` → `text-[var(--art-text)]` (day theme); прибрано дубльований h2-link (лише CTA ≥44px); severity chips без `bg-surface` на темному stage. `a11y-layout-matrix` tools/tools-uk: 28/28 passed. (source: pre-push hook `e2e/a11y-layout-matrix.spec.ts`)
 - 2026-10-05: реалізовано AH-5.10; експортовано масиви правил і цитат; додано `claude-md-rules.ts`; оновлено `tools.ts`, `i18n.ts`, `tool-card.tsx`, `tool-workspace.tsx`, `tools/page.tsx`; додано маршрути в `a11y-gating.json`. (source: локальний diff)
 
 ## Історичний запис

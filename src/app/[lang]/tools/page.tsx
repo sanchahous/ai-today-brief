@@ -185,7 +185,7 @@ export default async function ToolsPage({ params }: { params: Promise<Params> })
           aria-labelledby="compare-tools-title"
           tabIndex={0}
         >
-          <table className="compare-table w-full text-left border-collapse text-sm">
+          <table className="compare-table w-full min-w-[36rem] text-left border-collapse text-sm">
             <thead className="bg-surface border-b border-border">
               <tr>
                 <th scope="col" className="p-4 font-medium text-foreground">
@@ -205,10 +205,10 @@ export default async function ToolsPage({ params }: { params: Promise<Params> })
             <tbody className="divide-y divide-border bg-surface/50">
               {t.toolsPage.compareRows.map((row) => (
                 <tr key={row.slug} className="hover:bg-surface transition">
-                  <th scope="row" className="p-4 font-medium text-foreground">
+                  <th scope="row" className="whitespace-nowrap p-4 font-medium text-foreground">
                     <Link
                       href={`/${lang}/tools/${row.slug}`}
-                      className="text-foreground hover:text-accent no-underline font-medium"
+                      className="inline-flex min-h-[44px] min-w-[44px] items-center text-foreground hover:text-accent no-underline font-medium"
                     >
                       {row.name}
                     </Link>
@@ -231,13 +231,13 @@ export default async function ToolsPage({ params }: { params: Promise<Params> })
           {t.toolsPage.faqItems.map((faq, index) => (
             <details
               key={index}
-              className="rounded-xl border border-border bg-surface p-4 transition open:pb-5"
+              className="group rounded-xl border border-border bg-surface [&_summary::-webkit-details-marker]:hidden"
               open={index === 0}
             >
-              <summary className="cursor-pointer font-medium text-foreground select-none hover:text-accent transition">
+              <summary className="flex min-h-[44px] cursor-pointer items-center p-4 font-medium text-foreground outline-none select-none rounded-xl hover:text-accent transition focus-visible:ring-2 focus-visible:ring-accent">
                 {faq.question}
               </summary>
-              <p className="text-muted mt-3 mb-0 leading-relaxed text-sm sm:text-base">
+              <p className="text-muted px-4 pb-4 mb-0 leading-relaxed text-sm sm:text-base">
                 {faq.answer}
               </p>
             </details>

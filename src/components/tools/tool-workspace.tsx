@@ -49,8 +49,8 @@ export function ToolWorkspaceTemplate({
 
       <header className="tool-head max-w-[56.25rem] pt-6 sm:pt-8 pb-2">
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-signal/15 px-3 py-1 text-2xs font-mono tracking-wider uppercase text-signal">
-            <span className="h-1.5 w-1.5 rounded-full bg-signal" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-mono font-semibold tracking-wider uppercase text-foreground">
+            <span className="h-2 w-2 rounded-full bg-signal" aria-hidden="true" />
             {tool.status === 'live' ? t.toolsPage.liveStatus : t.toolsPage.comingSoonStatus}
           </span>
           <span className="inline-flex items-center gap-1.5 text-xs text-muted">
