@@ -111,7 +111,7 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
         </div>
       )}
       <div
-        className="cat-band flex flex-wrap items-center gap-2 px-5 py-4"
+        className={`${catStyles.band} flex flex-wrap items-center gap-2 px-5 py-4`}
         style={{ '--cat-color': color } as CSSProperties}
       >
         <span className="bg-accent text-on-accent rounded-pill px-2 py-0.5 text-2xs font-bold tracking-[0.08em] uppercase">

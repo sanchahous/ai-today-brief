@@ -8,7 +8,8 @@ const routes = suffixes.flatMap((suffix) => [
   { key: suffix || "home", path: `/en${suffix}` },
   { key: suffix || "home", path: `/uk${suffix}` },
 ]);
-const CATEGORY_SCOPE = '.cat-badge, .cat-fg, .cat-chip, .cat-header, .cat-thumb, .cat-icon-box';
+// AH-7.3: category tints live in category-presentation.module.css; scope via inline --cat-color.
+const CATEGORY_SCOPE = '[style*="--cat-color"]';
 
 test.describe('category colour gate', () => {
   for (const route of routes) for (const theme of ['night', 'day'] as const) {
@@ -66,7 +67,7 @@ test.describe('category colour gate', () => {
     const previewResponse = page.waitForResponse((response) => response.url().includes('/api/search?') && response.ok());
     await input.pressSequentially('mcp', { delay: 50 });
     await previewResponse;
-    const badges = dialog.locator('[role="option"] .cat-badge');
+    const badges = dialog.locator(`[role="option"] ${CATEGORY_SCOPE}`);
     await expect(badges.first()).toBeVisible();
     expect(await badges.evaluateAll((nodes) => nodes.every((node) =>
       (node as HTMLElement).style.getPropertyValue('--cat-color').startsWith('var(--cat-')))).toBe(true);

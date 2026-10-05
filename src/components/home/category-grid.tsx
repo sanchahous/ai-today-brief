@@ -80,10 +80,10 @@ function CategoryCard({
   const catStyle = { '--cat-color': color } as CSSProperties;
   return (
     <article className={`${cardStyles.card} rounded-card border-line bg-surface flex h-full flex-col overflow-hidden border`}>
-      <div className="cat-band flex items-center gap-3 p-4" style={catStyle}>
+      <div className={`${catStyles.band} flex items-center gap-3 p-4`} style={catStyle}>
         <span
           aria-hidden
-          className="cat-icon-box grid h-11 w-11 shrink-0 place-items-center rounded-[12px]"
+          className={`${catStyles.iconBox} grid h-11 w-11 shrink-0 place-items-center rounded-[12px]`}
           style={catStyle}
         >
           <CategoryGlyph icon={category.icon} size={24} strokeWidth={1.5} />

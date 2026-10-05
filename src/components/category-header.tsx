@@ -25,7 +25,7 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
       >
         <span
           aria-hidden="true"
-          className="cat-icon-box grid h-16 w-16 shrink-0 place-items-center rounded-[18px]"
+          className={`${catStyles.iconBox} grid h-16 w-16 shrink-0 place-items-center rounded-[18px]`}
           style={catStyle}
         >
           <CategoryGlyph icon={hub.icon} size={34} strokeWidth={1.5} />
@@ -58,7 +58,7 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
                   <li key={st}>
                     <Link
                       href={`/${lang}/news/search?q=${encodeURIComponent(st)}`}
-                      className="cat-chip rounded-pill inline-flex items-center px-3 py-1 text-[0.82rem] font-medium no-underline transition hover:border-[var(--cat-color)] [@media(pointer:coarse)]:min-h-[44px]"
+                      className={`${catStyles.chip} rounded-pill inline-flex items-center px-3 py-1 text-[0.82rem] font-medium no-underline transition hover:border-[var(--cat-color)] [@media(pointer:coarse)]:min-h-[44px]`}
                       style={catStyle}
                     >
                       {st}

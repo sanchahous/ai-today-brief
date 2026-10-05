@@ -10,7 +10,7 @@ Task: ah-7.3
 
 ## Status
 
-READY_FOR_ORCHESTRATOR. PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438).
+DONE (repair T1-f1). PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438). Оркестратор: commit repair diff + push.
 
 ### epic-5.3
 
@@ -30,6 +30,7 @@ READY_FOR_ORCHESTRATOR. PR: [#438](https://github.com/sanchahous/ai-today-brief/
   - `DEPRECATED_TOKEN_PATTERNS` + Vitest grep gate = 0.
   - `npm run design:raw:prune` — ratchet 29 color (було 33), 0 font-size < 12px.
   - Наступна задача епіку — **AH-7.4** (реліз і моніторинг).
+- 2026-10-05 (repair): `category-colours.spec.ts` — селектор `.cat-*` → `[style*="--cat-color"]` після CSS-модулів AH-7.3; залишки `cat-chip`/`cat-band`/`cat-icon-box` у компонентах → `category-presentation.module.css`. `PORT=3101 npm run e2e:affected` 888 passed (1 flaky author-uk retry green); `pr:check` exit 0.
 
 ## AC evidence
 
@@ -38,4 +39,4 @@ READY_FOR_ORCHESTRATOR. PR: [#438](https://github.com/sanchahous/ai-today-brief/
 | `grep` deprecated-токенів = 0 | `DEPRECATED_TOKEN_PATTERNS` у `tokens.ts`; Vitest `deprecated token aliases` — 0 hits під `src/`. |
 | Видалені файли не імпортуються | `video-teaser`, `post-card`, `category-thumb` видалені; `rg` по `src/` — 0 імпортів. |
 | CSS-бандл менший | `globals.css` скорочено (~200 рядків legacy); точне число — у PR body після `build:ci`. |
-| E2E 3 браузери | CI на PR #438 (оркестратор). Локально: `PORT=3101 npm run pr:check` — pending повтор після wiki fix. |
+| E2E 3 браузери | `category-colours.spec.ts`: селектор оновлено з `.cat-*` на `[style*="--cat-color"]` після CSS-модулів; залишки `cat-chip`/`cat-band`/`cat-icon-box` → `category-presentation.module.css`. Локально: `PORT=3101 npm run e2e:affected` + `pr:check`. |
