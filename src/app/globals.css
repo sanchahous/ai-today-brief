@@ -722,6 +722,12 @@ html[data-tension-motion='off'] *::after {
   transition: none !important;
   scroll-behavior: auto !important;
 }
+/* View-transition pseudo-elements are not descendants of * — kill WAAPI entries (AH-6.3 / motion-runtime). */
+html[data-tension-motion='off']::view-transition-group(*),
+html[data-tension-motion='off']::view-transition-old(*),
+html[data-tension-motion='off']::view-transition-new(*) {
+  animation: none !important;
+}
 
 /* ── skeleton shimmer (pure CSS — no JS animation libs) ───────────────────── */
 .skeleton {
@@ -1092,8 +1098,7 @@ html[data-tension-motion='off'] *::after {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
-    animation-duration: 0.001ms !important;
-    animation-delay: 0ms !important;
+    animation: none !important;
   }
   .skeleton::after {
     animation: none;
