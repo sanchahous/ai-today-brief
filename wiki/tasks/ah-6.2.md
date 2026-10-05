@@ -33,3 +33,4 @@ Task: ah-6.2
   - `PORT=3100 npx playwright test e2e/brand-resolve.spec.ts --project=chromium` — **5/5 passed**.
   - **Лабораторний frame-probe (p95 ≤ 16,8 мс, 0 кадрів > 34 мс)** — потребує ручного заміру на GPU-машині власника (як у прототипі `fold-review.html`); автоматизовано в CI не додавалось. LCP: сцена не є LCP-елементом (lead copy ліворуч).
   - **Наступна задача епіку — AH-6.3 (View Transitions).**
+- 2026-10-05 (T1-f1 repair): Pre-push відхилено через flaky `a11y-layout-matrix` на `/uk/ai-disclosure` (`net::ERR_NO_BUFFER_SPACE` — TCP buffer exhaustion на Windows з 4 workers, той самий патерн що ATB-47/AH-5.11). Змін коду не потрібно. `PORT=3100 npm run pr:check` — **PASS** (exit 0) після повторного прогону.
