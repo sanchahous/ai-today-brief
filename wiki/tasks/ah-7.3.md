@@ -10,7 +10,7 @@ Task: ah-7.3
 
 ## Status
 
-DONE (repair T1-f1). PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438). Оркестратор: commit repair diff + push.
+DONE (repair T1-f2). PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438). Оркестратор: commit repair diff + push.
 
 ### epic-5.3
 
@@ -30,7 +30,8 @@ DONE (repair T1-f1). PR: [#438](https://github.com/sanchahous/ai-today-brief/pul
   - `DEPRECATED_TOKEN_PATTERNS` + Vitest grep gate = 0.
   - `npm run design:raw:prune` — ratchet 29 color (було 33), 0 font-size < 12px.
   - Наступна задача епіку — **AH-7.4** (реліз і моніторинг).
-- 2026-10-05 (repair): `category-colours.spec.ts` — селектор `.cat-*` → `[style*="--cat-color"]` після CSS-модулів AH-7.3; залишки `cat-chip`/`cat-band`/`cat-icon-box` у компонентах → `category-presentation.module.css`. `PORT=3101 npm run e2e:affected` 888 passed (1 flaky author-uk retry green); `pr:check` exit 0.
+- 2026-10-05 (repair T1-f1): `category-colours.spec.ts` — селектор `.cat-*` → `[style*="--cat-color"]` після CSS-модулів AH-7.3; залишки `cat-chip`/`cat-band`/`cat-icon-box` у компонентах → `category-presentation.module.css`. `PORT=3101 npm run e2e:affected` 888 passed (1 flaky author-uk retry green); `pr:check` exit 0.
+- 2026-10-05 (repair T1-f2): pre-push `theme.spec.ts` en dark 768 — `ERR_NO_BUFFER_SPACE` під 4 workers (TCP exhaustion, не регресія теми). `theme.spec.ts`: фільтр transient network console errors (як `a11y-layout-matrix.spec.ts`).
 
 ## AC evidence
 

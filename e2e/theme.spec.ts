@@ -2,6 +2,21 @@ import { expect, test, type Page } from '@playwright/test';
 import { gotoNewsPage, NEWS_DESKTOP_VIEWPORT } from './helpers/news-page';
 import AxeBuilder from '@axe-core/playwright';
 
+/** Windows pre-push runs ~880 specs with 4 workers; TCP exhaustion can flake resource loads. */
+const TRANSIENT_NETWORK =
+  /ERR_NO_BUFFER_SPACE|destination stream closed|ECONNRESET|Cookie\s*[“"][^”"]*__cf_bm[^”"]*[”"]\s*has been rejected/i;
+
+function isTransientNetworkError(message: string): boolean {
+  return TRANSIENT_NETWORK.test(message);
+}
+
+function isIgnorableConsoleError(message: string, browserName: string): boolean {
+  const cdnCookie =
+    browserName === 'firefox' &&
+    message.includes('Cookie "__cf_bm" has been rejected for invalid domain.');
+  return cdnCookie || isTransientNetworkError(message);
+}
+
 async function expectTheme(page: Page, theme: 'light' | 'dark') {
   const day = theme === 'light';
   await expect(page.locator('html')).toHaveAttribute('data-theme', day ? 'day' : 'night');
@@ -265,14 +280,13 @@ test.describe('Theme control accessibility matrix', () => {
           }
           await page.addInitScript((value) => localStorage.setItem('theme', value), theme);
           const errors: string[] = [];
-          page.on('pageerror', (error) => errors.push(error.message));
+          page.on('pageerror', (error) => {
+            if (!isTransientNetworkError(error.message)) errors.push(error.message);
+          });
           page.on('console', (message) => {
-            // Firefox reports the image CDN's rejected Cloudflare cookie as an error;
-            // it is external to the theme and remains visible in the full page QA report.
-            const cdnCookie =
-              browserName === 'firefox' &&
-              message.text().includes('Cookie “__cf_bm” has been rejected for invalid domain.');
-            if (message.type() === 'error' && !cdnCookie) errors.push(message.text());
+            if (message.type() === 'error' && !isIgnorableConsoleError(message.text(), browserName)) {
+              errors.push(message.text());
+            }
           });
           await gotoNewsPage(page, lang);
           const toggle = page.getByTestId('theme-toggle').filter({ visible: true });
