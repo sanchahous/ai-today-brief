@@ -55,16 +55,19 @@ const META: Record<string, CategoryMeta> = {
     icon: 'creative',
     tokenKey: 'creative',
     tagline: { en: 'Image, video & audio generation', uk: 'Генерація зображень, відео та аудіо' },
+    subtopics: ['SVG', 'Image models', 'Video', 'Audio'],
   },
   'local-llms': {
     icon: 'local',
     tokenKey: 'local',
     tagline: { en: 'Self-hosted, privacy-first inference', uk: 'Self-hosted інференс і privacy-first' },
+    subtopics: ['Ollama', 'Quantization', 'GGUF', 'Llama.cpp'],
   },
   'career-and-money': {
     icon: 'career',
     tokenKey: 'career',
     tagline: { en: 'Freelance, indie-SaaS & certs', uk: 'Freelance, indie-SaaS і сертифікати' },
+    subtopics: ['Freelance', 'Indie SaaS', 'Certifications', 'Hiring'],
   },
   'models-and-research': {
     icon: 'models',
@@ -101,4 +104,69 @@ export function categoryColor(slug: string | null | undefined, dbColor?: string 
 export function categoryArtColor(slug: string | null | undefined, dbColor?: string | null): string {
   const key = categoryMeta(slug).tokenKey;
   return key ? `var(--art-${key})` : dbColor || 'var(--art-neutral)';
+}
+
+/** Map category slugs to a related in-depth guide slug, if one exists. */
+export const CATEGORY_RELATED_GUIDE: Record<string, string> = {
+  'tools-and-releases': 'claude-code-vs-cursor-vs-codex',
+  'agents-and-mcp': 'claude-code-vs-cursor-vs-codex',
+  'vibe-coding': 'claude-code-vs-cursor-vs-codex',
+  'models-and-research': 'atb-orchestration-bench',
+};
+
+export function getRelatedGuideSlug(slug: string | null | undefined): string | null {
+  if (!slug) return null;
+  return CATEGORY_RELATED_GUIDE[slug] ?? null;
+}
+
+/**
+ * Filter concepts matching category subtopics (prototype categoryPrimer logic).
+ * Falls back to the first up to 3 concepts if no direct match is found.
+ */
+export function findPrimerConcepts<T extends { slug: string; name: string }>(
+  subtopics: readonly string[],
+  allConcepts: readonly T[],
+  limit = 4,
+): T[] {
+  if (!allConcepts.length) return [];
+  const normalized = subtopics.map((s) => s.toLowerCase().trim()).filter(Boolean);
+  const picks = allConcepts.filter((c) => {
+    const cName = c.name.toLowerCase();
+    const cSlug = c.slug.toLowerCase();
+    return normalized.some((s) => {
+      const stem = s.endsWith('s') && s.length > 3 ? s.slice(0, -1) : s;
+      return (
+        cName.includes(s) ||
+        s.includes(cName) ||
+        cSlug.includes(s) ||
+        cName.includes(stem) ||
+        cSlug.includes(stem)
+      );
+    });
+  });
+  if (picks.length > 0) return picks.slice(0, limit);
+  return allConcepts.slice(0, Math.min(3, limit));
+}
+
+/**
+ * Evaluates whether this category has real, verifiable daily update activity.
+ * Per invariant I-6, never claim "updated daily" unless items appear on the
+ * latest published brief date and span at least 4 distinct publishing days in
+ * the recent 7-day window.
+ */
+export function isCategoryUpdatedDaily(
+  items: readonly { date: string }[],
+  latestBriefDate?: string | null,
+): boolean {
+  if (!items.length || !latestBriefDate) return false;
+  if (items[0].date !== latestBriefDate) return false;
+  const recentDates = new Set(
+    items
+      .map((it) => it.date)
+      .filter((d) => {
+        const diffMs = new Date(latestBriefDate).getTime() - new Date(d).getTime();
+        return diffMs >= 0 && diffMs <= 7 * 86400 * 1000;
+      }),
+  );
+  return recentDates.size >= 4;
 }
