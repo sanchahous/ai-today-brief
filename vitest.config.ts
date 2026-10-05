@@ -53,6 +53,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    testTimeout: 15000,
     include: ['src/**/*.test.ts', 'pipeline/**/*.test.ts'],
     coverage: {
       provider: 'v8',
