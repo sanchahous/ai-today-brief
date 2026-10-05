@@ -24,6 +24,12 @@ PR: https://github.com/sanchahous/ai-today-brief/pull/425
 
 - `PORT=3101 npm run pr:check` — **PASS** (re-run after fix).
 
+## Repair T1-f2 (2026-10-05) — pre-push E2E flake
+
+**Cause:** Pre-push hook runs full E2E (~312 specs); on Windows parallel workers can exhaust TCP buffers → `net::ERR_NO_BUFFER_SPACE` console error in `a11y-layout-matrix` (`terms-uk uk day 768`). Not a category-hub or `/terms` regression (same pattern as ATB-49 / AH-5.13).
+
+**Fix:** Targeted retry passed; `PORT=3101 npm run pr:check` — exit 0. No code changes.
+
 ## Status
 
 ### epic-5.3
