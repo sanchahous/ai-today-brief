@@ -12,12 +12,12 @@ export function AdvertiseInquiryCta({
 }) {
   return (
     <a
-      href={`mailto:${email}`}
+      href={`mailto:${email}?subject=Media%20kit`}
       onClick={() => trackEvent('sponsor_inquiry_click', { source: 'advertise' })}
-      className="rounded-pill bg-accent mt-5 inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent no-underline"
+      className="rounded-pill bg-accent-fill text-on-accent min-h-[44px] inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold hover:opacity-90 transition-opacity no-underline shrink-0"
     >
-      <MailIcon size={16} />
-      {label}
+      <MailIcon size={18} aria-hidden="true" />
+      <span>{label}</span>
     </a>
   );
 }
