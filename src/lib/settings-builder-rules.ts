@@ -457,6 +457,27 @@ export const SCOPE_HIERARCHY: readonly ScopeRow[] = [
   },
 ] as const;
 
+export const SETTINGS_BUILDER_CITATIONS: readonly Citation[] = [
+  settingsCitation,
+  permissionsCitation,
+  permissionModesCitation,
+  hooksCitation,
+  cliCitation,
+] as const;
+
+export type SettingsBuilderRuleItem =
+  | PermissionTemplate
+  | HookRecipe
+  | GrammarRow
+  | ScopeRow;
+
+export const SETTINGS_BUILDER_RULES: readonly SettingsBuilderRuleItem[] = [
+  ...PERMISSION_TEMPLATES,
+  ...HOOK_RECIPES,
+  ...GRAMMAR_REFERENCE,
+  ...SCOPE_HIERARCHY,
+] as const;
+
 export function getRecipe(id: string): HookRecipe | undefined {
   return HOOK_RECIPES.find((recipe) => recipe.id === id);
 }
@@ -464,3 +485,4 @@ export function getRecipe(id: string): HookRecipe | undefined {
 export function getTemplate(id: string): PermissionTemplate | undefined {
   return PERMISSION_TEMPLATES.find((template) => template.id === id);
 }
+

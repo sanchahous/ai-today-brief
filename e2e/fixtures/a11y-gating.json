@@ -74,6 +74,16 @@
       "id": "terms-uk",
       "path": "/uk/terms",
       "locales": ["uk"]
+    },
+    {
+      "id": "tools",
+      "path": "/en/tools",
+      "locales": ["en"]
+    },
+    {
+      "id": "tools-uk",
+      "path": "/uk/tools",
+      "locales": ["uk"]
     }
   ]
 }
