@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { parseMarkdown, type MdInline } from '@/lib/markdown';
+import { headingId, parseMarkdown, type MdInline } from '@/lib/markdown';
 import type { Lang } from '@/lib/site';
 
 function Inlines({ inlines }: { inlines: MdInline[] }) {
@@ -80,12 +80,14 @@ export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang
           );
         }
         if (block.kind === 'heading') {
+          const text = block.inlines.map((run) => run.text).join('');
+          const id = headingId(text);
           return block.level === 3 ? (
-            <h3 key={i} className="mt-7 mb-3 text-[1.18rem] leading-snug first:mt-0">
+            <h3 id={id} key={i} className="mt-7 mb-3 text-[1.18rem] leading-snug first:mt-0 scroll-mt-24">
               <Inlines inlines={block.inlines} />
             </h3>
           ) : (
-            <h4 key={i} className="mt-5 mb-2 text-[1.02rem] leading-snug first:mt-0">
+            <h4 id={id} key={i} className="mt-5 mb-2 text-[1.02rem] leading-snug first:mt-0 scroll-mt-24">
               <Inlines inlines={block.inlines} />
             </h4>
           );
