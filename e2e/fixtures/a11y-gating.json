@@ -74,6 +74,26 @@
       "id": "terms-uk",
       "path": "/uk/terms",
       "locales": ["uk"]
+    },
+    {
+      "id": "about",
+      "path": "/en/about",
+      "locales": ["en"]
+    },
+    {
+      "id": "about-uk",
+      "path": "/uk/about",
+      "locales": ["uk"]
+    },
+    {
+      "id": "author",
+      "path": "/en/author",
+      "locales": ["en"]
+    },
+    {
+      "id": "author-uk",
+      "path": "/uk/author",
+      "locales": ["uk"]
     }
   ]
 }
