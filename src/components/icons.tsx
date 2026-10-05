@@ -185,6 +185,37 @@ export function CheckIcon({ size = 16, strokeWidth = 2, style, className }: Icon
     </svg>
   );
 }
+export const Check = CheckIcon;
+
+export function LockIcon({ size = 18, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+export const Lock = LockIcon;
+
+export function CopyIcon({ size = 18, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V6a2 2 0 0 1 2-2h8" />
+    </svg>
+  );
+}
+export const Copy = CopyIcon;
+
+export function DocIcon({ size = 16, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M7 3h7l5 5v13H7z" />
+      <path d="M14 3v5h5" />
+    </svg>
+  );
+}
+export const Doc = DocIcon;
 export function MailIcon({ size = 18, strokeWidth = 1.7, style, className }: IconProps) {
   return (
     <svg {...base(size, strokeWidth, style, className)}>

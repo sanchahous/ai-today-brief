@@ -76,6 +76,16 @@
       "locales": ["uk"]
     },
     {
+      "id": "tools",
+      "path": "/en/tools",
+      "locales": ["en"]
+    },
+    {
+      "id": "tools-uk",
+      "path": "/uk/tools",
+      "locales": ["uk"]
+    },
+    {
       "id": "about",
       "path": "/en/about",
       "locales": ["en"]

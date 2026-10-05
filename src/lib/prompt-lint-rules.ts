@@ -54,6 +54,11 @@ const fableGuide: PromptCitation = {
   },
 };
 
+export const PROMPT_LINT_CITATIONS: readonly PromptCitation[] = [
+  promptingGuide,
+  fableGuide,
+] as const;
+
 const citations = [promptingGuide] as const;
 const fableCitations = [fableGuide] as const;
 

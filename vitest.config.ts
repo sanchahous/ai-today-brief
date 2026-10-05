@@ -26,6 +26,7 @@ const LOGIC_INCLUDE = [
   'src/lib/prompt-lint-rules.ts',
   'src/lib/settings-builder.ts',
   'src/lib/settings-builder-rules.ts',
+  'src/lib/claude-md-rules.ts',
   'src/lib/tools-mentioned.ts',
   'src/lib/topic-normalize.ts',
   'src/lib/ui/action-styles.ts',

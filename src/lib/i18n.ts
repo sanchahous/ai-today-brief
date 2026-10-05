@@ -32,6 +32,91 @@ export const STRINGS = {
       openTool: 'Open tool',
       liveStatus: 'Live',
       comingSoonStatus: 'Coming soon',
+      eyebrow: 'The workbench',
+      heroTitleLead: 'Small tools.',
+      heroTitleEm: 'Considered craft.',
+      privacyPromise:
+        'Your inputs never leave this page — no sign-up, no upload, no model call.',
+      panelLiveTools: 'live tools',
+      panelDeterministicRules: 'deterministic rules',
+      panelOfficialCitations: 'official citations',
+      panelDataSentToUs: 'data sent to us',
+      panelAriaLabel: 'Toolbox at a glance',
+      toolsAriaLabel: 'Tools',
+      outputLabel: 'Output',
+      rulesLabel: 'Rules',
+      citationsLabel: 'citations',
+      verifiedLabel: 'Verified',
+      rulesLastVerified: 'Rules last verified',
+      howTitle: 'How every tool works.',
+      howSteps: [
+        {
+          number: '01',
+          icon: 'lock' as const,
+          title: 'Your input stays local',
+          description: 'Nothing is uploaded; there is no account and no model call.',
+        },
+        {
+          number: '02',
+          icon: 'check' as const,
+          title: 'Deterministic checks',
+          description: 'Rules are fixed and cite the official documentation they come from.',
+        },
+        {
+          number: '03',
+          icon: 'copy' as const,
+          title: 'You review, then copy',
+          description: 'Output is read-only until valid; copy and export are explicit.',
+        },
+      ],
+      compareTitle: 'Which tool do you need?',
+      compareColTool: 'Tool',
+      compareColProvide: 'You provide',
+      compareColGet: 'You get',
+      compareColRuns: 'Runs',
+      compareRows: [
+        {
+          slug: 'prompt-optimizer',
+          name: 'Prompt Optimizer',
+          provide: 'A prompt, surface and model',
+          get: 'Severity-tiered findings, model advice',
+          runs: 'Browser',
+        },
+        {
+          slug: 'settings-builder',
+          name: 'settings.json Builder',
+          provide: 'Permission mode, presets, hooks',
+          get: 'settings.json',
+          runs: 'Browser',
+        },
+        {
+          slug: 'claude-md-generator',
+          name: 'CLAUDE.md / AGENTS.md',
+          provide: 'Project name, stack, guardrails',
+          get: 'AGENTS.md + CLAUDE.md',
+          runs: 'Browser',
+        },
+      ],
+      faqTitle: 'Questions about the tools.',
+      faqItems: [
+        {
+          question: 'Do you see what I type?',
+          answer:
+            'No. The tools run in your browser and send nothing to our servers. Usage analytics, if you consent, count page views only.',
+        },
+        {
+          question: 'Why rules instead of an AI model?',
+          answer:
+            'Deterministic rules give the same answer every time and can cite their source. That makes them reviewable.',
+        },
+        {
+          question: 'How current are the rules?',
+          answer:
+            'Each tool shows the date its rules were last verified against official documentation.',
+        },
+      ],
+      suggestText: 'Want another tool?',
+      suggestLink: 'Suggest one',
     },
     promptOptimizer: {
       surfaceLabel: 'Where will you run this prompt?',
@@ -505,9 +590,94 @@ export const STRINGS = {
       promptOptimizerTitle: 'Безкоштовний оптимізатор промптів для Claude (Fable 5)',
       promptOptimizerDescription:
         'Локальний лінтер промптів із цитатами для Claude Fable 5, Sonnet 4.6, Haiku 4.5 та Opus 4.8.',
-      openTool: 'Відкрити інструмент',
+      openTool: 'Відкрити утиліту',
       liveStatus: 'Працює',
       comingSoonStatus: 'Скоро',
+      eyebrow: 'Майстерня',
+      heroTitleLead: 'Малі інструменти.',
+      heroTitleEm: 'Продумана робота.',
+      privacyPromise:
+        'Ваші дані не залишають сторінку — без реєстрації, завантаження й виклику моделі.',
+      panelLiveTools: 'робочі утиліти',
+      panelDeterministicRules: 'детерміновані правила',
+      panelOfficialCitations: 'офіційні цитати',
+      panelDataSentToUs: 'даних надсилається нам',
+      panelAriaLabel: 'Toolbox коротко',
+      toolsAriaLabel: 'Утиліти',
+      outputLabel: 'Результат',
+      rulesLabel: 'Правила',
+      citationsLabel: 'цитат',
+      verifiedLabel: 'Перевірено',
+      rulesLastVerified: 'Правила перевірено',
+      howTitle: 'Як працює кожна утиліта.',
+      howSteps: [
+        {
+          number: '01',
+          icon: 'lock' as const,
+          title: 'Дані лишаються локально',
+          description: 'Нічого не завантажується; немає акаунта й виклику моделі.',
+        },
+        {
+          number: '02',
+          icon: 'check' as const,
+          title: 'Детерміновані перевірки',
+          description: 'Правила фіксовані й посилаються на офіційну документацію.',
+        },
+        {
+          number: '03',
+          icon: 'copy' as const,
+          title: 'Ви перевіряєте, потім копіюєте',
+          description: 'Результат лише для читання, доки не валідний; копіювання — явна дія.',
+        },
+      ],
+      compareTitle: 'Яка утиліта вам потрібна?',
+      compareColTool: 'Утиліта',
+      compareColProvide: 'Ви даєте',
+      compareColGet: 'Ви отримуєте',
+      compareColRuns: 'Де працює',
+      compareRows: [
+        {
+          slug: 'prompt-optimizer',
+          name: 'Prompt Optimizer',
+          provide: 'Промпт, середовище й модель',
+          get: 'Знахідки за рівнями, порада щодо моделі',
+          runs: 'Браузер',
+        },
+        {
+          slug: 'settings-builder',
+          name: 'settings.json Builder',
+          provide: 'Режим дозволів, пресети, hooks',
+          get: 'settings.json',
+          runs: 'Браузер',
+        },
+        {
+          slug: 'claude-md-generator',
+          name: 'CLAUDE.md / AGENTS.md',
+          provide: 'Назва, стек, запобіжники',
+          get: 'AGENTS.md + CLAUDE.md',
+          runs: 'Браузер',
+        },
+      ],
+      faqTitle: 'Питання про утиліти.',
+      faqItems: [
+        {
+          question: 'Чи бачите ви, що я вводжу?',
+          answer:
+            'Ні. Утиліти працюють у браузері й нічого не надсилають. Аналітика (за згоди) рахує лише перегляди сторінок.',
+        },
+        {
+          question: 'Чому правила, а не AI-модель?',
+          answer:
+            'Детерміновані правила дають однакову відповідь щоразу й можуть послатися на джерело. Це робить їх перевірними.',
+        },
+        {
+          question: 'Наскільки актуальні правила?',
+          answer:
+            'Кожна утиліта показує дату, коли її правила востаннє звіряли з документацією.',
+        },
+      ],
+      suggestText: 'Потрібна інша утиліта?',
+      suggestLink: 'Запропонуйте',
     },
     promptOptimizer: {
       surfaceLabel: 'Де ви запускатимете цей промпт?',
