@@ -2,11 +2,30 @@ import type { ReactNode } from 'react';
 import { Breadcrumbs, type BreadcrumbItem } from '@/components/breadcrumbs';
 import { Check, Lock } from '@/components/icons';
 import type { ToolContent } from '@/content/tools';
+
+/** Serializable tool fields safe to pass from Server Components to clients. */
+export type ToolWorkspaceTool = Pick<
+  ToolContent,
+  'slug' | 'title' | 'fullTitle' | 'description' | 'lede' | 'lastVerified' | 'status' | 'output'
+>;
+
+export function toToolWorkspaceTool(tool: ToolContent): ToolWorkspaceTool {
+  return {
+    slug: tool.slug,
+    title: tool.title,
+    fullTitle: tool.fullTitle,
+    description: tool.description,
+    lede: tool.lede,
+    lastVerified: tool.lastVerified,
+    status: tool.status,
+    output: tool.output,
+  };
+}
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 
 export interface ToolWorkspaceTemplateProps {
-  tool: ToolContent;
+  tool: ToolWorkspaceTool;
   lang: Lang;
   breadcrumbs: BreadcrumbItem[];
   lede: string;

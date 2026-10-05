@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import type { BreadcrumbItem } from '@/components/breadcrumbs';
 import { trackEvent } from '@/lib/analytics-client';
+import type { ToolWorkspaceTool } from '@/components/tools/tool-workspace';
 import { getStrings } from '@/lib/i18n';
 import { buildSettings, type BuilderState, type PermissionMode } from '@/lib/settings-builder';
 import {
@@ -12,16 +14,35 @@ import {
 } from '@/lib/settings-builder-rules';
 import { TOOL_EVENTS, toolTelemetryParams } from '@/lib/tool-telemetry';
 import type { Lang } from '@/lib/site';
+import { copyToolOutput, deriveToolOutputState, type ToolCopyPhase } from '@/lib/ui/tool-workspace';
+import { Button, Checkbox, Radio, RadioGroup } from '@/components/ui';
+import { ToolWorkspaceOutput } from '@/components/tools/tool-workspace-output';
+import { ToolWorkspaceTemplate } from '@/components/tools/tool-workspace';
 
 const INITIAL_TEMPLATE_IDS = ['deny-rm-rf', 'protect-env-read', 'protect-env-edit'] as const;
 const INITIAL_RECIPE_IDS = ['format-on-write-prettier'] as const;
 
-export function SettingsBuilderClient({ lang }: { lang: Lang }) {
-  const t = getStrings(lang).settingsBuilder;
+export interface SettingsBuilderClientProps {
+  lang: Lang;
+  tool: ToolWorkspaceTool;
+  breadcrumbs: BreadcrumbItem[];
+  catalogSlot?: ReactNode;
+}
+
+export function SettingsBuilderClient({
+  lang,
+  tool,
+  breadcrumbs,
+  catalogSlot,
+}: SettingsBuilderClientProps) {
+  const strings = getStrings(lang);
+  const t = strings.settingsBuilder;
+  const formRef = useRef<HTMLFormElement>(null);
   const [mode, setMode] = useState<PermissionMode>('acceptEdits');
   const [templateIds, setTemplateIds] = useState<string[]>([...INITIAL_TEMPLATE_IDS]);
   const [recipeIds, setRecipeIds] = useState<string[]>([...INITIAL_RECIPE_IDS]);
-  const [copied, setCopied] = useState(false);
+  const [built, setBuilt] = useState(false);
+  const [copyPhase, setCopyPhase] = useState<ToolCopyPhase>('idle');
 
   const selectedTemplates = useMemo(
     () => PERMISSION_TEMPLATES.filter((template) => templateIds.includes(template.id)),
@@ -49,6 +70,7 @@ export function SettingsBuilderClient({ lang }: { lang: Lang }) {
   }, [mode, selectedRecipes, selectedTemplates]);
 
   const settingsJson = useMemo(() => JSON.stringify(buildSettings(state), null, 2), [state]);
+  const outputState = deriveToolOutputState(built, copyPhase);
 
   function toggleTemplate(template: PermissionTemplate) {
     const exists = templateIds.includes(template.id);
@@ -75,14 +97,25 @@ export function SettingsBuilderClient({ lang }: { lang: Lang }) {
     trackEvent(TOOL_EVENTS.settingsBuild, toolTelemetryParams('settings-builder', { mode: nextMode }));
   }
 
+  function handleBuild(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBuilt(true);
+    setCopyPhase('idle');
+    trackEvent(
+      TOOL_EVENTS.settingsBuild,
+      toolTelemetryParams('settings-builder', {
+        mode,
+        recipe_count: selectedRecipes.length,
+        allow_count: state.permissions.allow.length,
+        deny_count: state.permissions.deny.length,
+        ask_count: state.permissions.ask.length,
+      }),
+    );
+  }
+
   async function copySettings() {
-    try {
-      await navigator.clipboard.writeText(settingsJson);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setCopied(false);
-    }
+    if (!built) return;
+    await copyToolOutput(settingsJson, setCopyPhase);
     trackEvent(
       TOOL_EVENTS.settingsCopy,
       toolTelemetryParams('settings-builder', {
@@ -96,66 +129,42 @@ export function SettingsBuilderClient({ lang }: { lang: Lang }) {
   }
 
   return (
-    <section
-      className="rounded-card border-border bg-surface mt-8 border p-5"
-      aria-label={t.buildSettings}
-    >
-      <div className="rounded-card border-border bg-surface-2 border p-4">
-        <p className="m-0 font-semibold">{t.privacyPromise}</p>
-        <p className="text-muted m-0 mt-2 text-sm leading-relaxed">
-          {t.heuristicDisclaimer} {t.schemaWarning}
-        </p>
-      </div>
-
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]">
-        <div className="grid gap-5">
-          <fieldset className="m-0 border-0 p-0">
-            <legend className="mb-2 font-semibold">{t.defaultModeLabel}</legend>
-            <p className="text-muted m-0 mb-3 text-sm leading-relaxed">{t.defaultModeHelp}</p>
-            <div className="grid gap-2 md:grid-cols-2">
-              {PERMISSION_MODES.map((item) => (
-                <label
-                  key={item}
-                  className="border-border bg-bg flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm"
-                >
-                  <input
-                    type="radio"
-                    name="settings-default-mode"
-                    value={item}
-                    checked={mode === item}
-                    onChange={() => changeMode(item)}
-                  />
-                  {t.permissionModes[item]}
-                </label>
-              ))}
-            </div>
-          </fieldset>
+    <ToolWorkspaceTemplate
+      tool={tool}
+      lang={lang}
+      breadcrumbs={breadcrumbs}
+      lede={tool.lede[lang]}
+      inputTitle={t.inputTitle}
+      inputPanel={
+        <form ref={formRef} className="grid gap-5" onSubmit={handleBuild}>
+          <RadioGroup label={t.defaultModeLabel} name="settings-default-mode" hint={t.defaultModeHelp}>
+            {PERMISSION_MODES.map((item) => (
+              <Radio
+                key={item}
+                name="settings-default-mode"
+                value={item}
+                checked={mode === item}
+                onChange={() => changeMode(item)}
+                label={t.permissionModes[item]}
+              />
+            ))}
+          </RadioGroup>
 
           <section aria-labelledby="permission-presets">
             <h3 id="permission-presets" className="m-0 text-lg">
               {t.permissionTemplatesTitle}
             </h3>
-            <div className="mt-3 grid gap-3">
+            <div className="mt-3 grid gap-2">
               {PERMISSION_TEMPLATES.map((template) => (
-                <label
+                <Checkbox
                   key={template.id}
-                  className="border-border bg-bg flex cursor-pointer gap-3 rounded-lg border p-3 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={templateIds.includes(template.id)}
-                    onChange={() => toggleTemplate(template)}
-                  />
-                  <span>
-                    <span className="block font-semibold">{template.title[lang]}</span>
-                    <code className="mt-1 inline-block rounded bg-surface-2 px-2 py-1 text-xs">
-                      {template.rule}
-                    </code>
-                    <span className="text-muted mt-2 block leading-relaxed">
-                      {template.rationale[lang]}
-                    </span>
-                  </span>
-                </label>
+                  name={template.id}
+                  checked={templateIds.includes(template.id)}
+                  onChange={() => toggleTemplate(template)}
+                  label={template.title[lang]}
+                  description={template.rule}
+                  hint={template.rationale[lang]}
+                />
               ))}
             </div>
           </section>
@@ -164,59 +173,56 @@ export function SettingsBuilderClient({ lang }: { lang: Lang }) {
             <h3 id="hook-recipes" className="m-0 text-lg">
               {t.hookRecipesTitle}
             </h3>
-            <div className="mt-3 grid gap-3">
+            <div className="mt-3 grid gap-2">
               {HOOK_RECIPES.map((recipe) => (
-                <label
+                <Checkbox
                   key={recipe.id}
-                  className="border-border bg-bg flex cursor-pointer gap-3 rounded-lg border p-3 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={recipeIds.includes(recipe.id)}
-                    onChange={() => toggleRecipe(recipe.id)}
-                  />
-                  <span>
-                    <span className="block font-semibold">{recipe.title[lang]}</span>
-                    <span className="text-faint mt-1 block font-mono text-xs">
-                      {recipe.event} · {recipe.matcher || t.anyMatcher}
-                    </span>
-                    <span className="text-muted mt-2 block leading-relaxed">
-                      {recipe.useCase[lang]}
-                    </span>
-                  </span>
-                </label>
+                  name={recipe.id}
+                  checked={recipeIds.includes(recipe.id)}
+                  onChange={() => toggleRecipe(recipe.id)}
+                  label={recipe.title[lang]}
+                  description={`${recipe.event} · ${recipe.matcher || t.anyMatcher}`}
+                  hint={recipe.useCase[lang]}
+                />
               ))}
             </div>
           </section>
-        </div>
 
-        <aside className="rounded-card border-border bg-bg border p-4" aria-labelledby="settings-output">
-          <h3 id="settings-output" className="m-0 text-lg">
-            {t.outputTitle}
-          </h3>
-          <p className="text-muted m-0 mt-2 text-sm leading-relaxed">{t.outputHelp}</p>
-          <pre className="border-border bg-surface-2 mt-4 max-h-[620px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed">
+          <Button type="submit" variant="primary" className="w-fit min-h-[44px]">
+            {t.buildSettings}
+          </Button>
+        </form>
+      }
+      outputTitle={t.outputTitle}
+      outputPanel={
+        <ToolWorkspaceOutput
+          state={outputState}
+          draftMessage={t.outputDraft}
+          exportErrorMessage={strings.toolWorkspace.exportError}
+          showCopy
+          copyLabel={t.copySettings}
+          copiedLabel={t.copied}
+          onCopy={() => void copySettings()}
+          footnote={t.outputHelp}
+        >
+          <pre
+            className="border-border bg-surface-2 max-h-[620px] overflow-auto rounded-lg border p-3 text-xs leading-relaxed"
+            tabIndex={0}
+            aria-readonly="true"
+          >
             <code>{settingsJson}</code>
           </pre>
-          <button
-            type="button"
-            onClick={() => void copySettings()}
-            className="rounded-pill bg-accent text-on-accent mt-4 px-5 py-2.5 font-semibold transition-opacity hover:opacity-90"
-          >
-            {copied ? t.copied : t.copySettings}
-          </button>
-        </aside>
-      </div>
-    </section>
+        </ToolWorkspaceOutput>
+      }
+      catalogSlot={catalogSlot}
+    />
   );
 }
 
 function groupTemplatesByEffect(templates: readonly PermissionTemplate[]): BuilderState['permissions'] {
-  return templates.reduce<BuilderState['permissions']>(
-    (grouped, template) => ({
-      ...grouped,
-      [template.effect]: [...grouped[template.effect], template.rule],
-    }),
-    { allow: [], deny: [], ask: [] },
-  );
+  const grouped: BuilderState['permissions'] = { allow: [], deny: [], ask: [] };
+  for (const template of templates) {
+    grouped[template.effect] = [...grouped[template.effect], template.rule];
+  }
+  return grouped;
 }

@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
+import { breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { ClaudeMdGeneratorClient } from '@/components/tools/claude-md-generator-client';
+import { toToolWorkspaceTool } from '@/components/tools/tool-workspace';
 import { getTool } from '@/content/tools';
 import { getStrings } from '@/lib/i18n';
 import { isLang, LANGS, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
@@ -54,7 +55,6 @@ export default async function ClaudeMdGeneratorPage({ params }: { params: Promis
   const tool = getTool(TOOL_SLUG);
   if (!tool) notFound();
   const strings = getStrings(lang);
-  const t = strings.claudeMdGenerator;
 
   const crumbs = [
     { label: strings.news.breadcrumbHome, href: `/${lang}` },
@@ -66,9 +66,6 @@ export default async function ClaudeMdGeneratorPage({ params }: { params: Promis
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
-      // One node per page: the tool IS a WebApplication; article-style fields
-      // (dateModified, lede) fold into it instead of a second TechArticle
-      // claiming the same URL.
       {
         '@type': 'WebApplication',
         name: tool.title[lang],
@@ -87,26 +84,16 @@ export default async function ClaudeMdGeneratorPage({ params }: { params: Promis
   };
 
   return (
-    <div className="mx-auto w-full max-w-[960px] flex-1 px-6 py-10">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-
-      <Breadcrumbs items={crumbs} />
-
-      <article>
-        <p className="text-faint m-0 text-[0.78rem] font-semibold tracking-[0.16em] uppercase">
-          {strings.toolsPage.title}
-        </p>
-        <h1 className="mb-3 text-[clamp(1.8rem,4vw,2.8rem)] leading-[1.12]">{tool.title[lang]}</h1>
-        <p className="text-muted mb-4 text-[1.08rem] leading-[1.7]">{tool.lede[lang]}</p>
-        <p className="rounded-card border-border bg-surface border p-4 text-sm leading-relaxed">
-          {t.privacyPromise} {t.heuristicDisclaimer}
-        </p>
-
-        <ClaudeMdGeneratorClient lang={lang} />
-      </article>
-    </div>
+      <ClaudeMdGeneratorClient
+        lang={lang}
+        tool={toToolWorkspaceTool(tool)}
+        breadcrumbs={crumbs}
+      />
+    </>
   );
 }
