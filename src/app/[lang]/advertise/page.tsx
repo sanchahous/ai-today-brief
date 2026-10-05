@@ -1,27 +1,16 @@
-import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, ADVERTISE_EMAIL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
-import {
-  AD_INVENTORY,
-  ADVERTISE_BENEFITS,
-  AUDIENCE_STATS,
-} from '@/lib/marketing-content';
-import { TrustPageShell } from '@/components/trust-page-shell';
+import { AD_INVENTORY } from '@/lib/marketing-content';
 import { AdvertiseInquiryCta } from '@/components/advertise-inquiry-cta';
-import { CheckIcon } from '@/components/icons';
-import { breadcrumbJsonLd } from '@/components/breadcrumbs';
+import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Reveal } from '@/components/reveal';
 import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
 
 type Params = { lang: string };
-
-function SectionHead({ children }: { children: ReactNode }) {
-  return <h2 className="mt-10 mb-4 text-[clamp(1.25rem,3vw,1.65rem)] first:mt-0">{children}</h2>;
-}
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { lang } = await params;
@@ -75,59 +64,55 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <TrustPageShell crumbs={crumbs} eyebrow={p.eyebrow} title={p.title} lead={p.lead}>
-        <SectionHead>{p.audience}</SectionHead>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
-          {AUDIENCE_STATS.map((s) => (
-            <div
-              key={s.label.en}
-              className="rounded-card border-border bg-surface border p-5 text-center"
-            >
-              <p className="font-serif text-accent text-[1.9rem] font-bold">{s.value}</p>
-              <p className="text-muted mt-1 text-sm">{s.label[lang]}</p>
-            </div>
-          ))}
-        </div>
-
-        <SectionHead>{p.inventory}</SectionHead>
-        <ul className="grid list-none gap-3 p-0">
-          {AD_INVENTORY.map((slot) => (
-            <li
-              key={slot.name.en}
-              className="rounded-card border-border bg-surface flex flex-wrap items-baseline gap-x-4 gap-y-2 border px-4 py-4"
-            >
-              <strong className="min-w-[220px] flex-1 text-base">{slot.name[lang]}</strong>
-              <span className="text-accent text-sm font-semibold">{slot.placement[lang]}</span>
-              <span className="text-muted w-full text-sm">{slot.note[lang]}</span>
-            </li>
-          ))}
-        </ul>
-
-        <SectionHead>{p.why}</SectionHead>
-        <ul className="grid list-none gap-2.5 p-0">
-          {ADVERTISE_BENEFITS.map((b) => (
-            <li key={b.en} className="flex gap-2.5 text-base leading-relaxed">
-              <span className="text-accent mt-0.5 inline-flex shrink-0">
-                <CheckIcon size={16} />
-              </span>
-              {b[lang]}
-            </li>
-          ))}
-        </ul>
+      <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10 pb-16">
+        <Breadcrumbs items={crumbs} />
 
         <Reveal>
-          <div
-            className="rounded-card border-border bg-surface mt-10 border p-6 sm:p-8"
-            style={{
-              background:
-                'radial-gradient(120% 160% at 0% 0%, rgba(240,192,64,0.12), transparent 55%), var(--surface)',
-            }}
-          >
-            <p className="text-muted max-w-[520px] text-base leading-relaxed">{p.contactBody}</p>
-            <AdvertiseInquiryCta email={ADVERTISE_EMAIL} label={p.contactCta} />
-          </div>
+          <header className="page-intro max-w-2xl mt-4 mb-10">
+            <p className="eyebrow text-accent">{p.eyebrow}</p>
+            <h1 className="font-serif text-[clamp(2rem,4.5vw,3rem)] font-bold leading-tight mt-2 mb-4 text-text">
+              {p.title}
+            </h1>
+            <p className="text-muted text-base sm:text-lg leading-relaxed">{p.lead}</p>
+          </header>
         </Reveal>
-      </TrustPageShell>
+
+        <section className="section ad-grid my-10 grid grid-cols-1 lg:grid-cols-3 gap-4" aria-label={p.inventory}>
+          {AD_INVENTORY.map((slot, i) => (
+            <article
+              key={slot.name.en}
+              className="ad-card rounded-card border border-dashed border-border-strong bg-surface p-6 flex flex-col gap-3 justify-between"
+            >
+              <div>
+                <span className="font-serif text-3xl sm:text-4xl font-bold text-accent leading-none">
+                  0{i + 1}
+                </span>
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-text mt-3 mb-2">
+                  {slot.name[lang]}
+                </h2>
+                <p className="text-muted text-sm leading-relaxed">{slot.note[lang]}</p>
+              </div>
+              <div className="pt-3 border-t border-border/50">
+                <span className="text-faint font-mono text-2xs uppercase tracking-wider font-medium">
+                  {slot.exampleLabel[lang]}
+                </span>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <Reveal>
+          <section className="section ad-contact rounded-card border border-border bg-surface p-6 sm:p-8 mt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="max-w-xl">
+              <h2 className="font-serif text-2xl font-bold text-text mb-2">
+                {lang === 'uk' ? 'Почнімо розмову.' : 'Start a conversation.'}
+              </h2>
+              <p className="text-muted text-sm sm:text-base leading-relaxed">{p.contactBody}</p>
+            </div>
+            <AdvertiseInquiryCta email={ADVERTISE_EMAIL} label={p.contactCta} />
+          </section>
+        </Reveal>
+      </div>
     </>
   );
 }

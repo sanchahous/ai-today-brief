@@ -2,12 +2,6 @@
   "version": 1,
   "entries": [
     {
-      "path": "src/app/[lang]/advertise/page.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.12)",
-      "count": 1
-    },
-    {
       "path": "src/app/globals.css",
       "kind": "color",
       "value": "#141414",
@@ -119,18 +113,6 @@
       "path": "src/components/site-header-chrome.tsx",
       "kind": "z-index",
       "value": "z-[70]",
-      "count": 1
-    },
-    {
-      "path": "src/components/subscribe-benefits-grid.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.12)",
-      "count": 1
-    },
-    {
-      "path": "src/components/subscribe-benefits-grid.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.35)",
       "count": 1
     }
   ]
