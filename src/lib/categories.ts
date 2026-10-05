@@ -1,5 +1,11 @@
 import { getSupabase } from '@/lib/supabase';
-import { categoryMeta } from '@/lib/category-meta';
+import {
+  categoryMeta,
+  findPrimerConcepts,
+  getRelatedGuideSlug,
+  isCategoryUpdatedDaily,
+} from '@/lib/category-meta';
+import { getGuide } from '@/content/guides';
 import type { HomeItem } from '@/lib/home';
 import { LANGS, type Lang } from '@/lib/site';
 import type { NewsCard } from '@/lib/news';
@@ -69,6 +75,16 @@ function wordCount(text: string): number {
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
+export interface CategoryPrimerConcept {
+  slug: string;
+  name: string;
+}
+
+export interface CategoryRelatedGuide {
+  slug: string;
+  title: string;
+}
+
 export interface CategoryHubView {
   slug: string;
   name: string;
@@ -78,6 +94,9 @@ export interface CategoryHubView {
   tagline: string;
   subtopics: string[];
   items: HomeItem[];
+  updatedDaily: boolean;
+  primerConcepts: CategoryPrimerConcept[];
+  relatedGuide: CategoryRelatedGuide | null;
 }
 
 /** Full category hub payload for the prototype layout (glyph header + PostFeed). */
@@ -85,6 +104,12 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
   const category = await getCategory(slug, lang);
   if (!category) return null;
   const meta = categoryMeta(slug);
+
+  const guideSlug = getRelatedGuideSlug(slug);
+  const guide = guideSlug ? getGuide(guideSlug) : null;
+  const relatedGuide: CategoryRelatedGuide | null = guide
+    ? { slug: guide.slug, title: guide.title[lang] }
+    : null;
 
   const supabase = getSupabase();
   if (!supabase) {
@@ -97,14 +122,32 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
       tagline: meta.tagline[lang],
       subtopics: meta.subtopics ?? [],
       items: [],
+      updatedDaily: false,
+      primerConcepts: [],
+      relatedGuide,
     };
   }
 
-  const { data: briefs } = await supabase
-    .from('briefs')
-    .select('id, date')
-    .eq('status', 'published')
-    .order('date', { ascending: false });
+  const [briefsResult, conceptsResult] = await Promise.all([
+    supabase
+      .from('briefs')
+      .select('id, date')
+      .eq('status', 'published')
+      .order('date', { ascending: false }),
+    supabase
+      .from('concepts')
+      .select('slug, name_en, name_uk')
+      .order('name_en', { ascending: true }),
+  ]);
+
+  const briefs = briefsResult.data;
+  const rawConcepts = conceptsResult.data ?? [];
+  const allConcepts = rawConcepts.map((c) => ({
+    slug: c.slug,
+    name: pick(lang, c.name_en, c.name_uk),
+  }));
+  const primerConcepts = findPrimerConcepts(meta.subtopics ?? [], allConcepts);
+
   if (!briefs || briefs.length === 0) {
     return {
       slug: category.slug,
@@ -115,6 +158,9 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
       tagline: meta.tagline[lang],
       subtopics: meta.subtopics ?? [],
       items: [],
+      updatedDaily: false,
+      primerConcepts,
+      relatedGuide,
     };
   }
 
@@ -205,6 +251,8 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
     };
   });
 
+  const updatedDaily = isCategoryUpdatedDaily(staged, briefs[0]?.date);
+
   return {
     slug: category.slug,
     name: category.name,
@@ -214,10 +262,14 @@ async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<Ca
     tagline: meta.tagline[lang],
     subtopics: meta.subtopics ?? [],
     items,
+    updatedDaily,
+    primerConcepts,
+    relatedGuide,
   };
 }
 
-export const getCategoryHub = cachePublicRead('category-hub', loadCategoryHub);
+// v2: primerConcepts + relatedGuide + updatedDaily on hub payload (AH-5.7).
+export const getCategoryHub = cachePublicRead('category-hub-v2', loadCategoryHub);
 
 async function loadCategoryItems(slug: string, lang: Lang, limit = 60): Promise<NewsCard[]> {
   const supabase = getSupabase();

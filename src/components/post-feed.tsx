@@ -1,14 +1,18 @@
 'use client';
 
 import { Fragment, useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { HomeItem } from '@/lib/home';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { Reveal } from '@/components/reveal';
-import { PostCard } from '@/components/post-card';
+import { StoryCard } from '@/components/editorial/story-card';
 import { AccessiblePagination } from '@/components/ui/pagination';
 import { SponsorCard } from '@/components/home/sponsor-card';
 import { NewsletterBand } from '@/components/home/newsletter-band';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SearchIcon } from '@/components/icons';
+import { actionClassName } from '@/lib/ui/action-styles';
 import { trackEvent } from '@/lib/analytics-client';
 
 const PAGE_SIZE = 6;
@@ -20,7 +24,7 @@ function readPageFromUrl(): number {
   return Number.isFinite(n) && n > 0 ? n : 1;
 }
 
-/** Paginated PostCard feed — shared by category (and later concept) hubs. */
+/** Paginated StoryCard feed — shared by category (and later concept) hubs. */
 export function PostFeed({
   lang,
   items,
@@ -32,7 +36,8 @@ export function PostFeed({
   weaveSponsor?: boolean;
   showNewsletter?: boolean;
 }) {
-  const t = getStrings(lang).news;
+  const rootStrings = getStrings(lang);
+  const t = rootStrings.news;
   const [page, setPage] = useState(1);
 
   // Sync state with URL on mount (without breaking ISR SSR)
@@ -78,9 +83,29 @@ export function PostFeed({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-card border-border border border-dashed px-4 py-14 text-center">
-        <p className="font-serif mb-2 text-xl">{t.emptyTitle}</p>
-        <p className="text-muted m-0">{t.emptyBody}</p>
+      <div className="space-y-8">
+        <EmptyState
+          icon={<SearchIcon size={24} />}
+          title={t.emptyTitle}
+          description={t.emptyBody}
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href={`/${lang}/news/search`}
+                className={actionClassName({ variant: 'primary', size: 'md' })}
+              >
+                {rootStrings.searchModalTitle || 'Search'}
+              </Link>
+              <Link
+                href={`/${lang}/news`}
+                className={actionClassName({ variant: 'outline', size: 'md' })}
+              >
+                {rootStrings.searchOpenArchive || t.title || 'All news'}
+              </Link>
+            </div>
+          }
+        />
+        {showNewsletter && <NewsletterBand lang={lang} embedded placement="category-hub" />}
       </div>
     );
   }
@@ -93,7 +118,7 @@ export function PostFeed({
         {rows.map((item, i) => (
           <Fragment key={item.id}>
             <Reveal delayMs={i * 45}>
-              <PostCard lang={lang} item={item} />
+              <StoryCard lang={lang} item={item} />
             </Reveal>
             {weaveSponsor && i === 2 && (
               <Reveal delayMs={i * 45 + 20}>
