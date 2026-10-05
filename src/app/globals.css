@@ -506,22 +506,31 @@ html[lang='uk'],
   }
 }
 
-/* ── scroll-reveal: toggled by the <Reveal> client wrapper ────────────────── */
-.reveal {
-  transition:
-    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+/* ── Tension v3 motion layer (AH-6.1): resting state is always visible ─────── */
+html[data-tension] {
+  --tension-touch: 160ms;
+  --tension-shift: 320ms;
+  --tension-settle: 640ms;
+  --tension-ease: cubic-bezier(0.18, 0.82, 0.26, 1);
+  --tension-return: cubic-bezier(0.2, 0.85, 0.25, 1.08);
 }
-@media (prefers-reduced-motion: no-preference) {
-  .reveal:not(.is-in) {
-    opacity: 0;
-    transform: translateY(18px);
-    will-change: opacity, transform;
+
+.tension-confirm {
+  border-color: var(--signal) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-tension-motion='on'] [data-variant='primary']:not([data-variant='outline']):not([data-variant='ghost']) {
+    overflow: hidden;
   }
 }
-.reveal.is-in {
-  opacity: 1;
-  transform: none;
+
+html[data-tension-motion='off'] *,
+html[data-tension-motion='off'] *::before,
+html[data-tension-motion='off'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
 }
 
 /* ── skeleton shimmer (pure CSS — no JS animation libs) ───────────────────── */
@@ -868,11 +877,6 @@ html[lang='uk'],
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
-  }
-  /* Never trap content behind an un-played reveal transition. */
-  .reveal {
-    opacity: 1;
-    transform: none;
   }
   .skeleton::after {
     animation: none;

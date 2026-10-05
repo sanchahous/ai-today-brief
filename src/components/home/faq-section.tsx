@@ -1,7 +1,6 @@
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { FAQS } from '@/lib/home-content';
-import { Reveal } from '@/components/reveal';
 import { FaqAccordionItem } from '@/components/home/faq-accordion-item';
 
 /**
@@ -26,7 +25,7 @@ export function FaqSection({ lang }: { lang: Lang }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
-      <Reveal>
+      <div data-gesture="settle">
         <p className="text-accent eyebrow">{t.faqEyebrow}</p>
         <h2 id="faq-title" className="mt-2 text-2xl sm:text-3xl">
           {t.faqTitle}
@@ -43,7 +42,7 @@ export function FaqSection({ lang }: { lang: Lang }) {
             />
           ))}
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }

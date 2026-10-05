@@ -1,6 +1,5 @@
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
-import { Reveal } from '@/components/reveal';
 import { NewsletterForm } from '@/components/home/newsletter-form';
 
 /**
@@ -30,36 +29,35 @@ export function NewsletterBand({
 
   return (
     <section aria-labelledby={showHeader ? 'newsletter-title' : undefined} className={outer}>
-      <Reveal>
-        <div
-          className={`newsletter-card-bg rounded-card border-border relative overflow-hidden border ${innerPadding}`}
-        >
-          {showHeader ? (
-            <>
-              <p className="text-accent eyebrow">{t.subEyebrow}</p>
-              <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">
-                {t.subTitle}
-              </h2>
-              <p className="text-muted mt-2 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
-              <ul className="text-muted mt-4 mb-5 flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm">
-                {t.subProofItems.map((item) => (
-                  <li key={item} className="flex items-center gap-1.5">
-                    <span aria-hidden="true" className="text-accent">
-                      ✓
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          <NewsletterForm
-            lang={lang}
-            variant="band"
-            placement={placement ?? (embedded ? 'subscribe-page' : 'home-band')}
-          />
-        </div>
-      </Reveal>
+      <div
+        data-gesture="fold"
+        className={`newsletter-card-bg rounded-card border-border relative overflow-hidden border ${innerPadding}`}
+      >
+        {showHeader ? (
+          <>
+            <p className="text-accent eyebrow">{t.subEyebrow}</p>
+            <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">
+              {t.subTitle}
+            </h2>
+            <p className="text-muted mt-2 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
+            <ul className="text-muted mt-4 mb-5 flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm">
+              {t.subProofItems.map((item) => (
+                <li key={item} className="flex items-center gap-1.5">
+                  <span aria-hidden="true" className="text-accent">
+                    ✓
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        <NewsletterForm
+          lang={lang}
+          variant="band"
+          placement={placement ?? (embedded ? 'subscribe-page' : 'home-band')}
+        />
+      </div>
     </section>
   );
 }

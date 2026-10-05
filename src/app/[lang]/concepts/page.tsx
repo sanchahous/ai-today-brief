@@ -5,7 +5,6 @@ import { getStrings } from '@/lib/i18n';
 import { getConcepts } from '@/lib/concepts';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { ConceptsGrid } from '@/components/concepts-grid';
-import { Reveal } from '@/components/reveal';
 
 // 24 h: concepts are evergreen and change only via the backfill workflow.
 export const revalidate = 86400;
@@ -66,12 +65,14 @@ export default async function ConceptsIndex({ params }: { params: Promise<Params
 
       <Breadcrumbs items={crumbs} />
 
-      <Reveal>
-        <header className="max-w-[720px]">
-          <h1 className="text-[clamp(1.8rem,4.5vw,2.7rem)]">{t.nav.concepts}</h1>
-          <p className="text-muted mt-4 text-base leading-relaxed">{t.conceptsLede}</p>
-        </header>
-      </Reveal>
+      <header className="max-w-[720px]">
+        <h1 data-gesture="curtain" className="text-[clamp(1.8rem,4.5vw,2.7rem)]">
+          {t.nav.concepts}
+        </h1>
+        <p data-gesture="reveal" data-gesture-delay="90" className="text-muted mt-4 text-base leading-relaxed">
+          {t.conceptsLede}
+        </p>
+      </header>
 
       {concepts.length === 0 ? (
         <p className="text-muted mt-10">{t.noResults}</p>

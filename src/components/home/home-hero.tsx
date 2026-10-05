@@ -28,11 +28,17 @@ export function HomeHero({
     <section aria-labelledby="hero-title" className="border-border-soft border-b">
       <div className="relative mx-auto w-full max-w-[1160px] px-6 pt-[4.5rem] pb-14">
         <p className="text-accent eyebrow">{t.heroEyebrow}</p>
-        <h1 id="hero-title" className="mt-4 max-w-3xl text-4xl leading-[1.08] sm:text-5xl">
+        <h1
+          id="hero-title"
+          data-gesture="curtain"
+          className="mt-4 max-w-3xl text-4xl leading-[1.08] sm:text-5xl"
+        >
           {t.heroTitleLead}
           <em>{t.heroTitleEm}</em>
         </h1>
-        <p className="text-muted mt-5 max-w-2xl text-lg leading-relaxed">{t.heroSubtitle}</p>
+        <p data-gesture="reveal" data-gesture-delay="90" className="text-muted mt-5 max-w-2xl text-lg leading-relaxed">
+          {t.heroSubtitle}
+        </p>
 
         <div className="mt-8 max-w-2xl">
           <HeroSearch
