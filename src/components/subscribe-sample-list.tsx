@@ -1,44 +1,68 @@
 import Link from 'next/link';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { ArrowRight } from '@/components/icons';
-import type { HomeItem } from '@/lib/home';
-import { Reveal } from '@/components/reveal';
+import type { SubscribeSampleItem } from '@/lib/subscribe-page';
+
+export interface SubscribeSampleListProps {
+  kicker?: string;
+  title: string;
+  lead?: string;
+  items: SubscribeSampleItem[];
+  readHref?: string;
+  readLabel?: string;
+}
 
 export function SubscribeSampleList({
+  kicker,
   title,
-  lead,
   items,
-}: {
-  title: string;
-  lead: string;
-  items: HomeItem[];
-}) {
+  readHref = '/digests',
+  readLabel = 'Read it on the web',
+}: SubscribeSampleListProps) {
   if (items.length === 0) return null;
 
   return (
-    <section className="mx-auto mt-14 max-w-[760px]">
-      <Reveal>
-        <h2 className="text-[clamp(1.35rem,3.2vw,1.9rem)]">{title}</h2>
-        <p className="text-muted mt-2 mb-6">{lead}</p>
-      </Reveal>
-      <ul className="grid list-none gap-3 p-0">
-        {items.map((item) => (
-          <li key={item.id}>
-            <Link
-              href={item.href}
-              className="rounded-card border-border bg-surface hover:border-accent/40 flex items-center gap-3 border px-4 py-3.5 transition-colors"
-            >
+    <aside
+      className="sample-issue rounded-card border-border bg-surface-2 border p-6 shadow-sm lg:sticky lg:top-24 lg:rotate-[1.2deg] transition-transform"
+      aria-labelledby="sample-title"
+    >
+      <p className="sample-kicker font-mono text-2xs uppercase tracking-wider text-accent font-semibold">
+        {kicker || 'A sample issue'}
+      </p>
+      <h2 id="sample-title" className="font-serif text-2xl font-bold mt-2 mb-4 text-text">
+        {title}
+      </h2>
+      <ol className="grid gap-3 mb-5 list-none p-0">
+        {items.map((item, i) => (
+          <li
+            key={item.id}
+            className="grid grid-cols-[30px_minmax(0,1fr)] gap-2 pt-3 border-t border-border"
+          >
+            <span className="font-mono text-xs text-accent">0{i + 1}</span>
+            <div>
               {item.categoryName ? (
-                <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
+                <div className="mb-1">
+                  <CategoryBadge
+                    slug={item.categorySlug}
+                    name={item.categoryName}
+                    color={item.categoryColor}
+                  />
+                </div>
               ) : null}
-              <span className="font-serif text-text min-w-0 flex-1 text-base font-semibold">
+              <p className="text-sm font-medium text-text leading-snug">
                 {item.title}
-              </span>
-              <ArrowRight size={16} className="text-faint shrink-0" />
-            </Link>
+              </p>
+            </div>
           </li>
         ))}
-      </ul>
-    </section>
+      </ol>
+      <Link
+        href={readHref}
+        className="text-accent hover:underline inline-flex items-center gap-1.5 text-sm font-semibold"
+      >
+        <span>{readLabel}</span>
+        <ArrowRight size={16} aria-hidden="true" />
+      </Link>
+    </aside>
   );
 }

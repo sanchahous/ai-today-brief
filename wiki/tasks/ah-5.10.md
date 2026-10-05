@@ -24,7 +24,7 @@ PR: https://github.com/sanchahous/ai-today-brief/pull/428
   - `src/content/tools.test.ts` перевіряє строгу рівність лічильників довжинам масивів. (source: `src/content/tools.test.ts`, `src/lib/claude-md-rules.test.ts`)
 - [x] **CollectionPage + ItemList JSON-LD без регресій; маршрут у gating-режимі:**
   - `src/app/[lang]/tools/page.tsx` містить `@graph` з `CollectionPage`, `ItemList` (включаючи `ListItem` для кожного інструмента), та `BreadcrumbList`. Базові типи з baseline `CollectionPage` та `Organization` збережено без регресій.
-  - `e2e/fixtures/a11y-gating.json` доповнено маршрутами `tools` (`/en/tools`) та `tools-uk` (`/uk/tools`). (source: `src/app/[lang]/tools/page.tsx`, `e2e/fixtures/a11y-gating.json`)
+  - `e2e/fixtures/a11y-gating.json` містить маршрути `tools`/`tools-uk` (AH-5.10) і після злиття з `main` також `about`/`about-uk`/`author`/`author-uk` (AH-5.12). (source: `src/app/[lang]/tools/page.tsx`, `e2e/fixtures/a11y-gating.json`)
 
 ## Handoff
 
@@ -32,6 +32,7 @@ PR: https://github.com/sanchahous/ai-today-brief/pull/428
 
 ## Log
 
+- 2026-10-05: repair T1-f2 — злиття `origin/main` у `feat/ah-5.10-toolbox`: конфлікт у `e2e/fixtures/a11y-gating.json` вирішено збереженням маршрутів `tools`/`tools-uk` (AH-5.10) і `about`/`about-uk`/`author`/`author-uk` (AH-5.12 з main). (source: merge conflict resolution)
 - 2026-10-05: repair T1-f1 — a11y gating `/tools`: FAQ `summary` `min-h-[44px]`; compare-table links `min-h/min-w-[44px]` + `min-w-[36rem]` + `whitespace-nowrap`; CTA `bg-accent-fill text-on-accent`; preview на `bg-stage` → `text-[var(--art-text)]` (day theme); прибрано дубльований h2-link (лише CTA ≥44px); severity chips без `bg-surface` на темному stage. `a11y-layout-matrix` tools/tools-uk: 28/28 passed. (source: pre-push hook `e2e/a11y-layout-matrix.spec.ts`)
 - 2026-10-05: реалізовано AH-5.10; експортовано масиви правил і цитат; додано `claude-md-rules.ts`; оновлено `tools.ts`, `i18n.ts`, `tool-card.tsx`, `tool-workspace.tsx`, `tools/page.tsx`; додано маршрути в `a11y-gating.json`. (source: локальний diff)
 

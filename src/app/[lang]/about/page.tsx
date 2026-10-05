@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { NewsletterForm } from '@/components/ui/newsletter-form';
+import { EditorAvatar, EditorLinks } from '@/components/editorial/editor-profile';
+import styles from '@/components/editorial/profile-pages.module.css';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
@@ -8,7 +12,6 @@ import {
   SITE_URL,
   EDITOR_NAME,
   EDITOR_ROLE,
-  CONTACT_EMAIL,
   type Lang,
 } from '@/lib/site';
 import { authorNode, publisherNode, PERSON_ID, ORG_ID } from '@/lib/schema';
@@ -22,28 +25,72 @@ type Params = { lang: string };
 const COPY = {
   en: {
     lede: `${SITE_NAME} is a daily, human-edited briefing for people who build with AI — engineers, founders and technical leads. One focused read a day on the models, frameworks and MLOps that actually move your work forward — in English and Ukrainian.`,
-    methodologyH: 'How we work',
-    methodology:
-      'Every day we scan 80+ stories from official AI labs, research papers, GitHub, Hacker News, Reddit and tier-1 tech press. We rank them and publish only the handful that matter — each with a plain-language summary, a clear “why it matters”, and a link to the primary source. You get a curated, human-edited selection, not dozens of thin, auto-generated pages.',
-    aiH: 'AI, with a human in the loop',
-    ai: 'We use language models to read sources and draft summaries and translations. A human editor reviews every brief before it ships — checking facts, refining tone, and removing duplicates. The editorial team, not the model, decides what gets published and stands behind it. Read more in our',
-    editorH: 'Who edits this',
-    editor: `Curated and edited by ${EDITOR_NAME}, ${EDITOR_ROLE.en.toLowerCase()}.`,
+    eyebrow: 'About the publication',
+    title: 'Intelligence deserves',
+    titleEm: 'a human perspective.',
+    copyH: 'A quieter place to understand what’s next.',
+    context:
+      'Each visit should leave you with context you can use: what changed, why it matters and where to go deeper. We select stories about the models, frameworks and MLOps that move your work forward.',
+    ai: 'AI helps read sources and draft summaries and translations. A human editor checks facts, refines the text and decides what gets published.',
+    artAlt: 'After Hours concept art: a brass sculpture with a glass edge',
+    artCaption: 'Concept art · After Hours',
+    processH: 'How a story becomes a brief',
+    process: [
+      {
+        title: 'Find the source',
+        text: 'Start with official reporting, papers and documentation. Link the source so readers can go deeper.',
+      },
+      {
+        title: 'Separate the signal',
+        text: 'Explain what changed, what the evidence shows and what is still uncertain.',
+      },
+      {
+        title: 'Make the editorial call',
+        text: 'A human editor checks the facts and approves the final text before publication.',
+      },
+      {
+        title: 'Correct in public',
+        text: 'Fix mistakes and note corrections on the story when they materially affect meaning.',
+      },
+    ],
+    editorH: 'Meet the editor',
+    profileLink: 'Full profile',
     expertiseH: 'Areas of focus',
-    contactH: 'Questions, corrections or tips',
     policyLink: 'Read our editorial policy',
   },
   uk: {
     lede: `${SITE_NAME} — щоденний бриф, який редагує людина, для тих, хто будує з AI: інженерів, фаундерів і техлідів. Один сфокусований випуск на день про моделі, фреймворки та MLOps, що справді рухають вашу роботу, — англійською та українською.`,
-    methodologyH: 'Як ми працюємо',
-    methodology:
-      'Щодня ми переглядаємо 80+ матеріалів з офіційних AI-лабораторій, наукових публікацій, GitHub, Hacker News, Reddit і tier-1 техмедіа. Ми ранжуємо їх і публікуємо лише ті кілька, що справді важливі, — кожен із простим резюме, чітким блоком «чому це важливо» та посиланням на першоджерело. Ви отримуєте курований відбір, відредагований людиною, а не десятки поверхових авто-сторінок.',
-    aiH: 'AI — під наглядом людини',
-    ai: 'Ми використовуємо мовні моделі, щоб читати джерела та готувати чернетки резюме й перекладів. Редактор-людина переглядає кожен випуск перед публікацією: перевіряє факти, вивіряє тон і прибирає дублі. Що публікувати — вирішує редакція, а не модель, і саме вона відповідає за результат. Докладніше — у нашому',
-    editorH: 'Хто це редагує',
-    editor: `Курує й редагує ${EDITOR_NAME}, ${EDITOR_ROLE.uk.toLowerCase()}.`,
+    eyebrow: 'Про видання',
+    title: 'Інтелект потребує',
+    titleEm: 'людського погляду.',
+    copyH: 'Спокійніше місце, щоб зрозуміти, що далі.',
+    context:
+      'Кожен візит має давати корисний контекст: що змінилось, чому це важливо й де заглибитись. Ми відбираємо матеріали про моделі, фреймворки та MLOps, що рухають вашу роботу.',
+    ai: 'AI допомагає читати джерела та готувати чернетки резюме й перекладів. Редактор-людина перевіряє факти, вивіряє текст і вирішує, що публікувати.',
+    artAlt: 'Концепт-арт After Hours: латунна скульптура зі скляним краєм',
+    artCaption: 'Концепт-арт · After Hours',
+    processH: 'Як матеріал стає брифом',
+    process: [
+      {
+        title: 'Знайти джерело',
+        text: 'Почати з офіційних матеріалів, наукових публікацій і документації. Дати посилання, щоб читач міг заглибитись.',
+      },
+      {
+        title: 'Відділити сигнал',
+        text: 'Пояснити, що змінилось, що показують докази й що лишається невідомим.',
+      },
+      {
+        title: 'Ухвалити рішення',
+        text: 'Редактор-людина перевіряє факти та схвалює остаточний текст перед публікацією.',
+      },
+      {
+        title: 'Виправляти публічно',
+        text: 'Виправляти помилки й зазначати виправлення в матеріалі, коли вони суттєво змінюють зміст.',
+      },
+    ],
+    editorH: 'Знайомтеся з редактором',
+    profileLink: 'Повний профіль',
     expertiseH: 'Теми експертизи',
-    contactH: 'Запитання, виправлення чи новини',
     policyLink: 'Редакційна політика',
   },
 } as const;
@@ -62,7 +109,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/about`,
       },
     },
-    ...socialMeta({ title: getStrings(l).about, description: COPY[l].lede, path: `/${l}/about`, lang: l }),
+    ...socialMeta({
+      title: getStrings(l).about,
+      description: COPY[l].lede,
+      path: `/${l}/about`,
+      lang: l,
+    }),
   };
 }
 
@@ -78,6 +130,7 @@ export default async function AboutPage({ params }: { params: Promise<Params> })
     '@graph': [
       {
         '@type': 'AboutPage',
+        name: `${t.about} ${SITE_NAME}`,
         inLanguage: lang,
         mainEntity: { '@id': ORG_ID },
       },
@@ -87,65 +140,106 @@ export default async function AboutPage({ params }: { params: Promise<Params> })
   };
 
   return (
-    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
+    <div className={styles.page} data-testid="about-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <h1 className="text-3xl sm:text-4xl">
-        {t.about} {SITE_NAME}
-      </h1>
-      <p className="mt-6 text-lg leading-relaxed">{c.lede}</p>
+      <header className={styles.intro}>
+        <p className={styles.eyebrow}>{c.eyebrow}</p>
+        <h1 className={styles.title}>
+          {c.title}
+          <br />
+          <em>{c.titleEm}</em>
+        </h1>
+        <p className={styles.lede}>{c.lede}</p>
+      </header>
 
-      <section className="mt-10">
-        <h2 className="text-xl">{c.methodologyH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">{c.methodology}</p>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-xl">{c.aiH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">
-          {c.ai}{' '}
-          <Link className="text-accent" href={`/${lang}/ai-disclosure`}>
-            {t.aiDisclosure}
-          </Link>
-          .
-        </p>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-xl">{c.editorH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">{c.editor}</p>
-        <p className="text-muted mt-3 text-sm leading-relaxed">
-          <span className="text-text font-medium">{c.expertiseH}: </span>
-          {EDITOR_PROFILE.expertise[lang].join(' · ')}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          {EDITOR_PROFILE.links.map((link) => (
-            <a
-              key={link.url}
-              className="text-accent text-sm font-medium hover:underline"
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-        <p className="text-muted mt-4 leading-relaxed">
-          <span className="text-text font-medium">{c.contactH}: </span>
-          <a className="text-accent" href={`mailto:${CONTACT_EMAIL}`}>
-            {CONTACT_EMAIL}
-          </a>
-        </p>
-        <p className="mt-3">
-          <Link className="text-accent text-sm font-medium hover:underline" href={`/${lang}/editorial-policy`}>
+      <section className={styles.split} aria-labelledby="about-context">
+        <figure className={styles.art}>
+          <picture>
+            <source
+              type="image/avif"
+              srcSet="/images/after-hours/after-hours-800.avif 800w, /images/after-hours/after-hours-1600.avif 1600w"
+              sizes="(max-width: 760px) 100vw, 50vw"
+            />
+            <source
+              type="image/webp"
+              srcSet="/images/after-hours/after-hours-800.webp 800w, /images/after-hours/after-hours-1600.webp 1600w"
+              sizes="(max-width: 760px) 100vw, 50vw"
+            />
+            <Image
+              src="/images/after-hours/after-hours-1600.webp"
+              width={1600}
+              height={900}
+              alt={c.artAlt}
+              unoptimized
+              loading="eager"
+              sizes="(max-width: 760px) 100vw, 50vw"
+            />
+          </picture>
+          <figcaption>{c.artCaption}</figcaption>
+        </figure>
+        <div className={styles.copy}>
+          <h2 id="about-context">{c.copyH}</h2>
+          <p>{c.context}</p>
+          <p>{c.ai}</p>
+          <Link className={styles.action} href={`/${lang}/editorial-policy`}>
             {c.policyLink}
           </Link>
-        </p>
+          <p>
+            <Link className={styles.action} href={`/${lang}/ai-disclosure`}>
+              {t.aiDisclosure}
+            </Link>
+          </p>
+        </div>
       </section>
+
+      <section className={styles.section} aria-labelledby="process-title">
+        <div className={styles.sectionHead}>
+          <h2 id="process-title">{c.processH}</h2>
+        </div>
+        <ol className={styles.process}>
+          {c.process.map((step, index) => (
+            <li key={step.title}>
+              <span aria-hidden="true">
+                {new Intl.NumberFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
+                  minimumIntegerDigits: 2,
+                }).format(index + 1)}
+              </span>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={styles.section} aria-labelledby="editor-title">
+        <div className={styles.sectionHead}>
+          <h2 id="editor-title">{c.editorH}</h2>
+          <Link className={styles.action} href={`/${lang}/author`}>
+            {c.profileLink}
+          </Link>
+        </div>
+        <div className={styles.editor}>
+          <EditorAvatar />
+          <div>
+            <h3>{EDITOR_NAME}</h3>
+            <p>
+              {EDITOR_ROLE[lang]} · {SITE_NAME}
+            </p>
+            <p>
+              {c.expertiseH}: {EDITOR_PROFILE.expertise[lang].join(' · ')}
+            </p>
+            <EditorLinks lang={lang} />
+          </div>
+        </div>
+      </section>
+
+      <div className={styles.newsletter}>
+        <NewsletterForm lang={lang} variant="band" />
+      </div>
     </div>
   );
 }
