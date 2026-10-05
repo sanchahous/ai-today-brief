@@ -319,9 +319,8 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
     expect(requestPayload).toBeNull();
 
     // 2. Check consent and select Ukrainian edition
-    await consentCheckbox.check({ force: true });
-    const ukOption = form.locator('input[type="radio"][value="uk"]');
-    await ukOption.check({ force: true });
+    await page.getByRole('checkbox', { name: /agree to the privacy policy/i }).check({ force: true });
+    await page.getByRole('radio', { name: 'Українська' }).check({ force: true });
 
     await submitBtn.click();
     const statusEl = page.locator('[role="status"]').first();

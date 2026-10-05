@@ -230,9 +230,10 @@ export function SearchDialog({
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const fromForm = String(new FormData(e.currentTarget).get('q') ?? '').trim();
     const field = e.currentTarget.querySelector('input[type="search"]');
-    const domValue = field instanceof HTMLInputElement ? field.value : '';
-    const value = (domValue || inputRef.current?.value || queryDraftRef.current || query).trim();
+    const domValue = field instanceof HTMLInputElement ? field.value.trim() : '';
+    const value = (fromForm || domValue || queryDraftRef.current || inputRef.current?.value || query).trim();
     if (value !== query) setQuery(value);
     navigateToSearch(value, wide ? 'dialog_desktop' : 'dialog_mobile');
   }
@@ -298,9 +299,13 @@ export function SearchDialog({
         <div className="min-w-0 flex-1">
           <SearchInput
             ref={inputRef}
+            name="q"
             lang={lang}
             label={t.searchModalTitle}
             value={query}
+            onInput={(e) => {
+              queryDraftRef.current = e.currentTarget.value;
+            }}
             onChange={(e) => {
               queryDraftRef.current = e.target.value;
               setQuery(e.target.value);

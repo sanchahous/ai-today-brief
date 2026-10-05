@@ -1,33 +1,14 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
 import { ViewTransition } from 'react';
-
-function subscribeReducedMotion(onStoreChange: () => void) {
-  const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-  media.addEventListener('change', onStoreChange);
-  return () => media.removeEventListener('change', onStoreChange);
-}
-
-function readReducedMotion() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
 
 /**
  * Cross-fades route content inside `<main>` (AH-6.3).
- * Always wraps children so SSR and hydration share the same tree — omitting the
- * wrapper remounts page content and detaches nodes mid-E2E. Reduced motion uses
- * `default="none"` (no view-transition-name) plus CSS on `::view-transition-*` (D13).
+ * Always wraps children with a stable `default` so SSR/hydration and E2E never
+ * remount page content when `prefers-reduced-motion` resolves. Reduced motion is
+ * handled in CSS (`::view-transition-*` → `animation: none`) and `data-tension-motion`
+ * (D13) — not by toggling this prop after paint.
  */
 export function RouteViewTransition({ children }: { children: React.ReactNode }) {
-  const reducedMotion = useSyncExternalStore(
-    subscribeReducedMotion,
-    readReducedMotion,
-    () => false,
-  );
-  return (
-    <ViewTransition default={reducedMotion ? 'none' : 'route-crossfade'}>
-      {children}
-    </ViewTransition>
-  );
+  return <ViewTransition default="route-crossfade">{children}</ViewTransition>;
 }

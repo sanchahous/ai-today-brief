@@ -2,7 +2,7 @@
 
 Summary: View Transitions між маршрутами — cross-fade контенту в `<main>`, reduced motion вимикає анімацію, фокус після навігації на H1 або `main`.
 Sources: [after-hours-redesign-epic §AH-6.3](../product/after-hours-redesign-epic.md); `node_modules/next/dist/docs/01-app/02-guides/view-transitions.md`; `artifacts/after-hours/tension.css`; [PR #434](https://github.com/sanchahous/ai-today-brief/pull/434)
-Last updated: 2026-10-05 (T1-f6 repair)
+Last updated: 2026-10-05 (T1-f7 repair)
 
 ---
 
@@ -20,6 +20,7 @@ Task: ah-6.3
 
 ## Updates
 
+- 2026-10-05 (T1-f7): Pre-push e2e — `header-layout` 1160px: controlled SearchDialog гонка fill→requestSubmit під 4 workers (порожній `q` → `/uk/news`); `name="q"`, `onInput`→`queryDraftRef`, FormData у submit. `RouteViewTransition` — стабільний `default="route-crossfade"` (без post-hydration toggle). `footer-newsletter` consent — `getByRole` + `force`; `a11y-layout-matrix` ERR_NO_BUFFER_SPACE — environmental.
 - 2026-10-05 (T1-f6): Pre-push e2e — `motion-runtime` reduced motion: React `<ViewTransition>` на гідрації створював 8 running `::view-transition-*` WAAPI-анімацій; `html[data-tension-motion='off'] *` їх не покриває. Виправлення: `default="none"` у `RouteViewTransition` (серверний знімок `false`), `animation: none` на `::view-transition-*` для `data-tension-motion=off` і `@media (prefers-reduced-motion)`.
 - 2026-10-05 (T1-f5): Pre-push e2e — `header-layout` на 1100/1160px: `requestSubmit` читав порожнє поле (controlled input + `useNavWide` useEffect-flip під навантаженням) → навігація на `/uk/news` замість `/uk/news/search?q=agent`; `queryDraftRef`, `useSyncExternalStore` для wide, `test.setTimeout(60_000)`.
 - 2026-10-05 (T1-f4): Pre-push e2e — `RouteViewTransition` умовно прибирав `<ViewTransition>` після гідрації (серверний знімок `useSyncExternalStore` = reduced motion), через що дерево в `<main>` розмонтовувалось і Playwright бачив «Element is not attached to the DOM» у `brand-resolve`, `footer-newsletter` та `maxHeight: NaN` у `crossbrowser-fallbacks`. Виправлення: завжди обгортати в `<ViewTransition>`, reduced motion лише в CSS (`::view-transition-*` 0.001ms).
