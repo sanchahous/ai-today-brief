@@ -10,7 +10,7 @@ Task: ah-7.3
 
 ## Status
 
-DONE (repair T1-f4). PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438). Усі CI checks зелені; PR mergeable, undrafted. Оркестратор: commit wiki diff + merge.
+DONE (repair T1-f5). PR: [#438](https://github.com/sanchahous/ai-today-brief/pull/438). Оркестратор: commit `e2e/footer-newsletter.spec.ts` + wiki diff + push/merge.
 
 ### epic-5.3
 
@@ -34,6 +34,7 @@ DONE (repair T1-f4). PR: [#438](https://github.com/sanchahous/ai-today-brief/pul
 - 2026-10-05 (repair T1-f2): pre-push `theme.spec.ts` en dark 768 — `ERR_NO_BUFFER_SPACE` під 4 workers (TCP exhaustion, не регресія теми). `theme.spec.ts`: фільтр transient network console errors (як `a11y-layout-matrix.spec.ts`).
 - 2026-10-05 (repair T1-f3): CI Playwright smoke run `37363135064` — job **cancelled** після 15 хв без логів (не тестовий фейл). Локально: `PORT=3101 npm run pr:check` exit 0 (~124 s); `PORT=3101 npm run e2e:affected` 883 passed / 5 skipped (~4.5 min). Re-run `gh run rerun 37363135064` → success (2026-10-05T20:02:38Z). `globals.css` 1053→929 рядків (−124); головний CSS chunk `1iu-avujcrpwd.css` ≈138.7 KB після `build:ci`.
 - 2026-10-06 (repair T1-f4): push T1-f3 (`b9a50e9`) — jobs `111963093317` (Playwright) і `111963091014` (npm ci) **cancelled** після ~15 хв (той самий патерн). Авто re-run 2026-10-06: Playwright smoke job `112142918289` pass 14m10s; deps `112143013442` pass; migration drift `112142778672` pass. `gh pr checks 438` — усі зелені. Локально: `PORT=3101 npm run pr:check` exit 0 (~139 s); `e2e:affected` 883 passed / 5 skipped (~5.2 min). Код без змін.
+- 2026-10-06 (repair T1-f5): `footer-newsletter.spec.ts` — флейк subscribe-page тесту: `.check({ force })` на controlled Checkbox/SegmentedControl не оновлював React state під parallel workers; кастомний mark перехоплював pointer clicks. Фікс: `readyNewsletterForm` (чекає `novalidate` = hydration), `toggleConsent`/`selectEdition` через keyboard (як `fields.spec.ts`). Stress: 80/80 pass (`--repeat-each=5`, 4 workers).
 
 ## AC evidence
 
