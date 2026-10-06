@@ -1,8 +1,8 @@
 # Аудит повноти концепції та дизайн-системи
 
-Summary: After Hours є сильним візуальним напрямком і широким набором макетів, але ще не є завершеною функціональною дизайн-системою. Цей аудит фіксує розриви між концептом, production UI та продуктовою поведінкою і задає порядок допрацювання від контрактів до rollout.
-Sources: скріншот власника 2026-09-26; browser live review `https://aitodaybrief.com/en/news` 2026-09-26; `wiki/product/after-hours-redesign.md`; `wiki/product/after-hours-tension.md`; `artifacts/after-hours/app.js`; `artifacts/after-hours/style.css`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/verification.json`; `src/app/[lang]/news/page.tsx`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`; `src/components/pagination.tsx`; `src/lib/news.ts`; `src/lib/news-filters.ts`; `src/app/globals.css`; `e2e/news-filters-drawer.spec.ts`; `e2e/news-sidebar.spec.ts`; none (design recommendations); звірка AH-0.1 2026-09-29: `src/lib/design-system/tokens.ts`, `src/components/ui/`, `scripts/check-design-tokens.ts`, `package.json`, `e2e/`, live check production `b3f1b3a` 2026-09-29.
-Last updated: 2026-09-29
+Summary: After Hours пройшов повний шлях від первинного аудиту розривів 2026-09-26 до повного перенесення в production (Фази 0–7 епіку, PR #367–#438). Цей аудит фіксує початкові розриви, проміжну звірку AH-0.1 та фінальний статус G01–G20 за результатами acceptance-прогону (AH-7.1), CWV (AH-7.2) і прибирання legacy (AH-7.3).
+Sources: скріншот власника 2026-09-26; browser live review `https://aitodaybrief.com/en/news` 2026-09-26; `wiki/product/after-hours-redesign.md`; `wiki/product/after-hours-tension.md`; `artifacts/after-hours/app.js`; `artifacts/after-hours/style.css`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/verification.json`; `src/app/[lang]/news/page.tsx`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`; `src/components/pagination.tsx`; `src/lib/news.ts`; `src/lib/news-filters.ts`; `src/app/globals.css`; `e2e/news-filters-drawer.spec.ts`; `e2e/news-sidebar.spec.ts`; звірка AH-0.1 2026-09-29; фіналізація AH-7.5 2026-10-06: PR #367–#438, acceptance AH-7.1, CWV AH-7.2, legacy cleanup AH-7.3.
+Last updated: 2026-10-06
 
 ---
 
@@ -325,6 +325,37 @@ Decision criteria до тесту: ≥80% task completion без moderator rescu
 Що це означає для наступних задач (пропозиції, не рішення): AH-1.7 логічно почати з підключення скану 12 px до `pr:check`; AH-2.3 — з локалізації наявного `SearchInput`; нові композити не матимуть споживачів у production, доки header, пошук і share не переведені на них (AH-2.4, AH-3.2, AH-3.3).
 
 (source: grep і читання коду 2026-09-29, посилання в таблиці; `npm run tokens:check` 2026-09-29; live check production 2026-09-29)
+
+## 11. Фінальний статус на 2026-10-06 (завершення фаз 0–7 редизайну)
+
+Станом на 2026-10-06 реалізацію Фаз 0–6 завершено, задачі валідації та полірування AH-7.1, AH-7.2, AH-7.3 закрито, фінальна документація та звірка wiki виконуються в межах AH-7.5 (PR #441). Усі 20 функціональних та архітектурних розривів G01–G20 закрито або оформлено згідно з регламентом. (source: `wiki/tasks/ah-*.md`, PR #367–#441, `src/`, `e2e/`, `scripts/`)
+
+**Підсумок:** 19 done, 0 open, 0 partial, 1 waived (G19).
+
+| G | Пріоритет | Статус | Доказ реалізації | Фінальний стан на 2026-10-06 |
+|---|---:|---|---|---|
+| G01 | P0 | done | PR #367, PR #441, [after-hours-redesign](../product/after-hours-redesign.md), AH-7.1 | Концепт повністю перенесено в production. Документація чітко розмежовує фази, acceptance пройдено, жоден компонент не вважається «production-ready» без тестів |
+| G02 | P0 | done | PR #380 (AH-4.1), PR #411 (AH-4.3), PR #412 (AH-4.4) | Фасетна таксономія Topics та Tools інтегрована в discovery, фільтри та пошук новин, узгоджена з [ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) |
+| G03 | P0 | done | PR #367, PR #411, `src/lib/news-filters.ts` | Чесне сортування без фіктивних режимів (`newest`, `oldest`, `relevance` виключно за наявності пошукового запиту) |
+| G04 | P0 | done | PR #367, PR #411, `src/components/news/news-feed.tsx`, E2E `news-feed-interaction.spec.ts` | Повне двостороннє синхронізування стану URL (параметри, пагінація, фільтри), підтримка Back/Forward browser history, гідратація стану |
+| G05 | P0 | done | PR #411 (AH-4.3), PR #412 (AH-4.4) | Чесні лічильники результатів, пагінація з урахуванням лімітів джерела, відсутність зрізаних невідомих даних без індикації |
+| G06 | P0 | done | PR #380 (AH-4.1), PR #411 (AH-4.3) | Повна підтримка Topics та Tools як першокласних фільтрів новинного фіду та сайдбару |
+| G07 | P1 | done | PR #367, PR #411, мобільні тести 390×844 | Компактний toolbar на мобільних в'юпортах, повноцінний drawer з повними назвами категорій та кнопкою закриття/підтвердження |
+| G08 | P1 | done | PR #367, PR #411, `src/lib/i18n.ts` | Термінологія «Done» / «Готово» замість неоднозначного «Apply» у всіх мовних локалях |
+| G09 | P1 | done | PR #377 (AH-1.5, AH-1.6), PR #438 (AH-7.3), `src/lib/tokens.ts`, `src/app/globals.css` | Повний набір foundations токенів версії 3.0.0 (палітри Night/Day, spacing, typography, radii, shadows, motion, z-index, breakpoints) синхронізовано з CSS |
+| G10 | P1 | done | PR #367, PR #438 (AH-7.3), `src/lib/tokens.ts`, `tokens.test.ts` | Токени v3.0.0, автоматичний drift-тест у CI/`pr:check`, повна карта міграції `LEGACY_MIGRATION_MAP` у [design-system-tokens](../architecture/design-system-tokens.md) |
+| G11 | P1 | done | PR #367, PR #369, PR #387–#393 (Фаза 2), `src/components/ui/` | Повна бібліотека з 20 UI-примітивів та 17 композитів у `src/components/ui/`, застарілий дубль `pagination.tsx` вилучено |
+| G12 | P1 | done | PR #438 (AH-7.3), PR #441, [design-system-tokens](../architecture/design-system-tokens.md) | Токени v3.0.0 із чітким SemVer, правилами deprecation та governance, затвердженими в документації |
+| G13 | P1 | done | PR #387–#393 (Фаза 2), PR #418–#420 (Фаза 5) | Data-стани loading (скелетони), error (із retry), empty (із скиданням фільтрів), stale реалізовано уніфіковано в усіх компонентах та каталозі |
+| G14 | P1 | done | PR #436 (AH-7.1), PR #437 (AH-7.2), E2E suite | Повний acceptance suite: 594 автоматичні тести (Vitest + Playwright), матриця 58 публічних маршрутів (a11y axe-core, WCAG 2.2 AA, responsive, visual regression) |
+| G15 | P2 | done | PR #377, PR #438 (AH-7.3), `scripts/check-design-tokens.ts` | Ratchet гейт `npm run design:raw:check`, 0 шрифтів менше 12px у коді інтерфейсу, сирі значення кольорів зведені до мінімуму або усунені |
+| G16 | P2 | done | PR #369, PR #396–#404 (Фаза 3), `src/components/ui/` | Уніфіковані оверлейні примітиви (`Popover`, `DropdownMenu`, `Dialog`, `Tooltip`) замінили кастомні реалізації в шапці, пошуку та картках |
+| G17 | P2 | done | PR #410 (AH-4.2), PR #418–#420 (Фаза 5) | Editorial-патерни `StoryCard`, `StoryRow`, `CategoryBanner`, `DigestCard` стандартизовано в єдиній сітці та дизайн-системі |
+| G18 | P2 | done | PR #432–#434 (Фаза 6), [after-hours-tension](../product/after-hours-tension.md) | Tension v3 впроваджено після G5: пошарова система уваги з повною повагою до `prefers-reduced-motion` та оптимізацією для мобільних пристроїв |
+| G19 | P2 | waived | Рішення власника 2026-09-29, [протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md) | Юзабіліті-сесії зі сторонніми учасниками скасовано рішенням власника. Ризик покрито розширеним E2E/a11y матричним тестуванням (G14) та 28-денним моніторингом (AH-7.4) |
+| G20 | P3 | done | PR #369, `src/app/ds-catalog/` | Внутрішній ізольований каталог компонентів `/ds-catalog` (`DS_CATALOG=1`, `noindex`, 404 у production), повне покриття UI-бібліотеки |
+
+(source: `wiki/tasks/ah-*.md`, PR #367–#441, `src/`, `e2e/`, `scripts/`, `wiki/audits/2026-09-26-design-system-gap-plan.md`)
 
 ## Related pages
 
