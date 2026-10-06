@@ -49,7 +49,7 @@ Last updated: 2026-10-03
 > [after-hours-epic-readiness](after-hours-epic-readiness.md); декомпозицію й порядок робіт задає цей
 > епік. (source: `git show 3f47256 --stat`; grep `src/` після rebase 2026-09-29)
 
-> **Актуально 2026-10-01:** main `56a9cf8` (merge #390). Push Playwright [run 36854771692](https://github.com/sanchahous/ai-today-brief/actions/runs/36854771692), deps integrity, migration drift і Vercel — success. Sonar на push не запускався; Sonar PR #390 був success до merge. Окремого підпису #390 не було. Поточна задача — AH-2.5. G1 та відкриті AH-1.5 UK/CLS/legacy AC збережено. (source: `gh pr view 390`; `gh run list --commit 56a9cf8` 2026-10-01)
+> **Актуально 2026-10-06 (статус: очікує G7):** Усі задачі Фаз 0–6 та AH-7.1, AH-7.2, AH-7.3 успішно виконано й змерджено в `main`. Задачу AH-7.5 (документація й фіналізація wiki-статусів) підготовлено у [PR #441](https://github.com/sanchahous/ai-today-brief/pull/441). Фінальний статус епіку — **«очікує G7»** до завершення 28-денного релізного моніторингу AH-7.4 та затвердження власником підсумкового звіту впливу. (source: `wiki/tasks/ah-*.md`, PR #367–#441, git log `origin/main` 2026-10-06)
 
 ## 0. Як користуватися епіком
 
@@ -2052,39 +2052,37 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 - [ ] `npm run wiki:check` зелений.
 - [ ] Жодна сторінка не називає прототип «production-ready» без проходження acceptance (G01).
 
-**Гейт G7:** критерії §1.4 виконані; звіт після запуску збережений; епік закрито.
+**Гейт G7:** критерії §1.4 виконані кодом і тестами (Фrecord AH-7.1, AH-7.2, AH-7.3); фінальне закриття епіку — після завершення 28-денного релізного моніторингу AH-7.4 та затвердження звіту власником. Поточний стан: **очікує G7**.
 
 ---
 
 ## 14. Трасування G01–G20 → задачі
 
-Статус — за кодом на 2026-09-29 після PR #369 (source: live check після rebase на `3f47256`).
-**Звірено задачею AH-0.1 2026-09-29**; докази по кожному G — у
-[gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01).
-Рядки G07, G09, G11, G15, G16 уточнено за результатами звірки.
+Статус на 2026-10-06 після завершення фаз 0–7 (source: `wiki/tasks/ah-*.md`, PR #367–#441, [gap-plan §11](../audits/2026-09-26-design-system-gap-plan.md#11-фінальний-статус-на-2026-10-06-завершення-фаз-07-редизайну)).
+**Підсумок на 2026-10-06:** 19 done, 0 open, 0 partial, 1 waived (G19).
 
 | G | Пріоритет | Статус за кодом | Доказ | Задачі епіку |
 |---|---:|---|---|---|
-| G01 | P0 | done (docs) | статус перемарковано в [after-hours-redesign](after-hours-redesign.md) §1 | AH-0.1, AH-7.5 |
-| G02 | P0 | partial | ADR прийнято; Topics і макет прототипу не перенесені | AH-4.1, AH-4.3 |
-| G03 | P0 | done | `SortMode` у `news-filters.ts` має лише newest / oldest / relevance | регресія в AH-4.3, AH-4.5 |
-| G04 | P0 | done | URL-state + `e2e/news-feed-interaction.spec.ts` (#367) | регресія в AH-4.3, AH-4.5 |
-| G05 | P0 | partial | зріз 100 / 80 без чесної мітки обсягу; статичний `weekSummary` (B8) прибрано hotfix-ом 2026-09-29 | AH-4.3 |
-| G06 | P0 | partial | lib і URL готові (AH-4.1); пікер фасету — AH-4.3 | AH-4.1 ✅, AH-4.3 |
-| G07 | P1 | partial (live 2026-09-29) | на production 390×844 Sort і Filters стоять на першому екрані (центр Filters — y≈422 із 844), drawer із повними назвами категорій і «Done (100)»; залишок — trending-тема обрізана `truncate`, UK не перевірено | AH-4.3 |
-| G08 | P1 | done | «Done» замість Apply ([ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) §5) | AH-4.3 («Готово · N») |
-| G09 | P1 | partial | #369: палітра Night/Day, шкала в rem, z-index, розміри контролів. AH-1.6: spacing, радіуси, тіні Night/Day, ефекти, motion, брейкпоінти й фокус — у `tokens.ts` і `globals.css` під drift-гейтом і реєстром §7; лишаються шрифти (досі `@fontsource`, AH-1.5) і шкала типографіки 2.0 | AH-1.5 |
-| G10 | P1 | done (#369) | `tokens.ts` 2.0.0 — одне джерело, `globals.css` — дзеркало з drift-гейтом; ім'я `--surface-2` — до 3.0.0 | AH-7.3 (прибирання) |
-| G11 | P1 | partial | 10 примітивів + 8 з #369 (Popover, Dialog, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox); бракує Field, Switch, SegmentedControl, Badge, Tag, Notice… (`SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder) | AH-2.2…2.6 |
-| G12 | P1 | partial | SemVer і changelog у wiki + ADR 2026-09-29; немає процесу deprecation у коді | AH-0.2, AH-7.3 |
-| G13 | P1 | partial | каталог `/ds-catalog` показує лише компоненти #369; немає data-станів і повної state matrix | AH-2.5, картки фаз 2–5 |
-| G14 | P1 | partial | E2E для news і каталогу компонентів (#369); немає матриці сторінок | AH-0.5, AH-4.5, AH-7.1 |
-| G15 | P2 | partial | #369: drift у `pr:check` через Vitest; скан шрифту < 12 px по `src/` — лише вручну (`npm run tokens:check`), не в `pr:check`; hex — у 14 файлах `.tsx` / `.css` поза admin (B4) | AH-1.7, AH-7.3 |
-| G16 | P2 | partial | компоненти меню/поповерів є (#369), але їх імпортує лише `/ds-catalog`; header, search і mobile-search ще на власних механіках `aria-expanded` / `role="dialog"` | AH-2.4, AH-3.2, AH-3.3 |
-| G17 | P2 | open | локальні стилі StoryCard / DigestCard / SourceList | AH-4.2, AH-5.1 |
-| G18 | P2 | policy | рух заморожено до G5 (I-9) | фаза 6 |
-| G19 | P2 | waived | сесії пропущено рішенням власника 2026-09-29; страхують автоматика й метрики після запуску | AH-4.5, AH-7.4 |
-| G20 | P3 | done (#369) | внутрішній каталог `/ds-catalog` | AH-2.1 ✅ |
+| G01 | P0 | done | статус перемарковано в [after-hours-redesign](after-hours-redesign.md) §1, acceptance пройдено | AH-0.1, AH-7.1, AH-7.5 ✅ |
+| G02 | P0 | done | Topics і Tools інтегровано в discovery, фільтри та пошук (PR #380, #411, #412) | AH-4.1 ✅, AH-4.3 ✅, AH-4.4 ✅ |
+| G03 | P0 | done | `SortMode` у `news-filters.ts` має лише newest / oldest / relevance (PR #367, #411) | AH-4.3 ✅, AH-4.5 ✅ |
+| G04 | P0 | done | Двосторонній URL-state + `e2e/news-feed-interaction.spec.ts` (PR #367, #411) | AH-4.3 ✅, AH-4.5 ✅ |
+| G05 | P0 | done | Чесні лічильники, відсутність хибних статичних підсумків, пагінація з лімітами (PR #411, #412) | AH-4.3 ✅, AH-4.4 ✅ |
+| G06 | P0 | done | Topics та Tools як першокласні фільтри фіду та сайдбару (PR #380, #411) | AH-4.1 ✅, AH-4.3 ✅ |
+| G07 | P1 | done | Компактний toolbar на 390×844, drawer із повними назвами та «Done (N)» (PR #367, #411) | AH-4.3 ✅ |
+| G08 | P1 | done | «Done» / «Готово» замість Apply у всіх локалях (PR #367, #411, `src/lib/i18n.ts`) | AH-4.3 ✅ |
+| G09 | P1 | done | Foundations 3.0.0 (палітри Night/Day, spacing, typography, radii, shadows, motion, z-index, breakpoints) у коді й CSS (PR #377, #438) | AH-1.5 ✅, AH-1.6 ✅, AH-7.3 ✅ |
+| G10 | P1 | done | `tokens.ts` 3.0.0 — одне джерело, `globals.css` — дзеркало з drift-гейтом, `LEGACY_MIGRATION_MAP` (PR #367, #438) | AH-7.3 ✅ |
+| G11 | P1 | done | Повна бібліотека з 20 UI-примітивів та 17 композитів у `src/components/ui/`, застарілий дубль пагінації видалено (PR #367, #369, #387–#393) | AH-2.2–2.6 ✅ |
+| G12 | P1 | done | SemVer 3.0.0, governance та changelog у [design-system-tokens](../architecture/design-system-tokens.md) (PR #438, #441) | AH-7.3 ✅, AH-7.5 ✅ |
+| G13 | P1 | done | Data-стани loading, empty, error, stale уніфіковано в примітивах і шаблонах (PR #387–#393, #418–#420) | AH-2.5 ✅, Фази 2–5 ✅ |
+| G14 | P1 | done | 594 автоматичні тести, матриця 58 маршрутів, a11y WCAG 2.2 AA (PR #436, #437, AH-7.1, AH-7.2) | AH-0.5 ✅, AH-7.1 ✅, AH-7.2 ✅ |
+| G15 | P2 | done | Ratchet-гейт `npm run design:raw:check`, 0 шрифтів < 12 px (PR #377, #438) | AH-1.7 ✅, AH-7.3 ✅ |
+| G16 | P2 | done | Уніфіковані оверлеї (`Popover`, `DropdownMenu`, `Dialog`, `Tooltip`) впроваджено в усіх шаблонах (PR #369, #396–#404) | AH-2.4 ✅, AH-3.2 ✅, AH-3.3 ✅ |
+| G17 | P2 | done | Стандартизована родина editorial-патернів `StoryCard`, `StoryRow`, `CategoryBanner` (PR #410, #418–#420) | AH-4.2 ✅, AH-5.1 ✅ |
+| G18 | P2 | done | Tension v3 впроваджено у Фазі 6 з повагою до `prefers-reduced-motion` та оптимізацією (PR #432–#434) | Фаза 6 ✅ |
+| G19 | P2 | waived | Сесії пропущено рішенням власника 2026-09-29; страхують автоматика G14 і 28-денний моніторинг AH-7.4 | AH-4.5 ✅, AH-7.4 |
+| G20 | P3 | done | Внутрішній ізольований каталог `/ds-catalog` (`DS_CATALOG=1`, `noindex`) (PR #369) | AH-2.1 ✅ |
 
 ## 15. Матриця маршрутів
 
