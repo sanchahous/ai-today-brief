@@ -2,7 +2,7 @@
 
 Summary: над чим іде робота просто зараз. Живий статус кожної задачі — окремий файл у каталозі фрагментів, не список у цьому файлі.
 Sources: wiki/tasks/README.md; заморожений факт sync нижче; історична шапка — у wiki/tasks/archive-shared-lines.md (ATB-67, PR #405)
-Last updated: 2026-10-03
+Last updated: 2026-10-06
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
@@ -19,6 +19,19 @@ desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-
 Last updated: 2026-10-03 (AH-3.3 review fixes)
 
 ---
+
+## Weekly worker dispatch loop — 2026-10-06
+
+Production мав 491 `github_dispatch_requested` за 24 години через п’ять
+`editorial_master` jobs: повторний enqueue скинув `attempts` у 0, хоча ledger
+вже мав 3/3 спроб. SQL-міграцію застосовано до production, п’ять jobs
+terminalized як `failed`, cron `weekly_digest_generate` призупинено на час
+виправлення й відновлено. Усі ledger mismatch усунено; кодовий PR фіксує
+linked retry для admin дії. (source: production Supabase live check 2026-10-06;
+[Actions run #7957](https://github.com/sanchahous/ai-today-brief/actions/runs/37417601227);
+`supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`)
+Суміжний prompt-only visual refresh enqueue теж захищено від reset attempts.
+(source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
 
 <!-- task-status: fragments -->
 

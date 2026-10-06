@@ -8,9 +8,24 @@ revision Stage 0, OpenRouter catalog, YouTube 120s, ElevenLabs TTS,
 LinkedIn PDF skip on public promote 2026-09-03,
 social URLs follow the published slug 2026-09-03, two-phase release (Ship / Publish video)
 2026-09-03
-Last updated: 2026-10-02
+Last updated: 2026-10-06
 
 ---
+
+## Якщо weekly worker багаторазово запускається після failure
+
+Перевір `attempts` job проти найбільшого `attempt_number` у
+`weekly_digest_generation_attempts`. Після інциденту 2026-10-06 повторне enqueue
+terminal job не скидає лічильник; явний retry створює linked job. П’ять
+старих `editorial_master` jobs із вичерпаними 3/3 attempts переведено в
+`failed`, не видаляючи їхні checkpoints. При аналогічному інциденті тимчасово
+призупини `weekly_digest_generate` cron, усунь розбіжність і лише тоді віднови
+cron. (source: production Supabase live check 2026-10-06;
+`supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`;
+[Actions run #7957](https://github.com/sanchahous/ai-today-brief/actions/runs/37417601227))
+Prompt-only visual refresh також зберігає terminal job при повторному
+`request_key`; для нової спроби потрібен новий запит/linked retry.
+(source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
 
 ## Бренд-знак на PDF і соц-слайдах (2026-10-02)
 

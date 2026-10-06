@@ -7,9 +7,26 @@ editorial-voice, PDF/Social/Video, Prompt-as-Code v6, daily visual, topic slug, 
 OpenRouter catalog, YouTube 120s, ElevenLabs TTS, LinkedIn PDF skip 2026-09-03,
 social URLs follow the published slug 2026-09-03, two-phase release (Ship / Publish video)
 2026-09-03
-Last updated: 2026-10-02
+Last updated: 2026-10-06
 
 ---
+
+## Dispatch loop incident (2026-10-06)
+
+Повторний enqueue зі стабільним idempotency key раніше переводив terminal `failed`
+job у `queued` і скидав `attempts` у 0, залишаючи ledger з attempt №1–3.
+`claim_weekly_digest_generation_jobs_v2` після цього падав на unique constraint
+`(job_id, attempt_number)`, а reaper і п’ятихвилинний dispatcher повторювали запуск.
+Міграція `20261006052110_weekly_generation_idempotent_queue.sql` зберігає наявний
+рядок без змін при повторному enqueue і terminalizes jobs, у яких ledger уже
+досяг `max_attempts`. Нову спробу terminal master створює linked retry RPC.
+(source: [Actions run #7957](https://github.com/sanchahous/ai-today-brief/actions/runs/37417601227);
+production Supabase live check 2026-10-06; `supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`;
+`src/lib/weekly-digest/orchestrator.ts`)
+
+Той самий захист додано для prompt-only visual refresh: повторний
+`request_key` для `story_image` або `cover` повертає наявну job без скидання
+attempts. (source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
 
 ## Revision Stage 0: carry-forward on the master path (2026-08-29)
 
