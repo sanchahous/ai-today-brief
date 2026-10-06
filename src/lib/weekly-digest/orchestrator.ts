@@ -24,6 +24,7 @@ interface RpcClient {
 }
 
 type StudioJobRow = {
+  id: string;
   job_type: string;
   status: string;
   input: Json;
@@ -172,7 +173,7 @@ export async function startWeeklyContentStudio(weeklyDigestId: string, revisionI
 /**
  * Admin "Start / retry Content Studio": mint new `research_pack` rows when the
  * previous jobs already succeeded (or failed), skip slots that are already in
- * flight, and leave a waiting master on this revision in place.
+ * flight, and create a linked retry for a terminal master.
  */
 export async function retryWeeklyContentStudio(
   weeklyDigestId: string,
@@ -182,7 +183,7 @@ export async function retryWeeklyContentStudio(
   const { db, mode, featureItems } = await loadContentStudioContext(weeklyDigestId, revisionId);
   const { data: jobs, error: jobsError } = await db
     .from('weekly_digest_generation_jobs')
-    .select('job_type,status,input')
+    .select('id,job_type,status,input')
     .eq('weekly_digest_id', weeklyDigestId)
     .eq('revision_id', revisionId)
     .in('job_type', ['research_pack', 'editorial_master']);
@@ -223,6 +224,18 @@ export async function retryWeeklyContentStudio(
   const masterKey = contentStudioMasterKey({ digestId: weeklyDigestId, revisionId });
   if (!shouldEnqueueContentStudioMaster(masterStatuses)) {
     skipped.push(masterKey);
+    return { queued, skipped, mode };
+  }
+  const terminalMaster = jobs?.find(
+    (job) => job.job_type === 'editorial_master' &&
+      (job.status === 'failed' || job.status === 'cancelled'),
+  );
+  if (terminalMaster) {
+    const { error } = await rpc.rpc('retry_weekly_digest_generation_job', {
+      p_job_id: terminalMaster.id,
+    });
+    if (error) throw new Error(error.message);
+    queued.push(masterKey);
     return { queued, skipped, mode };
   }
   await queueGenerationJob(rpc, {

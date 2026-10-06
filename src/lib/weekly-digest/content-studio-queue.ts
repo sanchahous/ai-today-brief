@@ -62,8 +62,8 @@ export function shouldEnqueueContentStudioResearch(statuses: string[]): boolean 
 /**
  * First-start uses the stable research key so composer and the admin button
  * share one row. Any later click (succeeded, failed, cancelled) needs a unique
- * key because `queue_weekly_digest_generation_job` only resets failed/cancelled
- * on conflict — succeeded/waiting/queued are returned unchanged.
+ * key because `queue_weekly_digest_generation_job` preserves every existing
+ * row, including failed/cancelled jobs and their attempt history.
  */
 export function contentStudioResearchRetryNonce(
   statuses: string[],
@@ -75,7 +75,7 @@ export function contentStudioResearchRetryNonce(
 /**
  * Leave a waiting/running master in place (it still waits for 3 approved packs).
  * Do not mint another master after one already succeeded — that path is
- * "Regenerate master". Re-queue only when none exists, or every existing row
+ * "Regenerate master". Create a linked retry only when every existing row
  * is failed/cancelled.
  */
 export function shouldEnqueueContentStudioMaster(statuses: string[]): boolean {

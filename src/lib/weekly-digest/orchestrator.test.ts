@@ -183,6 +183,27 @@ describe('Content Studio queueing', () => {
     expect(queuedKeys().some((key) => key.includes(':master'))).toBe(false);
   });
 
+  it('uses a linked retry instead of reopening a failed master with its stable key', async () => {
+    tables.weekly_digest_generation_jobs = {
+      data: [
+        ...featureIds.map((id) => ({
+          job_type: 'research_pack',
+          status: 'queued',
+          input: { revision_item_id: id } as Json,
+        })),
+        { id: 'failed-master-1', job_type: 'editorial_master', status: 'failed', input: {} as Json },
+      ],
+      error: null,
+    };
+
+    const result = await retryWeeklyContentStudio(digestId, revisionId, retryNonce);
+
+    expect(result.queued).toEqual([contentStudioMasterKey({ digestId, revisionId })]);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith('retry_weekly_digest_generation_job', {
+      p_job_id: 'failed-master-1',
+    });
+  });
+
   it('refuses to start after publication begins', async () => {
     tables.weekly_digests = {
       data: { id: digestId, active_revision_id: revisionId, status: 'published' },
