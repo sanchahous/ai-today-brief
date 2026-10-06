@@ -20,6 +20,8 @@ Last updated: 2026-10-06
 attempts і не породжує повторні GitHub Actions запуски після вичерпання ліміту.
 (source: `src/lib/weekly-digest/orchestrator.ts`;
 `supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`)
+Prompt-only visual refresh використовує ту саму політику idempotency для
+`story_image` jobs. (source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
 
 `weekly-editorial-v3` (раніше `-v2`) replaces the old `impact → recency → daily rank`
 sort used for weekly digests. Its purpose is to produce an explainable,

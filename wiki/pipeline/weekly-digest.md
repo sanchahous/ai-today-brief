@@ -24,6 +24,10 @@ job у `queued` і скидав `attempts` у 0, залишаючи ledger з at
 production Supabase live check 2026-10-06; `supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`;
 `src/lib/weekly-digest/orchestrator.ts`)
 
+Той самий захист додано для prompt-only visual refresh: повторний
+`request_key` для `story_image` або `cover` повертає наявну job без скидання
+attempts. (source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
+
 ## Revision Stage 0: carry-forward on the master path (2026-08-29)
 
 Automated `editorial_master` used `create_service_weekly_digest_revision` /

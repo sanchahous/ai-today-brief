@@ -23,6 +23,9 @@ terminal job не скидає лічильник; явний retry створю
 cron. (source: production Supabase live check 2026-10-06;
 `supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`;
 [Actions run #7957](https://github.com/sanchahous/ai-today-brief/actions/runs/37417601227))
+Prompt-only visual refresh також зберігає terminal job при повторному
+`request_key`; для нової спроби потрібен новий запит/linked retry.
+(source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
 
 ## Бренд-знак на PDF і соц-слайдах (2026-10-02)
 

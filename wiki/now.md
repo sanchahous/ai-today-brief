@@ -30,6 +30,8 @@ terminalized як `failed`, cron `weekly_digest_generate` призупинено
 linked retry для admin дії. (source: production Supabase live check 2026-10-06;
 [Actions run #7957](https://github.com/sanchahous/ai-today-brief/actions/runs/37417601227);
 `supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`)
+Суміжний prompt-only visual refresh enqueue теж захищено від reset attempts.
+(source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
 
 <!-- task-status: fragments -->
 

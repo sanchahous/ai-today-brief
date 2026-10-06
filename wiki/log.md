@@ -5770,3 +5770,5 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 2026-10-03: Реалізовано AH-3.3 (2-рівневий header, sticky на 960px, mobile menu) (ATB-24)
 
 2026-10-06: Інцидент weekly GitHub Actions dispatch loop — оновлено `wiki/pipeline/weekly-digest.md`, `wiki/pipeline/weekly-editorial-selection.md`, `wiki/ops/weekly-admin-runbook.md`, `wiki/now.md` та `wiki/index.md`. Джерела: production Supabase live check 2026-10-06, [Actions run #7957](https://github.com/sanchahous/ai-today-brief/actions/runs/37417601227), `supabase/migrations/20261006052110_weekly_generation_idempotent_queue.sql`.
+
+2026-10-06: Додано захист prompt-only visual refresh queue від повторного скидання attempts; оновлено `wiki/pipeline/weekly-digest.md`, `wiki/pipeline/weekly-editorial-selection.md`, `wiki/ops/weekly-admin-runbook.md`, `wiki/now.md` і `wiki/index.md`. (source: `supabase/migrations/20261006053536_weekly_visual_refresh_idempotent_queue.sql`)
