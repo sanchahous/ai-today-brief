@@ -1,12 +1,18 @@
 # After Hours — Tension v3
 
-Summary: обрана власником мова руху для всіх 28 маршрутів прототипу After Hours: дванадцять скінченних жестів інтерфейсу, View Transitions між маршрутами і брендова сцена головної **The Resolve** (3,4 с), яка замінила Editorial Fold.
-Sources: запит власника 2026-09-25 і 2026-09-28; `artifacts/after-hours/tension.js`, `tension.css`, `app.js`, `home.js`, `tokens.json`; `artifacts/after-hours-motion/fold-review.html`; `artifacts/after-hours/qa/qa-v3-final-chromium.json`, `qa-v3-final-xbrowser.json`; browser diagnostic 2026-09-28.
-Last updated: 2026-09-28
+Summary: обрана власником мова руху для всіх публічних маршрутів After Hours, перенесена в production (Фаза 6, PR #432–#434): дванадцять скінченних жестів інтерфейсу, View Transitions між маршрутами і брендова сцена головної The Resolve (3,4 с).
+Sources: запит власника 2026-09-25 і 2026-09-28; `artifacts/after-hours/tension.js`, `tension.css`, `app.js`, `home.js`, `tokens.json`; `artifacts/after-hours-motion/fold-review.html`; `src/lib/motion/`; `src/components/home/brand-stage.tsx`; `src/components/site-header-chrome.tsx`; PR #432, #433, #434; [after-hours-acceptance](../audits/2026-10-05-after-hours-acceptance.md).
+Last updated: 2026-10-06
 
 ---
 
 ## Рішення та результат
+
+> **Статус 2026-10-06 — Перенесено в production:** Tension v3 повністю інтегровано в кодову базу сайту у Фазі 6 епіку:
+> - **AH-6.1 (PR #432):** Motion runtime `src/lib/motion/`, 12 жестів інтерфейсу, ліміт 32 анімацій, повна повага до `prefers-reduced-motion` (інваріант I-9, D13).
+> - **AH-6.2 (PR #433):** Брендова сцена The Resolve на головній (`brand-stage.tsx`, SSR-безпечний SVG, 31 WAAPI-трек) та жест «strum» знака бренду в шапці.
+> - **AH-6.3 (PR #434):** View Transitions між публічними маршрутами з плавним cross-fade та перевіркою відсутності регресій при зміні маршруту.
+> - **Перевірка (AH-7.1, PR #436):** 43 motion E2E-тести в Chromium, Firefox та WebKit підтвердили відсутність нескінченних анімацій, дотримання кадрового бюджету та коректний fallback. (source: [acceptance audit](../audits/2026-10-05-after-hours-acceptance.md))
 
 Власник обрав **01 · Tension** (2026-09-25) замість початкової рекомендації Quiet Signal з [першого дослідження](after-hours-motion.md). 2026-09-28 власник оцінив рух як «слабо представлений і простуватий», а брендову анімацію головної — як «просто розгинання», недостатнє для якісного бренду, і попросив додати унікальності та преміальності. (source: запит власника 2026-09-25; запит власника 2026-09-28)
 
@@ -75,7 +81,13 @@ Last updated: 2026-09-28
 
 ## Передача в production
 
-Масштабовано **дизайн-концепт і прототип**. Перенесення: токени тривалостей/easing — у Tailwind `@theme`; малий client-модуль для observers, WAAPI і сцени; SSR-розмітка знака лишається статичною й читабельною без JS. Hash-маршрути, діагностичний атлас і frame probe у продукт не переносити. Порядок — після стабільних станів компонентів, як у [аудиті](../audits/2026-09-26-design-system-gap-plan.md) (Milestone 4). (source: scope запиту власника; design handoff proposal)
+**Виконано (Фаза 6 епіку).**
+- Токени тривалостей/easing перенесено в `tokens.ts` та Tailwind `@theme` (AH-1.6, AH-6.1).
+- Клієнтський модуль жестів та observers реалізовано в `src/lib/motion/` (AH-6.1).
+- SSR-розмітка The Resolve впроваджена в `src/components/home/brand-stage.tsx` (AH-6.2).
+- View Transitions між маршрутами додано в `src/lib/motion/view-transitions.ts` та root provider (AH-6.3).
+- Прототипні hash-маршрути, діагностичний атлас і frame probe у продукт не переносилися, як і вимагалося контрактом.
+(source: PR #432, #433, #434; [after-hours-redesign-epic](after-hours-redesign-epic.md))
 
 ## Історія
 
