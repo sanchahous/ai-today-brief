@@ -228,12 +228,12 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
         <div className="mt-10 grid gap-10 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-14">
           <aside className="lg:sticky lg:top-[calc(var(--header-h)+2rem)] lg:self-start">
             <WeeklyToc items={digest.items} lang={lang} />
-            <div className="border-border-soft mt-7 border-t pt-6">
+            <div className="border-line-soft mt-7 border-t pt-6">
               {digest.hasPdf ? (
                 <a
                   href={`/${lang}/weekly/${digest.slug}/download`}
                   data-digest-event="pdf_download"
-                  className="border-border text-text hover:border-accent hover:text-accent rounded-pill flex w-full items-center justify-center border px-4 py-2.5 text-center text-sm font-semibold no-underline transition-colors"
+                  className="border-line text-text hover:border-accent hover:text-accent rounded-pill flex w-full items-center justify-center border px-4 py-2.5 text-center text-sm font-semibold no-underline transition-colors"
                 >
                   {copy.downloadPdf}
                 </a>
@@ -252,7 +252,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
             {digest.editorNote ? (
               <section
                 aria-labelledby="editor-note-title"
-                className="border-border bg-surface rounded-card mb-12 border p-6 sm:p-8"
+                className="border-line bg-surface rounded-card mb-12 border p-6 sm:p-8"
               >
                 <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
                   {copy.editorNote}
@@ -299,7 +299,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
                   {digest.keyTakeaways.map((takeaway, index) => (
                     <li
                       key={`${index}-${takeaway}`}
-                      className="border-border bg-surface rounded-card grid grid-cols-[2rem_minmax(0,1fr)] gap-3 border p-4"
+                      className="border-line bg-surface rounded-card grid grid-cols-[2rem_minmax(0,1fr)] gap-3 border p-4"
                     >
                       <span
                         aria-hidden
@@ -329,13 +329,13 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
                   <table className="w-full min-w-[28rem] text-left text-sm">
                     <thead className="text-faint text-xs tracking-wide uppercase">
                       <tr>
-                        <th className="border-border-soft border-b py-2 pr-3">
+                        <th className="border-line-soft border-b py-2 pr-3">
                           {lang === 'uk' ? 'Мітка' : 'Label'}
                         </th>
-                        <th className="border-border-soft border-b py-2 pr-3">
+                        <th className="border-line-soft border-b py-2 pr-3">
                           {lang === 'uk' ? 'Значення' : 'Value'}
                         </th>
-                        <th className="border-border-soft border-b py-2">
+                        <th className="border-line-soft border-b py-2">
                           {lang === 'uk' ? 'Історія' : 'Story'}
                         </th>
                       </tr>
@@ -343,11 +343,11 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
                     <tbody>
                       {metrics.map((row) => (
                         <tr key={`${row.value}:${row.storyTitle}`}>
-                          <td className="border-border-soft border-b py-2 pr-3">{row.label}</td>
-                          <td className="border-border-soft border-b py-2 pr-3 font-semibold">
+                          <td className="border-line-soft border-b py-2 pr-3">{row.label}</td>
+                          <td className="border-line-soft border-b py-2 pr-3 font-semibold">
                             {row.value}
                           </td>
-                          <td className="border-border-soft text-muted border-b py-2">
+                          <td className="border-line-soft text-muted border-b py-2">
                             {row.storyTitle}
                           </td>
                         </tr>
@@ -380,7 +380,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
                   {faq.map((entry) => (
                     <div
                       key={entry.question}
-                      className="border-border bg-surface rounded-card border p-4"
+                      className="border-line bg-surface rounded-card border p-4"
                     >
                       <dt className="font-semibold">{entry.question}</dt>
                       <dd className="text-muted mt-2 leading-7">{entry.answer}</dd>
@@ -397,7 +397,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               {digest.previous ? (
                 <Link
                   href={`/${lang}/weekly/${digest.previous.slug}`}
-                  className="border-border bg-surface hover:border-accent rounded-card border p-4 no-underline transition-colors"
+                  className="border-line bg-surface hover:border-accent rounded-card border p-4 no-underline transition-colors"
                 >
                   <span className="text-faint block text-xs uppercase">← {copy.previous}</span>
                   <span className="text-text mt-2 block font-serif font-semibold">
@@ -410,7 +410,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               {digest.next ? (
                 <Link
                   href={`/${lang}/weekly/${digest.next.slug}`}
-                  className="border-border bg-surface hover:border-accent rounded-card border p-4 text-right no-underline transition-colors"
+                  className="border-line bg-surface hover:border-accent rounded-card border p-4 text-right no-underline transition-colors"
                 >
                   <span className="text-faint block text-xs uppercase">{copy.next} →</span>
                   <span className="text-text mt-2 block font-serif font-semibold">
@@ -420,7 +420,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               ) : null}
             </nav>
 
-            <section className="border-border rounded-card mt-12 border p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
+            <section className="border-line rounded-card mt-12 border p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
               <div>
                 <h2 className="text-xl">
                   {lang === 'uk'

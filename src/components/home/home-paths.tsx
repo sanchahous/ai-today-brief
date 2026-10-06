@@ -38,7 +38,7 @@ export function HomePaths({ lang, conceptCount }: { lang: Lang; conceptCount: nu
           <Link
             key={card.href}
             href={card.href}
-            className="border-border bg-surface hover:border-accent rounded-card flex min-h-[var(--touch-target-min)] flex-col gap-3 border p-5 no-underline"
+            className="border-line bg-surface hover:border-accent rounded-card flex min-h-[var(--touch-target-min)] flex-col gap-3 border p-5 no-underline"
           >
             <span className="text-faint font-serif text-xl" aria-hidden>
               {String(index + 1).padStart(2, '0')}

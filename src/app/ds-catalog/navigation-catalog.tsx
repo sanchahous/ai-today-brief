@@ -56,7 +56,7 @@ export function NavigationCatalog() {
       id="navigation-catalog"
       data-testid="navigation-catalog"
       aria-labelledby="navigation-catalog-title"
-      className="border-border border-t py-8"
+      className="border-line border-t py-8"
       lang={lang}
     >
       <h2 id="navigation-catalog-title" className="mb-4 font-serif text-xl">
@@ -69,7 +69,7 @@ export function NavigationCatalog() {
           type="button"
           onClick={() => setLang('en')}
           className={`min-h-[44px] rounded-full px-4 text-sm font-medium transition ${
-            lang === 'en' ? 'bg-text text-bg font-bold' : 'border-border text-muted border'
+            lang === 'en' ? 'bg-text text-bg font-bold' : 'border-line text-muted border'
           }`}
         >
           EN
@@ -78,7 +78,7 @@ export function NavigationCatalog() {
           type="button"
           onClick={() => setLang('uk')}
           className={`min-h-[44px] rounded-full px-4 text-sm font-medium transition ${
-            lang === 'uk' ? 'bg-text text-bg font-bold' : 'border-border text-muted border'
+            lang === 'uk' ? 'bg-text text-bg font-bold' : 'border-line text-muted border'
           }`}
         >
           UK

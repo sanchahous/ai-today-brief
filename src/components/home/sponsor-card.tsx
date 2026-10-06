@@ -6,6 +6,7 @@ import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import { trackEvent } from '@/lib/analytics-client';
 import { ArrowRight } from '@/components/icons';
+import catStyles from '@/components/category-presentation.module.css';
 
 /**
  * "Open ad slot" house unit. Until the `sponsors` table carries a real paid
@@ -30,7 +31,7 @@ export function SponsorCard({
       <aside
         data-testid="sponsor-card"
         aria-labelledby="sponsor-title"
-        className="border-border bg-surface mx-auto grid w-full max-w-[1160px] gap-4 border-y px-6 py-8 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center"
+        className="border-line bg-surface mx-auto grid w-full max-w-[1160px] gap-4 border-y px-6 py-8 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center"
       >
         <p className="text-accent eyebrow">{t.adSlotLabel}</p>
         <div>
@@ -48,7 +49,7 @@ export function SponsorCard({
         <Link
           href={`/${lang}/advertise`}
           onClick={() => trackEvent('ad_slot_click', { placement })}
-          className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center gap-1.5 border px-4 py-2 text-sm font-semibold no-underline"
+          className="rounded-pill border-line text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center gap-1.5 border px-4 py-2 text-sm font-semibold no-underline"
         >
           {t.adSlotCta}
           <ArrowRight size={15} />
@@ -60,12 +61,12 @@ export function SponsorCard({
   return (
     <article
       data-testid="sponsor-card"
-      className="cat-header rounded-card relative border p-5"
+      className={`${catStyles.header} rounded-card relative border p-5`}
       style={style}
     >
       <div className="mb-3">
         <span
-          className="cat-badge rounded-pill px-2 py-0.5 text-2xs font-bold tracking-[0.1em] uppercase"
+          className={`${catStyles.badge} rounded-pill px-2 py-0.5 text-2xs font-bold tracking-[0.1em] uppercase`}
           style={style}
         >
           {t.adSlotLabel}
@@ -78,7 +79,7 @@ export function SponsorCard({
       <Link
         href={`/${lang}/advertise`}
         onClick={() => trackEvent('ad_slot_click', { placement })}
-        className="cat-chip rounded-pill inline-flex min-h-[var(--touch-target-min)] items-center gap-1.5 border px-4 py-2 text-sm font-semibold no-underline transition-colors"
+        className={`${catStyles.chip} rounded-pill inline-flex min-h-[var(--touch-target-min)] items-center gap-1.5 border px-4 py-2 text-sm font-semibold no-underline transition-colors`}
         style={style}
       >
         {t.adSlotCta}

@@ -29,7 +29,7 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
       data-weekly-story
       data-story-id={item.id}
       aria-labelledby={`story-${item.rank}-title`}
-      className="border-border-soft scroll-mt-[calc(var(--header-h)+2rem)] border-t pt-10"
+      className="border-line-soft scroll-mt-[calc(var(--header-h)+2rem)] border-t pt-10"
     >
       <div className="grid gap-4 sm:grid-cols-[3rem_minmax(0,1fr)]">
         <span aria-hidden className="text-accent font-serif text-4xl leading-none font-semibold">
@@ -56,7 +56,7 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
       </div>
 
       {item.image ? (
-        <figure className="border-border bg-surface rounded-card relative mt-7 aspect-video overflow-hidden border">
+        <figure className="border-line bg-surface rounded-card relative mt-7 aspect-video overflow-hidden border">
           <Image
             src={item.image.url}
             alt={item.image.alt}
@@ -97,7 +97,7 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
       ) : null}
 
       {item.editorsView ? (
-        <div className="border-border bg-surface/60 rounded-card mt-6 border border-dashed p-5">
+        <div className="border-line bg-surface/60 rounded-card mt-6 border border-dashed p-5">
           <p className="text-faint text-xs font-bold tracking-[0.12em] uppercase">
             {copy.editorsView}
           </p>
@@ -107,7 +107,7 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
       ) : null}
 
       {item.discussionQuestion ? (
-        <p className="border-border mt-6 border-t pt-6 text-lg leading-8 font-medium italic">
+        <p className="border-line mt-6 border-t pt-6 text-lg leading-8 font-medium italic">
           <span aria-hidden className="text-accent not-italic">
             {copy.discuss}:{' '}
           </span>
@@ -140,7 +140,7 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
 
 function Insight({ title, body }: { title: string; body: string }) {
   return (
-    <div className="border-border bg-surface rounded-card border p-5">
+    <div className="border-line bg-surface rounded-card border p-5">
       <h3 className="text-accent text-sm font-bold">{title}</h3>
       <p className="text-muted mt-2 text-sm leading-7">{body}</p>
     </div>

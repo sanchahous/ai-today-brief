@@ -10,12 +10,6 @@
     {
       "path": "src/app/globals.css",
       "kind": "color",
-      "value": "#141414",
-      "count": 1
-    },
-    {
-      "path": "src/app/globals.css",
-      "kind": "color",
       "value": "#1f231f",
       "count": 1
     },
@@ -173,24 +167,6 @@
       "path": "src/components/cookie-consent.tsx",
       "kind": "z-index",
       "value": "z-[100]",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/video-teaser.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.12)",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/video-teaser.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.16)",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/video-teaser.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.4)",
       "count": 1
     },
     {

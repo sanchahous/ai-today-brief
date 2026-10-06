@@ -22,7 +22,7 @@ function useDailyRead(): ReadState {
 }
 
 const controlClass =
-  'inline-flex min-h-[var(--touch-target-min)] items-center gap-2 rounded-pill border border-border bg-surface px-4 text-sm font-semibold text-text transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]';
+  'inline-flex min-h-[var(--touch-target-min)] items-center gap-2 rounded-pill border border-line bg-surface px-4 text-sm font-semibold text-text transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]';
 
 /**
  * Page-local read state. Nothing is stored or sent: a reload starts unread,
@@ -134,7 +134,7 @@ export function DailyIssueToc({
   return (
     <nav
       aria-label={t.briefItemsLabel}
-      className="rounded-card border-border bg-surface border p-4"
+      className="rounded-card border-line bg-surface border p-4"
     >
       <p className="text-text m-0 mb-3 text-sm font-semibold">
         {t.briefItemsLabel} · {items.length}
@@ -168,7 +168,7 @@ export function DailyBriefFinale() {
   return (
     <section aria-live="polite" aria-atomic="true" className="mt-10" data-testid="daily-complete">
       {complete ? (
-        <div className="rounded-card border-border bg-surface border px-6 py-8 text-center">
+        <div className="rounded-card border-line bg-surface border px-6 py-8 text-center">
           <h2 className="font-serif text-text m-0 text-2xl">{t.briefComplete}</h2>
         </div>
       ) : null}

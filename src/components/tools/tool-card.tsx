@@ -86,14 +86,14 @@ export function ToolCard({ tool, lang, index = 0 }: ToolCardProps) {
 
   return (
     <article
-      className="instrument relative flex flex-col justify-between gap-4 p-6 rounded-2xl border border-border bg-surface shadow-sm transition hover:border-accent/60"
+      className="instrument relative flex flex-col justify-between gap-4 p-6 rounded-2xl border border-line bg-surface shadow-sm transition hover:border-accent/60"
       aria-labelledby={`tool-${tool.slug}`}
     >
       <header className="flex items-center justify-between">
         <span className="instrument-no font-display text-4xl leading-none text-muted" aria-hidden="true">
           {indexFormatted}
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-mono font-semibold tracking-wider uppercase text-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-0.5 text-xs font-mono font-semibold tracking-wider uppercase text-foreground">
           <span className="h-2 w-2 rounded-full bg-signal" aria-hidden="true" />
           {tool.status === 'live' ? t.toolsPage.liveStatus : t.toolsPage.comingSoonStatus}
         </span>
@@ -108,11 +108,11 @@ export function ToolCard({ tool, lang, index = 0 }: ToolCardProps) {
         </p>
       </div>
 
-      <div className="instrument-preview min-h-[132px] p-4 rounded-xl border border-border bg-stage text-[var(--art-text)] flex items-center">
+      <div className="instrument-preview min-h-[132px] p-4 rounded-xl border border-line bg-stage text-[var(--art-text)] flex items-center">
         <ToolPreview slug={tool.slug} lang={lang} />
       </div>
 
-      <dl className="instrument-facts grid gap-1.5 pt-3 border-t border-border mt-auto mb-0">
+      <dl className="instrument-facts grid gap-1.5 pt-3 border-t border-line mt-auto mb-0">
         <div className="flex justify-between gap-3 text-sm">
           <dt className="text-muted">{t.toolsPage.outputLabel}</dt>
           <dd className="text-foreground font-medium text-right m-0">{tool.output[lang]}</dd>

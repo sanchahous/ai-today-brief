@@ -59,7 +59,7 @@ export function AccessiblePagination({
     <nav
       data-testid="pagination"
       aria-label={ariaLabel}
-      className={`border-border mt-8 flex flex-wrap items-center justify-center gap-2 border-t pt-6 ${className}`}
+      className={`border-line mt-8 flex flex-wrap items-center justify-center gap-2 border-t pt-6 ${className}`}
     >
       {/* Previous Button */}
       {page > 1 ? (
@@ -68,7 +68,7 @@ export function AccessiblePagination({
           onClick={(e) => handleClick(e, page - 1)}
           aria-label={prevLabel}
           rel="prev"
-          className="border-border text-muted hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none"
+          className="border-line text-muted hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none"
         >
           <ArrowRight size={14} className="rotate-180" />
           <span className="hidden sm:inline">{prevLabel}</span>
@@ -76,7 +76,7 @@ export function AccessiblePagination({
       ) : (
         <span
           aria-disabled="true"
-          className="border-border text-faint inline-flex min-h-[44px] min-w-[44px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium opacity-40 select-none"
+          className="border-line text-faint inline-flex min-h-[44px] min-w-[44px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium opacity-40 select-none"
         >
           <ArrowRight size={14} className="rotate-180" />
           <span className="hidden sm:inline">{prevLabel}</span>
@@ -102,7 +102,7 @@ export function AccessiblePagination({
             className={`focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none ${
               p === page
                 ? 'border-text bg-text text-bg font-bold shadow-xs'
-                : 'border-border text-muted hover:border-accent hover:text-accent'
+                : 'border-line text-muted hover:border-accent hover:text-accent'
             }`}
           >
             {p}
@@ -117,7 +117,7 @@ export function AccessiblePagination({
           onClick={(e) => handleClick(e, page + 1)}
           aria-label={nextLabel}
           rel="next"
-          className="border-border text-muted hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none"
+          className="border-line text-muted hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-[var(--focus)] inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium transition select-none outline-none"
         >
           <span className="hidden sm:inline">{nextLabel}</span>
           <ArrowRight size={14} />
@@ -125,7 +125,7 @@ export function AccessiblePagination({
       ) : (
         <span
           aria-disabled="true"
-          className="border-border text-faint inline-flex min-h-[44px] min-w-[44px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium opacity-40 select-none"
+          className="border-line text-faint inline-flex min-h-[44px] min-w-[44px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border px-3.5 py-2 font-mono text-sm font-medium opacity-40 select-none"
         >
           <span className="hidden sm:inline">{nextLabel}</span>
           <ArrowRight size={14} />

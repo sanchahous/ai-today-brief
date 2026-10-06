@@ -4,7 +4,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { CategoryGlyph } from './icons';
 import { CategoryBadge } from './ui/category-badge';
-import { CategoryThumb } from './category-thumb';
 import { CategoryBanner } from './category-banner';
 import { FilterChip } from './ui/chip';
 import { categoryMeta } from '@/lib/category-meta';
@@ -32,7 +31,6 @@ describe('category presentation', () => {
     const color = '#47E4D3';
     const elements = [
       createElement(CategoryBadge, { slug, name: 'Tools', color }),
-      createElement(CategoryThumb, { slug, name: 'Tools', color, icon: 'tools' }),
       createElement(FilterChip, { categorySlug: slug, label: 'Tools', categoryColor: color }),
     ];
     for (const element of elements) {

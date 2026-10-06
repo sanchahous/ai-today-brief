@@ -4,7 +4,7 @@ export function Takeaways({ lang, items }: { lang: Lang; items: string[] }) {
   const title = lang === 'uk' ? 'Головне' : 'Key Takeaways';
   
   return (
-    <div className="my-8 rounded-2xl bg-surface-2 p-5 sm:p-7">
+    <div className="my-8 rounded-2xl bg-raised p-5 sm:p-7">
       <h3 className="mb-4 font-serif text-xl font-semibold">{title}</h3>
       <ol className="m-0 list-none space-y-4 p-0">
         {items.map((item, i) => (

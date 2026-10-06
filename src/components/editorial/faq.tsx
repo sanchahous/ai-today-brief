@@ -14,7 +14,7 @@ export function Faq({ lang, title, items }: { lang: Lang; title?: string; items:
       <h3 className="mb-4 font-serif text-xl font-semibold">{heading}</h3>
       <div className="flex flex-col gap-3">
         {items.map((item) => (
-          <details key={item.id} className="group rounded-xl border border-border bg-surface [&_summary::-webkit-details-marker]:hidden">
+          <details key={item.id} className="group rounded-xl border border-line bg-surface [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex cursor-pointer items-center justify-between p-4 font-medium text-text outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
               {item.question}
               <span className="ml-4 shrink-0 transition-transform group-open:rotate-180">

@@ -45,14 +45,14 @@ export function FormatCompareTable({ lang, titleId }: { lang: Lang; titleId: str
         {t.title}
       </h2>
       <div
-        className="border-border mt-6 overflow-x-auto rounded-card border"
+        className="border-line mt-6 overflow-x-auto rounded-card border"
         role="region"
         aria-labelledby={titleId}
         tabIndex={0}
       >
         <table className="min-w-full border-collapse text-left text-sm">
           <thead>
-            <tr className="border-border border-b">
+            <tr className="border-line border-b">
               <th scope="col" className="sr-only">{t.attribute}</th>
               <th scope="col" className="px-4 py-3 font-semibold">{t.dailyHead}</th>
               <th scope="col" className="px-4 py-3 font-semibold">{t.weeklyHead}</th>
@@ -60,7 +60,7 @@ export function FormatCompareTable({ lang, titleId }: { lang: Lang; titleId: str
           </thead>
           <tbody>
             {t.rows.map(([label, daily, weekly]) => (
-              <tr key={label} className="border-border border-b last:border-b-0">
+              <tr key={label} className="border-line border-b last:border-b-0">
                 <th scope="row" className="text-muted px-4 py-3 align-top font-medium whitespace-nowrap">
                   {label}
                 </th>

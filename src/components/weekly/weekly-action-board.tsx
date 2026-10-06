@@ -46,7 +46,7 @@ export function WeeklyActionBoard({
         {actions.map((item, index) => (
           <li
             key={item.id}
-            className="border-border-soft grid grid-cols-[2rem_minmax(0,1fr)] gap-4 border-t pt-5 first:border-t-0 first:pt-0"
+            className="border-line-soft grid grid-cols-[2rem_minmax(0,1fr)] gap-4 border-t pt-5 first:border-t-0 first:pt-0"
           >
             <span
               aria-hidden

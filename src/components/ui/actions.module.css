@@ -54,7 +54,7 @@
   .control:not(:disabled):hover {
     color: var(--accent);
     border-color: var(--accent);
-    background: var(--surface-2);
+    background: var(--raised);
   }
   .control[data-variant='primary']:not(:disabled):hover,
   .pill[aria-pressed='true']:not(:disabled):hover {

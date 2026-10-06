@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 export type NoticeTone = 'info' | 'warning' | 'error' | 'success';
 
 const TONE_CLASS: Record<NoticeTone, string> = {
-  info: 'border-border text-accent',
+  info: 'border-line text-accent',
   warning: 'border-warning text-warning',
   error: 'border-error text-error',
   success: 'border-success text-success',

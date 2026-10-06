@@ -50,7 +50,7 @@ export function Tabs({ tabs, ariaLabel, defaultTabId, activeTabId, onTabChange, 
         role="tablist"
         aria-label={ariaLabel}
         onKeyDown={onKeyDown}
-        className="border-border flex gap-1 overflow-x-auto border-b"
+        className="border-line flex gap-1 overflow-x-auto border-b"
       >
         {tabs.map((tab, i) => {
           const selected = tab.id === active;

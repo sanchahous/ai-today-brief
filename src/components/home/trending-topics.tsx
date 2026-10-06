@@ -29,7 +29,7 @@ export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingT
         </div>
         <Link
           href={`/${lang}/news`}
-          className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-4 py-2 text-sm font-semibold no-underline"
+          className="rounded-pill border-line text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-4 py-2 text-sm font-semibold no-underline"
         >
           {t.weekCta}
           <ArrowRight size={16} />

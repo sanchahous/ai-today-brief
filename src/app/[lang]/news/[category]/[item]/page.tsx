@@ -226,7 +226,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
 
         <div className="max-w-reading mx-auto mb-8">
           {heroImage ? (
-            <figure className="border-border bg-surface relative m-0 aspect-video overflow-hidden rounded-xl border">
+            <figure className="border-line bg-surface relative m-0 aspect-video overflow-hidden rounded-xl border">
               <Image
                 src={heroImage}
                 alt={detail.title}
@@ -276,7 +276,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                 href={detail.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-card border-border bg-surface text-text hover:border-accent mt-6 inline-flex items-center gap-2 border px-3.5 py-2.5 text-[0.88rem] no-underline transition"
+                className="rounded-card border-line bg-surface text-text hover:border-accent mt-6 inline-flex items-center gap-2 border px-3.5 py-2.5 text-[0.88rem] no-underline transition"
               >
                 {t.itemSource}: <strong>{detail.sourceName ?? t.readOriginal}</strong>
                 <ExternalLinkIcon size={14} />
@@ -291,7 +291,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                 {adjacent.prev ? (
                   <Link
                     href={adjacent.prev.href}
-                    className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 no-underline transition"
+                    className="rounded-card border-line bg-surface hover:border-accent block border p-3.5 no-underline transition"
                   >
                     <span className="text-faint text-2xs mb-1 block tracking-[0.06em] uppercase">
                       ← {t.prevStory}
@@ -306,7 +306,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                 {adjacent.next && (
                   <Link
                     href={adjacent.next.href}
-                    className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 text-right no-underline transition"
+                    className="rounded-card border-line bg-surface hover:border-accent block border p-3.5 text-right no-underline transition"
                   >
                     <span className="text-faint text-2xs mb-1 block tracking-[0.06em] uppercase">
                       {t.nextStory} →
@@ -332,7 +332,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
               <li key={story.id}>
                 <Link
                   href={story.href}
-                  className="rounded-card border-border bg-surface hover:border-accent flex items-center gap-3 border p-3.5 no-underline transition"
+                  className="rounded-card border-line bg-surface hover:border-accent flex items-center gap-3 border p-3.5 no-underline transition"
                 >
                   <CategoryBadge
                     slug={story.categorySlug}

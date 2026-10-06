@@ -3,7 +3,7 @@
 /*
  * AI Today Brief — design tokens (ported from the prototype).
  * `@theme inline` registers brand utilities (bg-bg, bg-surface, text-accent,
- * border-border, font-serif, rounded-card, …) that resolve to the CSS variables
+ * border-line, font-serif, rounded-card, …) that resolve to the CSS variables
  * below — so a light theme can swap at runtime by toggling `.theme-light`.
  *
  * Fonts ship via next/font/local from OFL subsets, with no outbound font CDN requests.
@@ -26,11 +26,10 @@
   --text-5xl: clamp(2.625rem, 1.8rem + 3.8vw, 4.5rem);
 
   --color-bg: var(--bg);
-  --color-bg-soft: var(--bg-soft);
+  --color-bg-deep: var(--bg-deep);
   --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-border: var(--border);
-  --color-border-soft: var(--border-soft);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
@@ -71,10 +70,14 @@
 /*
  * D5 breakpoints (prototype values, rem so they follow the reader's font size). Tailwind builds
  * `min-width` variants from these names (`tablet:` = 60rem; the prototype's max-width queries are
- * `max-tablet:`). Default sm / md / lg / xl are deliberately NOT redefined until AH-7.3. Header
+ * `max-tablet:`). Default sm / md / lg / xl align with D5 from tokens 3.0.0. Header
  * chrome and the news archive switch at `tablet` (AH-3.3); remaining discovery templates move in AH-4.3.
  */
 @theme {
+  --breakpoint-sm: 25rem;
+  --breakpoint-md: 47.5rem;
+  --breakpoint-lg: 60rem;
+  --breakpoint-xl: 80rem;
   --breakpoint-compact: 23.75rem;
   --breakpoint-narrow: 25rem;
   --breakpoint-phone: 47.5rem;
@@ -85,7 +88,7 @@
 }
 
 /*
- * Semantic palette — After Hours v2.1.0 (mirror of src/lib/design-system/tokens.ts).
+ * Semantic palette — After Hours v3.0.0 (mirror of src/lib/design-system/tokens.ts).
  * Do not edit values here alone: `npm run tokens:check` fails on drift, missing Day roles,
  * contrast below WCAG AA, or any font size below the 12px floor.
  */
@@ -108,14 +111,13 @@
   --measure: 68ch;
   --header-h: 76px;
   --bg: #171918;
-  --bg-soft: #131514;
+  --bg-deep: #131514;
   --stage: #0e100f;
   --surface: #1f2321;
-  --surface-2: #282d29;
   --raised: #282d29;
   --overlay: #323832;
-  --border: #3b413c;
-  --border-soft: #2d332f;
+  --line: #3b413c;
+  --line-soft: #2d332f;
   --line-strong: #737a73;
   --text: #f0e9dc;
   --muted: #b9b7ac;
@@ -220,14 +222,13 @@
 html[data-theme='day'] {
   color-scheme: light;
   --bg: #efe8da;
-  --bg-soft: #e6ddcc;
+  --bg-deep: #e6ddcc;
   --stage: #151716;
   --surface: #f7f2e8;
-  --surface-2: #e6ddcc;
   --raised: #fdfaf4;
   --overlay: #e6ddcc;
-  --border: #d6cebf;
-  --border-soft: #e2dacb;
+  --line: #d6cebf;
+  --line-soft: #e2dacb;
   --line-strong: #8c8577;
   --text: #1d211d;
   --muted: #4d5148;
@@ -771,35 +772,7 @@ html[data-tension-motion='off']::view-transition-new(*) {
   }
 }
 
-/* ── gentle pulse for the unused video teaser badge ───────────────────────── */
-.pulse {
-  animation: soft-pulse 2.4s ease-in-out infinite;
-}
-@keyframes soft-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
-
 /* ── news archive layout (ported from prototype) ─────────────────────────── */
-.card-hover {
-  transition:
-    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .card-hover:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-pop);
-  }
-}
-
-.elevation-card,
 .shadow-1 {
   box-shadow: var(--shadow-1);
 }
@@ -812,61 +785,6 @@ html[data-tension-motion='off']::view-transition-new(*) {
   box-shadow: var(--shadow-pop);
 }
 
-/* Theme category tokens; opaque surface tints keep nested backgrounds above AA. */
-.cat-fg {
-  color: var(--cat-color);
-}
-
-.cat-badge {
-  color: var(--cat-color);
-  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--cat-color) 34%, transparent);
-}
-
-.cat-thumb {
-  color: var(--cat-color);
-  background: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
-    var(--surface)
-  );
-  border: 1px solid color-mix(in srgb, var(--cat-color) 27%, transparent);
-}
-
-.cat-chip {
-  color: var(--cat-color);
-  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--cat-color) 33%, transparent);
-}
-
-.cat-band {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
-    var(--surface)
-  );
-  border-bottom: 1px solid color-mix(in srgb, var(--cat-color) 6%, var(--surface));
-}
-
-.cat-icon-box {
-  color: var(--cat-color);
-  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--cat-color) 33%, transparent);
-}
-
-.cat-header {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
-    var(--surface)
-  );
-  border: 1px solid color-mix(in srgb, var(--cat-color) 27%, transparent);
-}
-
-.cat-dot {
-  background: var(--cat-color);
-}
-
 .filter-row {
   border-radius: 8px;
   padding: 0.2rem 0.4rem;
@@ -874,7 +792,7 @@ html[data-tension-motion='off']::view-transition-new(*) {
   transition: background-color 0.2s ease;
 }
 .filter-row:hover {
-  background: var(--surface-2);
+  background: var(--raised);
 }
 
 .sidebar-drawer-touch .filter-row {
@@ -885,13 +803,13 @@ html[data-tension-motion='off']::view-transition-new(*) {
 
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--line) transparent;
 }
 .sidebar-scroll::-webkit-scrollbar {
   width: 6px;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--line);
   border-radius: 999px;
 }
 .sidebar-scroll::-webkit-scrollbar-track {
@@ -918,11 +836,6 @@ html[data-tension-motion='off']::view-transition-new(*) {
   }
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .theme-light .card-hover:hover {
-    border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
-  }
-}
 .news-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -974,7 +887,7 @@ html[data-tension-motion='off']::view-transition-new(*) {
   min-width: 44px;
   padding: 0.75rem 1rem;
   background: var(--accent);
-  color: #141414;
+  color: var(--on-accent);
   font-weight: 600;
   font-size: 0.85rem;
   border-radius: 0 0 8px 0;
@@ -996,24 +909,6 @@ html[data-tension-motion='off']::view-transition-new(*) {
   border: 0;
 }
 
-.not-found-page {
-  display: grid;
-  justify-items: start;
-  gap: 0;
-}
-
-.nf-code {
-  color: var(--line-strong, var(--border));
-  font-family: var(--font-display), serif;
-  font-size: clamp(6rem, 4rem + 8vw, 11rem);
-  line-height: 0.8;
-  letter-spacing: -0.06em;
-  margin: 0;
-}
-.nf-code span {
-  color: var(--signal);
-}
-
 .not-found-search {
   display: flex;
   align-items: center;
@@ -1022,7 +917,7 @@ html[data-tension-motion='off']::view-transition-new(*) {
   max-width: 36rem;
   margin-top: 2rem;
   padding: 0.5rem 0.5rem 0.5rem 1rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--surface);
 }
@@ -1035,35 +930,12 @@ html[data-tension-motion='off']::view-transition-new(*) {
   max-width: 42rem;
   min-height: var(--touch-target-min, 44px);
   padding: 0.5rem 0.5rem 0.5rem 1rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--surface);
 }
 .news-search-form input[type='search'] {
   min-height: var(--touch-target-min, 44px);
-}
-
-.nf-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.nf-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch-floor, 44px);
-  padding: 0 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  color: var(--text);
-  font-size: var(--text-sm, 0.875rem);
-  font-weight: 600;
-  text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.nf-link:hover {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 /* Route view transitions (AH-6.3): opacity cross-fade only — no shared-element morph. */
@@ -1122,17 +994,8 @@ html[data-tension-motion='off']::view-transition-new(*) {
     outline: var(--focus-width) solid Highlight;
     outline-offset: var(--focus-offset);
   }
-  :where(.elevation-card, .shadow-1, .shadow-2, .shadow-pop) {
+  :where(.shadow-1, .shadow-2, .shadow-pop) {
     border: 1px solid CanvasText;
   }
 }
 
-/* Newsletter card wash — tuned per theme so the gold accent reads on both dark and light. */
-.newsletter-card-bg {
-  background:
-    radial-gradient(120% 160% at 0% 0%, rgb(var(--accent-rgb) / 0.14), transparent 55%), var(--surface);
-}
-.theme-light .newsletter-card-bg {
-  background:
-    radial-gradient(120% 160% at 0% 0%, rgb(var(--accent-rgb) / 0.1), transparent 55%), var(--surface);
-}

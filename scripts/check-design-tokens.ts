@@ -57,7 +57,7 @@ const TEXT_MIN = 4.5;
 const UI_MIN = 3;
 
 /** Every text role must reach 4.5:1 on every surface it can sit on; UI strokes need 3:1. */
-const SURFACES: Role[] = ['bg', 'bgSoft', 'surface', 'surface2', 'raised'];
+const SURFACES: Role[] = ['bg', 'bgDeep', 'surface', 'raised', 'overlay'];
 const TEXT_ROLES: Role[] = ['text', 'muted', 'faint', 'accent', 'signal', 'claret', 'error', 'success', 'warning'];
 const CATEGORY_ROLES = CATEGORY_TOKEN_KEYS.map((key) => `cat${key[0].toUpperCase()}${key.slice(1)}` as Role);
 const ART_ROLES = [

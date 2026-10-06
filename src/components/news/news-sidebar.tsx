@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Pill } from '@/components/ui/pill';
 import { NewsletterBand } from '@/components/home/newsletter-band';
+import catStyles from '@/components/category-presentation.module.css';
 
 export type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
 import type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
@@ -143,7 +144,7 @@ function SidebarControls({
                     style={{ accentColor: color } as CSSProperties}
                   />
                   <span
-                    className="cat-fg inline-flex shrink-0"
+                    className={`${catStyles.fg} inline-flex shrink-0`}
                     style={{ '--cat-color': color } as CSSProperties}
                   >
                     <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.6} />
@@ -273,7 +274,7 @@ export function NewsSidebar({
         aria-label={t.filters}
       >
         <SidebarControls {...controls} />
-        <div className="border-border mt-2 border-t pt-5">
+        <div className="border-line mt-2 border-t pt-5">
           <NewsletterBand
             lang={controls.lang}
             embedded
@@ -292,7 +293,7 @@ export function NewsSidebar({
           placement="fullscreen"
           panelTestId="news-filters-drawer"
           backdropTestId="news-filters-backdrop"
-          panelClassName="sidebar-drawer-touch border-border p-4 sm:p-5"
+          panelClassName="sidebar-drawer-touch border-line p-4 sm:p-5"
         >
           <div className="mb-5 flex items-center justify-between">
             <h2 className="m-0 text-lg font-semibold">{t.filters}</h2>

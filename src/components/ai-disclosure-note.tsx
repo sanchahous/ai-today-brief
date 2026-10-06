@@ -20,7 +20,7 @@ export function AiDisclosureNote({
           <SparkleIcon size={14} />
         </span>
         <Link
-          className="text-text hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center font-medium underline decoration-[color:var(--border)] underline-offset-2 transition-colors hover:decoration-current"
+          className="text-text hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center font-medium underline decoration-[color:var(--line)] underline-offset-2 transition-colors hover:decoration-current"
           href={`/${lang}/ai-disclosure`}
         >
           {t.aiNoteLabel}
@@ -30,7 +30,7 @@ export function AiDisclosureNote({
   }
 
   return (
-    <div className="border-border bg-surface text-muted rounded-pill inline-flex flex-wrap items-center gap-2 border px-2.5 py-1.5 text-[0.76rem]">
+    <div className="border-line bg-surface text-muted rounded-pill inline-flex flex-wrap items-center gap-2 border px-2.5 py-1.5 text-[0.76rem]">
       <span aria-hidden className="text-accent inline-flex">
         <SparkleIcon size={14} />
       </span>

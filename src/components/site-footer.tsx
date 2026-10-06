@@ -31,7 +31,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
   const linkedin = SOCIALS.find((s) => s.key === 'linkedin');
 
   return (
-    <footer className="bg-bg-soft border-border-soft border-t">
+    <footer className="bg-bg-deep border-line-soft border-t">
       <div className="mx-auto max-w-[1160px] px-6 py-10">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
           <div className="min-w-0 max-w-md shrink-0 lg:max-w-xs">
@@ -58,7 +58,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
                         target={isNewTab ? '_blank' : undefined}
                         rel={isNewTab ? 'noopener noreferrer' : undefined}
                         aria-label={ariaLabel}
-                        className="border-border text-muted hover:border-accent hover:text-accent rounded-pill inline-flex min-h-[44px] min-w-[44px] items-center justify-center border px-3 text-sm font-medium transition-colors"
+                        className="border-line text-muted hover:border-accent hover:text-accent rounded-pill inline-flex min-h-[44px] min-w-[44px] items-center justify-center border px-3 text-sm font-medium transition-colors"
                       >
                         {s.label}
                       </a>
@@ -140,7 +140,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             </FooterCol>
           </nav>
         </div>
-        <div className="border-border-soft mt-10 border-t pt-6 text-xs text-faint">
+        <div className="border-line-soft mt-10 border-t pt-6 text-xs text-faint">
           <p>
             © {new Date().getFullYear()} {SITE_NAME} · {t.rights}
           </p>

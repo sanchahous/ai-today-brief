@@ -122,7 +122,7 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
 
         <header className="mt-6 max-w-[800px]">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="inline-flex items-center gap-1.5 rounded-pill border border-border bg-surface px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-muted">
+            <span className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-muted">
               {guide.level[lang]}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-pill border border-signal/55 bg-surface px-2.5 py-1 text-2xs font-medium text-signal">
@@ -162,7 +162,7 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
             <section
               id="changelog"
               aria-labelledby="changelog-title"
-              className="mt-12 pt-8 border-t border-border"
+              className="mt-12 pt-8 border-t border-line"
             >
               <h2 id="changelog-title" className="font-serif text-2xl font-bold mb-4 text-text">
                 Changelog
@@ -189,7 +189,7 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
               </ol>
             </section>
 
-            <div className="mt-8 pt-6 border-t border-border lg:hidden">
+            <div className="mt-8 pt-6 border-t border-line lg:hidden">
               <Link
                 className="text-accent text-sm font-medium hover:underline inline-flex items-center gap-1.5 min-h-[44px]"
                 href={`/${lang}/guides`}

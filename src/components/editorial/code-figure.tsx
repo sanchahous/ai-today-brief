@@ -32,8 +32,8 @@ export function CodeFigure({
 
   return (
     <figure className="my-6">
-      <div className="relative group overflow-hidden rounded-xl border border-border bg-surface-2">
-        <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2">
+      <div className="relative group overflow-hidden rounded-xl border border-line bg-raised">
+        <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-2">
           <span className="text-xs font-mono text-muted uppercase tracking-wider">
             {language || 'text'}
           </span>

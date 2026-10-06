@@ -29,7 +29,7 @@ export function TrustLabel({ lang, level }: { lang: Lang; level: TrustLevel }) {
   const isSponsored = level === 'sponsored';
 
   return (
-    <div className={`border-border bg-surface text-muted inline-flex flex-wrap items-center gap-2 rounded-pill border px-2.5 py-1.5 text-[0.76rem] ${isVerified ? 'border-success text-success' : ''}`}>
+    <div className={`border-line bg-surface text-muted inline-flex flex-wrap items-center gap-2 rounded-pill border px-2.5 py-1.5 text-[0.76rem] ${isVerified ? 'border-success text-success' : ''}`}>
       {isVerified && (
         <span aria-hidden className="inline-flex">
           ✓

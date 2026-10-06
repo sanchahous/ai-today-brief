@@ -126,7 +126,7 @@ export function Popover({
         role={role === 'dialog' ? 'dialog' : undefined}
         aria-label={role === 'dialog' ? ariaLabel : undefined}
         hidden={!open}
-        className={`bg-raised border-border text-text rounded-card absolute z-[var(--z-dropdown)] min-w-48 max-w-[min(22rem,calc(100vw-2rem))] border p-2 shadow-[var(--shadow-pop)] ${
+        className={`bg-raised border-line text-text rounded-card absolute z-[var(--z-dropdown)] min-w-48 max-w-[min(22rem,calc(100vw-2rem))] border p-2 shadow-[var(--shadow-pop)] ${
           placement.vertical === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
         } ${placement.horizontal === 'end' ? 'right-0' : 'left-0'} ${panelClassName}`}
       >

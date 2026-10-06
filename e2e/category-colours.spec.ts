@@ -8,7 +8,8 @@ const routes = suffixes.flatMap((suffix) => [
   { key: suffix || "home", path: `/en${suffix}` },
   { key: suffix || "home", path: `/uk${suffix}` },
 ]);
-const CATEGORY_SCOPE = '.cat-badge, .cat-fg, .cat-chip, .cat-header, .cat-thumb, .cat-icon-box';
+// AH-7.3: category tints live in category-presentation.module.css; scope via inline --cat-color.
+const CATEGORY_SCOPE = '[style*="--cat-color"]';
 
 test.describe('category colour gate', () => {
   for (const route of routes) for (const theme of ['night', 'day'] as const) {
@@ -27,7 +28,7 @@ test.describe('category colour gate', () => {
         await page.goto(route.path);
         await expect(page.locator('main h1')).toBeVisible();
         if (route.key === '/news' || route.key.startsWith('/category/'))
-          await expect(page.getByTestId('post-card').or(page.getByTestId('story-card')).first()).toBeVisible();
+          await expect(page.getByTestId('story-card').first()).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
         await expect(page.locator('main h1')).toHaveCount(1);
         const scopes = page.locator(CATEGORY_SCOPE);
@@ -57,7 +58,7 @@ test.describe('category colour gate', () => {
     for (const item of result.items) expect(categoryColor(item.categorySlug, item.categoryColor)).toMatch(/^var\(--cat-/);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/en/news');
-    await expect(page.getByTestId('post-card').or(page.getByTestId('story-card')).first()).toBeVisible();
+    await expect(page.getByTestId('story-card').first()).toBeVisible();
     await page.getByTestId('search-trigger-compact').click();
     const dialog = page.getByRole('dialog', { name: /^search$/i });
     await expect(dialog).toBeVisible();
@@ -66,7 +67,7 @@ test.describe('category colour gate', () => {
     const previewResponse = page.waitForResponse((response) => response.url().includes('/api/search?') && response.ok());
     await input.pressSequentially('mcp', { delay: 50 });
     await previewResponse;
-    const badges = dialog.locator('[role="option"] .cat-badge');
+    const badges = dialog.locator(`[role="option"] ${CATEGORY_SCOPE}`);
     await expect(badges.first()).toBeVisible();
     expect(await badges.evaluateAll((nodes) => nodes.every((node) =>
       (node as HTMLElement).style.getPropertyValue('--cat-color').startsWith('var(--cat-')))).toBe(true);

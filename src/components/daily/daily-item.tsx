@@ -28,7 +28,7 @@ export function DailyItem({
   return (
     <li id={`item-${index}`}>
       <WeeklyTopClickTracker slot="featured" target={{ id: item.id, slug: item.slug ?? undefined, lang }}>
-        <article aria-labelledby={`di-${item.id}`} className="rounded-card border-border bg-surface border p-4 sm:p-5">
+        <article aria-labelledby={`di-${item.id}`} className="rounded-card border-line bg-surface border p-4 sm:p-5">
           <div className="flex gap-4">
             <span aria-hidden className="text-faint font-serif min-w-8 text-2xl leading-none">
               {number}
@@ -83,7 +83,7 @@ function ItemMeta({ lang, item }: { lang: Lang; item: BriefItemCard }) {
 export function DailyPractice({ lang, step }: { lang: Lang; step: string }) {
   const t = getStrings(lang);
   return (
-    <section className="rounded-card border-border bg-surface mt-10 border p-5 sm:p-6" aria-labelledby="try-title">
+    <section className="rounded-card border-line bg-surface mt-10 border p-5 sm:p-6" aria-labelledby="try-title">
       <p className="text-accent m-0 text-xs font-bold tracking-[0.14em] uppercase">{t.oneThingToTry}</p>
       <h2 id="try-title" className="font-serif text-text mt-2 mb-0 text-2xl leading-snug">
         {step}

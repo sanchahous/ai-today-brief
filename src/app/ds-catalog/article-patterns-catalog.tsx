@@ -40,14 +40,14 @@ export function ArticlePatternsCatalog() {
     : 'Швидка коричнева лисиця стрибає через лінивого собаку. Це дуже довгий абзац, щоб продемонструвати обмеження ширини рядка у макеті для читання. Він має гарно переноситися на рівні 60-75 символів для забезпечення оптимальної зручності читання. Хороша типографіка є важливою для чудового досвіду читання, особливо для довгих редакційних матеріалів. Anthropic представила субагентів для Claude Code з ізольованим робочим простором та реактивними сповіщеннями.';
 
   return (
-    <div className="space-y-12 mt-12 pt-12 border-t border-border reading">
+    <div className="space-y-12 mt-12 pt-12 border-t border-line reading">
       <div className="flex flex-wrap items-center gap-2 mb-8">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted">Language for Patterns:</span>
         <button
           type="button"
           onClick={() => setLang('en')}
           className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition ${
-            lang === 'en' ? 'border-transparent bg-accent-fill text-on-accent' : 'border-border text-muted hover:text-text'
+            lang === 'en' ? 'border-transparent bg-accent-fill text-on-accent' : 'border-line text-muted hover:text-text'
           }`}
         >
           EN
@@ -56,7 +56,7 @@ export function ArticlePatternsCatalog() {
           type="button"
           onClick={() => setLang('uk')}
           className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition ${
-            lang === 'uk' ? 'border-transparent bg-accent-fill text-on-accent' : 'border-border text-muted hover:text-text'
+            lang === 'uk' ? 'border-transparent bg-accent-fill text-on-accent' : 'border-line text-muted hover:text-text'
           }`}
         >
           UK
@@ -98,7 +98,7 @@ export function ArticlePatternsCatalog() {
 
       <div className="space-y-4">
         <h3 className="font-serif text-lg">ReadingLayout (TOC, Body, Tools)</h3>
-        <div className="border border-border rounded-xl p-4 bg-surface">
+        <div className="border border-line rounded-xl p-4 bg-surface">
           <ReadingLayout
             toc={<TableOfContents lang={lang} items={tocItems} />}
             content={

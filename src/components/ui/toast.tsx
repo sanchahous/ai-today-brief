@@ -20,7 +20,7 @@ interface ToastApi {
 const ToastContext = createContext<ToastApi | null>(null);
 
 const TONE_CLASS: Record<Toast['tone'], string> = {
-  info: 'border-border',
+  info: 'border-line',
   success: 'border-success',
   error: 'border-error',
 };

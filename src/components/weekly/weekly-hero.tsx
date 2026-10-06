@@ -54,7 +54,7 @@ export function WeeklyHero({
   const { standfirst, more } = weeklyHeroDescriptions(digest);
 
   return (
-    <header className="border-border-soft border-b pb-10">
+    <header className="border-line-soft border-b pb-10">
       <Link
         href={`/${lang}/digests`}
         className="text-accent inline-flex text-sm font-semibold no-underline hover:underline"
@@ -62,7 +62,7 @@ export function WeeklyHero({
         ← {copy.allDigests}
       </Link>
 
-      <section className="rounded-card border-border bg-surface grain relative isolate mt-6 overflow-hidden border shadow-[var(--shadow-pop)]">
+      <section className="rounded-card border-line bg-surface grain relative isolate mt-6 overflow-hidden border shadow-[var(--shadow-pop)]">
         {digest.cover ? (
           <Image
             aria-hidden
@@ -116,8 +116,8 @@ export function WeeklyHero({
           ) : null}
 
           {more ? (
-            <details className="border-border group mt-4 w-full border-t pt-4">
-              <summary className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill inline-flex list-none items-center gap-2 border px-4 py-2.5 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
+            <details className="border-line group mt-4 w-full border-t pt-4">
+              <summary className="border-line bg-surface text-text hover:border-accent hover:text-accent rounded-pill inline-flex list-none items-center gap-2 border px-4 py-2.5 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
                 <span className="group-open:hidden">{copy.showMore}</span>
                 <span className="hidden group-open:inline">{copy.showLess}</span>
                 <span
@@ -145,7 +145,7 @@ export function WeeklyHero({
                 <a
                   href={`/${lang}/weekly/${digest.slug}/download`}
                   data-digest-event="pdf_download"
-                  className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
+                  className="border-line bg-surface text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
                 >
                   {copy.downloadPdf}
                 </a>
@@ -154,7 +154,7 @@ export function WeeklyHero({
                 <a
                   href="#video"
                   data-digest-event="video_play"
-                  className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
+                  className="border-line bg-surface text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
                 >
                   {copy.watch}
                 </a>

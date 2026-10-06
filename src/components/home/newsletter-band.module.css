@@ -1,0 +1,10 @@
+.cardBg {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--accent-rgb) / 0.14), transparent 55%), var(--surface);
+}
+
+:global(.theme-light) .cardBg,
+:global(html[data-theme='day']) .cardBg {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--accent-rgb) / 0.1), transparent 55%), var(--surface);
+}

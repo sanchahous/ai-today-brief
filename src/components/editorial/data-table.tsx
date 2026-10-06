@@ -16,7 +16,7 @@ export function DataTable({
         role="region" 
         aria-label={title}
         tabIndex={0}
-        className="w-full overflow-x-auto rounded-xl border border-border"
+        className="w-full overflow-x-auto rounded-xl border border-line"
       >
         <table className="w-full min-w-[500px] border-collapse text-left text-sm">
           {children}

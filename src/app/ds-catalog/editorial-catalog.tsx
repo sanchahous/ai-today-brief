@@ -108,11 +108,11 @@ export function EditorialCatalog() {
     return (
       <div
         data-theme={theme}
-        className={`rounded-card border border-border p-6 transition-colors ${
+        className={`rounded-card border border-line p-6 transition-colors ${
           isDay ? 'theme-light bg-bg text-text' : 'bg-bg text-text'
         }`}
       >
-        <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+        <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
           <h3 className="font-serif text-lg font-semibold capitalize">
             {theme} Theme {isDay ? '☀ (Day / .theme-light)' : '☾ (Night / Brand default)'}
           </h3>
@@ -126,7 +126,7 @@ export function EditorialCatalog() {
   return (
     <div className="space-y-8">
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted">Language:</span>
           <button
@@ -135,7 +135,7 @@ export function EditorialCatalog() {
             className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition ${
               lang === 'en'
                 ? 'border-transparent bg-accent-fill text-on-accent'
-                : 'border-border text-muted hover:text-text'
+                : 'border-line text-muted hover:text-text'
             }`}
           >
             EN (English)
@@ -146,7 +146,7 @@ export function EditorialCatalog() {
             className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition ${
               lang === 'uk'
                 ? 'border-transparent bg-accent-fill text-on-accent'
-                : 'border-border text-muted hover:text-text'
+                : 'border-line text-muted hover:text-text'
             }`}
           >
             UK (Українська)
@@ -163,7 +163,7 @@ export function EditorialCatalog() {
               className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium capitalize transition ${
                 themeMode === mode
                   ? 'border-transparent bg-accent-fill text-on-accent'
-                  : 'border-border text-muted hover:text-text'
+                  : 'border-line text-muted hover:text-text'
               }`}
             >
               {mode}
@@ -179,7 +179,7 @@ export function EditorialCatalog() {
             className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition ${
               selectedLayout === 'all'
                 ? 'border-transparent bg-accent-fill text-on-accent'
-                : 'border-border text-muted hover:text-text'
+                : 'border-line text-muted hover:text-text'
             }`}
           >
             All 4
@@ -192,7 +192,7 @@ export function EditorialCatalog() {
               className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition ${
                 selectedLayout === layout
                   ? 'border-transparent bg-accent-fill text-on-accent'
-                  : 'border-border text-muted hover:text-text'
+                  : 'border-line text-muted hover:text-text'
               }`}
             >
               {layout}
@@ -210,7 +210,7 @@ export function EditorialCatalog() {
               className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-1.5 text-xs font-medium transition ${
                 imageMode === m
                   ? 'border-transparent bg-accent-fill text-on-accent'
-                  : 'border-border text-muted hover:text-text'
+                  : 'border-line text-muted hover:text-text'
               }`}
             >
               {m === 'banner' ? 'CategoryBanner (без зображення)' : m === 'withImage' ? 'With Image' : 'Both'}
@@ -220,7 +220,7 @@ export function EditorialCatalog() {
       </div>
 
       {/* CategoryBanner Showcase */}
-      <div className="rounded-card border border-border bg-surface p-6">
+      <div className="rounded-card border border-line bg-surface p-6">
         <h3 className="mb-2 font-serif text-lg">CategoryBanner — Deterministic Brass Grooves (Без зображення)</h3>
         <p className="mb-4 text-xs text-muted">
           Same story ID produces identical groove tilt, shift, and signal dot coordinates across renders.

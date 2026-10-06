@@ -23,7 +23,7 @@ export function SubscribeSampleList({
 
   return (
     <aside
-      className="sample-issue rounded-card border-border bg-surface-2 border p-6 shadow-sm lg:sticky lg:top-24 lg:rotate-[1.2deg] transition-transform"
+      className="sample-issue rounded-card border-line bg-raised border p-6 shadow-sm lg:sticky lg:top-24 lg:rotate-[1.2deg] transition-transform"
       aria-labelledby="sample-title"
     >
       <p className="sample-kicker font-mono text-2xs uppercase tracking-wider text-accent font-semibold">
@@ -36,7 +36,7 @@ export function SubscribeSampleList({
         {items.map((item, i) => (
           <li
             key={item.id}
-            className="grid grid-cols-[30px_minmax(0,1fr)] gap-2 pt-3 border-t border-border"
+            className="grid grid-cols-[30px_minmax(0,1fr)] gap-2 pt-3 border-t border-line"
           >
             <span className="font-mono text-xs text-accent">0{i + 1}</span>
             <div>

@@ -8,6 +8,7 @@ import type { BriefItemDetail } from '@/lib/items';
 import type { Lang } from '@/lib/site';
 import { FactsVisualBlock } from '@/components/facts-visual';
 import { MarkdownBody } from '@/components/markdown-body';
+import catStyles from '@/components/category-presentation.module.css';
 
 export type ToolLink = { name: string; href: string | null };
 
@@ -21,7 +22,7 @@ function paragraphs(text: string): string[] {
 function SectionLabel({ children, style }: { children: React.ReactNode; style?: CSSProperties }) {
   return (
     <h2
-      className={`text-2xs m-0 mt-7 mb-2.5 font-bold tracking-[0.08em] uppercase ${style ? 'cat-fg' : 'text-accent'}`}
+      className={`text-2xs m-0 mt-7 mb-2.5 font-bold tracking-[0.08em] uppercase ${style ? catStyles.fg : 'text-accent'}`}
       style={style}
     >
       {children}
@@ -55,15 +56,15 @@ export function StoryBody({
       {sections.why && (
         <section
           aria-label={t.whyItMatters}
-          className="bg-surface-2 mb-5 rounded-r-lg py-3 pr-4 pl-4"
+          className="bg-raised mb-5 rounded-r-lg py-3 pr-4 pl-4"
           style={{
             // Solid floor first so the accent stripe never vanishes where color-mix is unsupported.
-            borderLeft: '3px solid var(--border)',
-            borderLeftColor: `color-mix(in srgb, ${color} 55%, var(--border))`,
+            borderLeft: '3px solid var(--line)',
+            borderLeftColor: `color-mix(in srgb, ${color} 55%, var(--line))`,
           }}
         >
           <h2
-            className="cat-fg text-2xs m-0 mb-1.5 font-bold tracking-[0.08em] uppercase"
+            className={`${catStyles.fg} text-2xs m-0 mb-1.5 font-bold tracking-[0.08em] uppercase`}
             style={catStyle}
           >
             {t.whyItMatters}
@@ -80,7 +81,7 @@ export function StoryBody({
           <ul className="m-0 list-none p-0">
             {detail.takeaways?.map((bullet, i) => (
               <li key={i} className="mb-2 flex gap-2.5">
-                <span className="cat-fg font-bold tabular-nums" style={catStyle}>
+                <span className={`${catStyles.fg} font-bold tabular-nums`} style={catStyle}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <span className="text-[0.92rem] leading-relaxed">{bullet}</span>
@@ -93,11 +94,11 @@ export function StoryBody({
       {sections.facts && (
         <section
           aria-label={t.factsTitle}
-          className="border-border bg-surface mb-6 overflow-hidden rounded-lg border"
+          className="border-line bg-surface mb-6 overflow-hidden rounded-lg border"
         >
           <h2
-            className="cat-fg text-2xs m-0 border-b px-4 py-2.5 font-bold tracking-[0.08em] uppercase"
-            style={{ ...catStyle, borderColor: 'var(--border)' }}
+            className={`${catStyles.fg} text-2xs m-0 border-b px-4 py-2.5 font-bold tracking-[0.08em] uppercase`}
+            style={{ ...catStyle, borderColor: 'var(--line)' }}
           >
             {t.factsTitle}
           </h2>
@@ -106,7 +107,7 @@ export function StoryBody({
             {detail.facts?.map((fact, i) => (
               <div
                 key={i}
-                className={`flex flex-wrap gap-x-4 gap-y-0.5 px-4 py-2.5 ${i % 2 === 1 ? 'bg-surface-2' : ''}`}
+                className={`flex flex-wrap gap-x-4 gap-y-0.5 px-4 py-2.5 ${i % 2 === 1 ? 'bg-raised' : ''}`}
               >
                 <dt className="text-muted m-0 min-w-[140px] flex-1 text-[0.84rem] break-words">
                   {fact.label}
@@ -138,7 +139,7 @@ export function StoryBody({
             tabIndex={0}
             role="region"
             aria-label={t.tryItTitle}
-            className="bg-surface-2 border-border mb-1 overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] leading-relaxed"
+            className="bg-raised border-line mb-1 overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] leading-relaxed"
             data-language={detail.codeSnippet.language}
           >
             <code>{detail.codeSnippet.code}</code>
@@ -152,7 +153,7 @@ export function StoryBody({
           {sections.whenToUse && (
             <section
               aria-label={t.whenToUseTitle}
-              className="border-border bg-surface rounded-lg border p-4"
+              className="border-line bg-surface rounded-lg border p-4"
             >
               <h2 className="text-2xs text-success-contrast m-0 mb-2 font-bold tracking-[0.08em] uppercase">
                 ✓ {t.whenToUseTitle}
@@ -169,7 +170,7 @@ export function StoryBody({
           {sections.whenNotToUse && (
             <section
               aria-label={t.whenNotToUseTitle}
-              className="border-border bg-surface rounded-lg border p-4"
+              className="border-line bg-surface rounded-lg border p-4"
             >
               <h2 className="text-faint text-2xs m-0 mb-2 font-bold tracking-[0.08em] uppercase">
                 ✕ {t.whenNotToUseTitle}
@@ -205,7 +206,7 @@ export function StoryBody({
       {sections.editorTake && (
         <section
           aria-label={t.editorTakeTitle}
-          className="bg-surface-2 mt-7 rounded-r-lg py-3.5 pr-4 pl-4"
+          className="bg-raised mt-7 rounded-r-lg py-3.5 pr-4 pl-4"
           style={{ borderLeft: '3px solid var(--accent)' }}
         >
           <h2 className="text-accent text-2xs m-0 mb-1.5 font-bold tracking-[0.08em] uppercase">
@@ -221,7 +222,7 @@ export function StoryBody({
           <ul className="m-0 list-none space-y-3 p-0">
             {detail.communityReactions?.map((reaction, i) => (
               <li key={i}>
-                <blockquote className="border-border m-0 border-l-2 pl-3.5 text-[0.92rem] leading-relaxed italic">
+                <blockquote className="border-line m-0 border-l-2 pl-3.5 text-[0.92rem] leading-relaxed italic">
                   “{reaction.quote}”
                 </blockquote>
                 <p className="text-faint m-0 mt-1 pl-3.5 text-[0.78rem]">
@@ -251,7 +252,7 @@ export function StoryBody({
             ) : (
               <span
                 key={tool.name}
-                className="rounded-pill border-border bg-surface-2 text-muted text-2xs border px-2.5 py-1"
+                className="rounded-pill border-line bg-raised text-muted text-2xs border px-2.5 py-1"
               >
                 #{tool.name}
               </span>
@@ -270,7 +271,7 @@ export function StoryBody({
                   href={citation.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-text inline-flex min-h-[var(--touch-target-min)] items-center underline decoration-[color:var(--border)] underline-offset-2 hover:decoration-current"
+                  className="text-text inline-flex min-h-[var(--touch-target-min)] items-center underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
                 >
                   {citation.title || citation.url}
                 </a>

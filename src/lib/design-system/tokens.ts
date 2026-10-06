@@ -1,5 +1,5 @@
 /**
- * AI Today Brief — Design System Tokens (After Hours v2.1.0)
+ * AI Today Brief — Design System Tokens (After Hours v3.0.0)
  *
  * 3-tier architecture:
  * 1. Primitives: raw immutable palettes, spacing, type scale, motion, breakpoints, z-index.
@@ -13,7 +13,22 @@
  * Decision record: wiki/decisions/2026-09-29-design-tokens-2-0-migration.md
  */
 
-export const TOKENS_VERSION = '2.1.0';
+export const TOKENS_VERSION = '3.0.0';
+
+/** Legacy token names removed in 3.0.0 — `tokens.test.ts` fails if any appear under `src/`. */
+export const DEPRECATED_TOKEN_PATTERNS = [
+  '--surface-2',
+  '--bg-soft',
+  '--border-soft',
+  '--paper',
+  '--ink',
+  '--brass',
+  '--mint',
+  'bg-surface-2',
+  'bg-bg-soft',
+  'border-border',
+  'border-border-soft',
+] as const;
 
 export const CATEGORY_TOKEN_KEYS = ['tools', 'tutorials', 'cost', 'agents', 'vibe', 'creative', 'local', 'career', 'models'] as const;
 export type CategoryTokenKey = (typeof CATEGORY_TOKEN_KEYS)[number];
@@ -275,14 +290,13 @@ const D = PRIMITIVES.palette.day;
 export const SEMANTIC_TOKENS = {
   night: {
     bg: N.ink,
-    bgSoft: N.inkDeep,
+    bgDeep: N.inkDeep,
     stage: N.stage,
     surface: N.surface,
-    surface2: N.raised,
     raised: N.raised,
     overlay: N.overlay,
-    border: N.line,
-    borderSoft: '#2d332f',
+    line: N.line,
+    lineSoft: '#2d332f',
     lineStrong: N.lineStrong,
     text: N.paper,
     muted: N.muted,
@@ -327,14 +341,13 @@ export const SEMANTIC_TOKENS = {
   },
   day: {
     bg: D.bg,
-    bgSoft: D.bgDeep,
+    bgDeep: D.bgDeep,
     stage: D.stage,
     surface: D.surface,
-    surface2: D.overlay,
     raised: D.raised,
     overlay: D.overlay,
-    border: D.line,
-    borderSoft: '#e2dacb',
+    line: D.line,
+    lineSoft: '#e2dacb',
     lineStrong: D.lineStrong,
     text: D.text,
     muted: D.muted,
@@ -379,21 +392,16 @@ export const SEMANTIC_TOKENS = {
   },
 } as const;
 
-/**
- * Semantic role → CSS custom property. `globals.css` must define every entry in both themes;
- * `tokens:check` enforces it. `surface2` is the recessed/secondary surface used by chips and
- * inset panels (Night: raised; Day: slightly darker than surface). `border` = decorative line.
- */
+/** Semantic role → CSS custom property. `globals.css` must define every entry in both themes. */
 export const CSS_VAR_BY_ROLE: Record<keyof typeof SEMANTIC_TOKENS.night, string> = {
   bg: '--bg',
-  bgSoft: '--bg-soft',
+  bgDeep: '--bg-deep',
   stage: '--stage',
   surface: '--surface',
-  surface2: '--surface-2',
   raised: '--raised',
   overlay: '--overlay',
-  border: '--border',
-  borderSoft: '--border-soft',
+  line: '--line',
+  lineSoft: '--line-soft',
   lineStrong: '--line-strong',
   text: '--text',
   muted: '--muted',
@@ -538,20 +546,26 @@ export const CSS_THEME_RADII: Readonly<Record<string, string>> = {
 };
 
 /** D5 breakpoints registered in the `@theme` block (Tailwind `min-width` and `max-*` variants). */
-export const CSS_THEME_BREAKPOINTS: Readonly<Record<string, string>> = Object.fromEntries(
-  Object.entries(PRIMITIVES.breakpoints).map(([name, value]) => [
-    `--breakpoint-${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`,
-    value,
-  ]),
-);
+export const CSS_THEME_BREAKPOINTS: Readonly<Record<string, string>> = {
+  '--breakpoint-sm': PRIMITIVES.breakpoints.narrow,
+  '--breakpoint-md': PRIMITIVES.breakpoints.phone,
+  '--breakpoint-lg': PRIMITIVES.breakpoints.tablet,
+  '--breakpoint-xl': PRIMITIVES.breakpoints.desktop,
+  ...Object.fromEntries(
+    Object.entries(PRIMITIVES.breakpoints).map(([name, value]) => [
+      `--breakpoint-${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`,
+      value,
+    ]),
+  ),
+};
 
 export const LEGACY_MIGRATION_MAP: Record<string, string> = {
   '#0f0f0f': 'var(--bg)',
-  '#141414': 'var(--bg-soft)',
+  '#141414': 'var(--bg-deep)',
   '#1a1a1a': 'var(--surface)',
-  '#202020': 'var(--surface-2)',
-  '#2a2a2a': 'var(--border)',
-  '#232323': 'var(--border-soft)',
+  '#202020': 'var(--raised)',
+  '#2a2a2a': 'var(--line)',
+  '#232323': 'var(--line-soft)',
   '#e8e8e8': 'var(--text)',
   '#a3a3a3': 'var(--muted)',
   '#6a6a6a': 'var(--faint)',

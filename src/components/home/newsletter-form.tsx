@@ -228,7 +228,7 @@ export function NewsletterForm({
         onSubmit={handleSubmit}
         noValidate
         aria-busy={effectiveStatus === 'pending'}
-        className={`bg-surface border-border rounded-card w-full max-w-lg border p-6 sm:p-8 space-y-5 ${className}`}
+        className={`bg-surface border-line rounded-card w-full max-w-lg border p-6 sm:p-8 space-y-5 ${className}`}
       >
         {effectiveStatus === 'error' && (generalError || failed || copy.failed) ? (
           <div className="w-full">
@@ -360,7 +360,7 @@ export function NewsletterForm({
             onFocus={markStarted}
             placeholder={placeholder ?? copy.emailPlaceholder}
             aria-label={placeholder ?? copy.emailLabel}
-            className="bg-surface border-border text-text rounded-md focus-visible:border-accent min-h-[44px] flex-1 border px-3 py-2.5 text-sm transition-colors"
+            className="bg-surface border-line text-text rounded-md focus-visible:border-accent min-h-[44px] flex-1 border px-3 py-2.5 text-sm transition-colors"
           />
           <Button
             type="submit"
@@ -424,7 +424,7 @@ export function NewsletterForm({
           onFocus={markStarted}
           placeholder={placeholder ?? copy.emailPlaceholder}
           aria-label={placeholder ?? copy.emailLabel}
-          className="bg-bg border-border text-text rounded-pill focus-visible:border-accent min-h-[44px] flex-1 basis-52 border px-4 py-3 text-sm transition-colors"
+          className="bg-bg border-line text-text rounded-pill focus-visible:border-accent min-h-[44px] flex-1 basis-52 border px-4 py-3 text-sm transition-colors"
         />
         <button
           type="submit"

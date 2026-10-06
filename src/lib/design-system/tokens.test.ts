@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   collectDeclaredTokens,
@@ -21,6 +21,7 @@ import {
   CATEGORY_TOKEN_KEYS,
   CSS_VARS_BY_THEME,
   CSS_VARS_STATIC,
+  DEPRECATED_TOKEN_PATTERNS,
   LEGACY_MIGRATION_MAP,
   PRIMITIVES,
   remToPx,
@@ -32,8 +33,8 @@ const globalsCss = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf
 const tokenDoc = readFileSync(join(process.cwd(), TOKEN_DOC), 'utf8');
 
 describe('Design Tokens & Accessibility Contrast', () => {
-  it('is version 2.1.0', () => {
-    expect(TOKENS_VERSION).toBe('2.1.0');
+  it('is version 3.0.0', () => {
+    expect(TOKENS_VERSION).toBe('3.0.0');
   });
 
   it('passes all WCAG AA contrast checks in runContrastAudit', () => {
@@ -116,7 +117,7 @@ describe('Design Tokens & Accessibility Contrast', () => {
   it('keeps --faint above 4.5:1 on every surface in both themes (regression: 3.5:1 in v1)', () => {
     for (const theme of ['night', 'day'] as const) {
       const t = SEMANTIC_TOKENS[theme];
-      for (const surface of [t.bg, t.bgSoft, t.surface, t.surface2, t.raised]) {
+      for (const surface of [t.bg, t.bgDeep, t.surface, t.raised, t.overlay]) {
         expect(contrastRatio(t.faint, surface)).toBeGreaterThanOrEqual(4.5);
       }
     }
@@ -245,10 +246,13 @@ describe('non-colour token sync (AH-1.6)', () => {
     expect(PRIMITIVES.sizes.headerHPrototype).toBe('72px');
   });
 
-  it('does not touch the default Tailwind breakpoints (sm / md / lg / xl)', () => {
-    const names = Object.keys(CSS_THEME_BREAKPOINTS).map((n) => n.replace('--breakpoint-', ''));
-    for (const reserved of ['sm', 'md', 'lg', 'xl', '2xl']) expect(names).not.toContain(reserved);
-    expect(globalsCss).not.toMatch(/--breakpoint-(sm|md|lg|xl|2xl):/);
+  it('aligns default Tailwind breakpoints with D5 (sm / md / lg / xl)', () => {
+    expect(CSS_THEME_BREAKPOINTS['--breakpoint-sm']).toBe(PRIMITIVES.breakpoints.narrow);
+    expect(CSS_THEME_BREAKPOINTS['--breakpoint-md']).toBe(PRIMITIVES.breakpoints.phone);
+    expect(CSS_THEME_BREAKPOINTS['--breakpoint-lg']).toBe(PRIMITIVES.breakpoints.tablet);
+    expect(CSS_THEME_BREAKPOINTS['--breakpoint-xl']).toBe(PRIMITIVES.breakpoints.desktop);
+    expect(globalsCss).toContain('--breakpoint-sm: 25rem;');
+    expect(globalsCss).toContain('--breakpoint-lg: 60rem;');
   });
 });
 
@@ -298,6 +302,29 @@ describe('token documentation gate (M1)', () => {
     const report = runDocsAudit(globalsCss, tokenDoc.replace('`--ease-release`', '`--renamed`'));
     expect(report.pass).toBe(false);
     expect(report.reports.join('\n')).toContain('--ease-release');
+  });
+});
+
+describe('deprecated token aliases (AH-7.3)', () => {
+  it('has zero deprecated token names under src/', () => {
+    const root = join(process.cwd(), 'src');
+    const hits: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) walk(path);
+        else if (/\.(ts|tsx|css)$/.test(entry.name) && !entry.name.endsWith('.test.ts')) {
+          const rel = relative(process.cwd(), path).replace(/\\/g, '/');
+          if (rel === 'src/lib/design-system/tokens.ts') continue;
+          const text = readFileSync(path, 'utf8');
+          for (const pattern of DEPRECATED_TOKEN_PATTERNS) {
+            if (text.includes(pattern)) hits.push(`${rel}: ${pattern}`);
+          }
+        }
+      }
+    };
+    walk(root);
+    expect(hits).toEqual([]);
   });
 });
 

@@ -96,7 +96,7 @@ export function FieldCatalog() {
   useEffect(() => { setReady(true); }, []);
 
   return (
-    <section id="field-catalog" data-testid="field-catalog" data-ready={ready ? 'true' : 'false'} lang={lang} aria-labelledby="field-catalog-title" className="border-border border-t py-8">
+    <section id="field-catalog" data-testid="field-catalog" data-ready={ready ? 'true' : 'false'} lang={lang} aria-labelledby="field-catalog-title" className="border-line border-t py-8">
       <h2 id="field-catalog-title" className="mb-4 font-serif text-xl">{copy.title}</h2>
       <div className="mb-4 flex flex-wrap gap-2">
         <Pill pressed={lang === 'en'} onClick={() => setLang('en')}>EN</Pill>

@@ -139,7 +139,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
       role="region"
       aria-label={c.cookieTitle}
       data-testid="cookie-consent"
-      className={`border-border bg-raised shadow-pop pointer-events-auto fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-[100] w-[min(440px,calc(100vw-2rem))] overflow-y-auto rounded-[var(--radius-card)] border p-5 ${
+      className={`border-line bg-raised shadow-pop pointer-events-auto fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-[100] w-[min(440px,calc(100vw-2rem))] overflow-y-auto rounded-[var(--radius-card)] border p-5 ${
         prefsOpen
           ? 'max-h-[min(420px,calc(100dvh-2rem))]'
           : 'max-h-[min(240px,calc(100dvh-2rem))] sm:max-h-[min(420px,calc(100dvh-2rem))]'
@@ -148,7 +148,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
       <div className="mb-2 flex items-center gap-2">
         <h2 className="text-base font-semibold">{c.cookieTitle}</h2>
         <span
-          className="text-faint border-border ml-auto rounded-full border px-2 py-0.5 text-2xs font-bold tracking-wide uppercase"
+          className="text-faint border-line ml-auto rounded-full border px-2 py-0.5 text-2xs font-bold tracking-wide uppercase"
           title={c.cookieRegionNote}
         >
           {region}
@@ -167,7 +167,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
           {categories.map((cat) => (
             <div
               key={cat.key}
-              className="border-border bg-surface rounded-md border p-3"
+              className="border-line bg-surface rounded-md border p-3"
             >
               <Switch
                 label={titleByKey[cat.key]}

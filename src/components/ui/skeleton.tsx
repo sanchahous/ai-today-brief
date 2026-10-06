@@ -40,7 +40,7 @@ export function HeroStatsSkeleton() {
 
 export function CategoryCardSkeleton() {
   return (
-    <div className="rounded-card border-border bg-surface flex h-full flex-col overflow-hidden border" aria-hidden>
+    <div className="rounded-card border-line bg-surface flex h-full flex-col overflow-hidden border" aria-hidden>
       <div className="flex items-center gap-3 p-4">
         <Skeleton className="h-11 w-11 shrink-0 rounded-[12px]" />
         <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ export function PostCardSkeleton() {
   // Mirror the real PostCard structure (outer bordered card -> post-grid -> 92px thumb +
   // content) so hydration does not shift the layout.
   return (
-    <div className="rounded-card border-border bg-surface border p-4" aria-hidden>
+    <div className="rounded-card border-line bg-surface border p-4" aria-hidden>
       <div className="post-grid">
         <Skeleton className="h-[92px] w-[92px] rounded-card" />
         <div>
@@ -80,7 +80,7 @@ export function PostCardSkeleton() {
 export function HomePageSkeleton() {
   return (
     <div className="skeleton-reveal flex-1">
-      <section className="border-border-soft border-b px-6 pt-[4.5rem] pb-14">
+      <section className="border-line-soft border-b px-6 pt-[4.5rem] pb-14">
         <div className="mx-auto max-w-[1160px]">
           <Skeleton className="h-3 w-40 rounded-md" />
           <Skeleton className="mt-4 h-12 max-w-3xl rounded-md" />

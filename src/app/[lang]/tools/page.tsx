@@ -103,7 +103,7 @@ export default async function ToolsPage({ params }: { params: Promise<Params> })
         </div>
 
         <dl
-          className="bench-panel grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border shadow-sm m-0 p-0"
+          className="bench-panel grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-border shadow-sm m-0 p-0"
           aria-label={t.toolsPage.panelAriaLabel}
         >
           <div className="flex flex-col-reverse p-5 bg-surface">
@@ -152,7 +152,7 @@ export default async function ToolsPage({ params }: { params: Promise<Params> })
             return (
               <li
                 key={step.number}
-                className="grid gap-3 p-6 rounded-2xl border border-border bg-surface"
+                className="grid gap-3 p-6 rounded-2xl border border-line bg-surface"
               >
                 <span className="step-no font-mono text-2xs text-faint" aria-hidden="true">
                   {step.number}
@@ -180,13 +180,13 @@ export default async function ToolsPage({ params }: { params: Promise<Params> })
           {t.toolsPage.compareTitle}
         </h2>
         <div
-          className="table-scroll overflow-x-auto rounded-xl border border-border"
+          className="table-scroll overflow-x-auto rounded-xl border border-line"
           role="region"
           aria-labelledby="compare-tools-title"
           tabIndex={0}
         >
           <table className="compare-table w-full min-w-[36rem] text-left border-collapse text-sm">
-            <thead className="bg-surface border-b border-border">
+            <thead className="bg-surface border-b border-line">
               <tr>
                 <th scope="col" className="p-4 font-medium text-foreground">
                   {t.toolsPage.compareColTool}
@@ -231,7 +231,7 @@ export default async function ToolsPage({ params }: { params: Promise<Params> })
           {t.toolsPage.faqItems.map((faq, index) => (
             <details
               key={index}
-              className="group rounded-xl border border-border bg-surface [&_summary::-webkit-details-marker]:hidden"
+              className="group rounded-xl border border-line bg-surface [&_summary::-webkit-details-marker]:hidden"
               open={index === 0}
             >
               <summary className="flex min-h-[44px] cursor-pointer items-center p-4 font-medium text-foreground outline-none select-none rounded-xl hover:text-accent transition focus-visible:ring-2 focus-visible:ring-accent">

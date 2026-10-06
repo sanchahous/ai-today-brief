@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { VIEWPORTS } from './helpers/viewports';
 
@@ -7,6 +7,43 @@ const HOME = '/en';
 const SUBSCRIBE_PAGE = '/en/subscribe';
 
 const MOBILE_VIEWPORTS = [VIEWPORTS.phone320, VIEWPORTS.phone390] as const;
+
+/** Wait until the client NewsletterForm is hydrated (noValidate blocks native GET ?email= submits). */
+async function readyNewsletterForm(page: Page, url: string) {
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  const emailInput = page.locator('input[type="email"]').first();
+  await emailInput.scrollIntoViewIfNeeded();
+  await expect(emailInput).toBeVisible({ timeout: 10_000 });
+  const form = page.locator('form').filter({ has: emailInput }).first();
+  await expect(form).toHaveAttribute('novalidate', '');
+  return {
+    emailInput,
+    form,
+    submitBtn: form.locator('button[type="submit"]'),
+  };
+}
+
+/** Controlled checkbox — custom mark intercepts pointer events; keyboard matches fields.spec.ts. */
+async function toggleConsent(form: Locator, page: Page) {
+  const consent = form.getByRole('checkbox', { name: /agree to the privacy policy/i });
+  await consent.focus();
+  await page.keyboard.press('Space');
+  await expect(consent).toBeChecked();
+}
+
+/** Controlled SegmentedControl radios — keyboard, not .check({ force }), under parallel workers. */
+async function selectEdition(form: Locator, page: Page, label: string) {
+  const edition = form.getByRole('radiogroup', { name: /edition language/i });
+  const target = edition.getByRole('radio', { name: label, exact: true });
+  if (label === 'Українська') {
+    await edition.getByRole('radio', { name: 'English', exact: true }).focus();
+    await page.keyboard.press('ArrowRight');
+  } else {
+    await target.focus();
+    await page.keyboard.press('Space');
+  }
+  await expect(target).toBeChecked();
+}
 
 async function getDataLayerEvents(page: Page, eventName: string) {
   return page.evaluate((name) => {
@@ -116,12 +153,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
       await route.fulfill({ status: 200, json: { ok: true } });
     });
 
-    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
-
-    const form = page.locator('form').filter({ has: emailInput }).first();
-    const submitBtn = form.locator('button[type="submit"]');
+    const { emailInput, form, submitBtn } = await readyNewsletterForm(page, HOME);
 
     // 1. Submit with empty email
     await submitBtn.click();
@@ -152,12 +184,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
       await route.fulfill({ status: 200, json: { ok: true } });
     });
 
-    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
-
-    const form = page.locator('form').filter({ has: emailInput }).first();
-    const submitBtn = form.locator('button[type="submit"]');
+    const { emailInput, form, submitBtn } = await readyNewsletterForm(page, HOME);
 
     await emailInput.fill('builder@example.com');
 
@@ -181,18 +208,13 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
       await route.fulfill({ status: 200, json: { ok: true } });
     });
 
-    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
-
-    const form = page.locator('form').filter({ has: emailInput }).first();
-    const submitBtn = form.locator('button[type="submit"]');
+    const { emailInput, submitBtn } = await readyNewsletterForm(page, HOME);
 
     await emailInput.fill('new-reader@example.com');
     await submitBtn.click();
 
     const statusEl = page.locator('[role="status"]').first();
-    await expect(statusEl).toBeVisible();
+    await expect(statusEl).toBeVisible({ timeout: 10_000 });
     await expect(statusEl).toContainText(/confirm|inbox|підтверд/i);
 
     const subscribeEvents = await getDataLayerEvents(page, 'newsletter_subscribe');
@@ -204,12 +226,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
       await route.fulfill({ status: 502, json: { error: 'provider_failed' } });
     });
 
-    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
-
-    const form = page.locator('form').filter({ has: emailInput }).first();
-    const submitBtn = form.locator('button[type="submit"]');
+    const { emailInput, form, submitBtn } = await readyNewsletterForm(page, HOME);
 
     const enteredEmail = 'keep-this-email@example.com';
     await emailInput.fill(enteredEmail);
@@ -239,12 +256,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
       await route.fulfill({ status: 200, json: { ok: true, already: true } });
     });
 
-    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
-
-    const form = page.locator('form').filter({ has: emailInput }).first();
-    const submitBtn = form.locator('button[type="submit"]');
+    const { emailInput, submitBtn } = await readyNewsletterForm(page, HOME);
 
     await emailInput.fill('already-member@example.com');
     await submitBtn.click();
@@ -261,12 +273,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
       await route.abort('failed');
     });
 
-    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
-
-    const form = page.locator('form').filter({ has: emailInput }).first();
-    const submitBtn = form.locator('button[type="submit"]');
+    const { emailInput, form, submitBtn } = await readyNewsletterForm(page, HOME);
 
     const testEmail = 'offline-user@example.com';
     await emailInput.fill(testEmail);
@@ -304,13 +311,7 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
       await route.fulfill({ status: 200, json: { ok: true } });
     });
 
-    await page.goto(SUBSCRIBE_PAGE, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
-
-    const form = page.locator('form').filter({ has: emailInput }).first();
-    const consentCheckbox = form.locator('input[type="checkbox"]');
-    const submitBtn = form.locator('button[type="submit"]');
+    const { emailInput, form, submitBtn } = await readyNewsletterForm(page, SUBSCRIBE_PAGE);
 
     // 1. Submit without consent
     await emailInput.fill('subscriber@example.com');
@@ -318,9 +319,10 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
     await expect(form.locator('[role="alert"]').first()).toBeVisible({ timeout: 10_000 });
     expect(requestPayload).toBeNull();
 
-    // 2. Check consent and select Ukrainian edition
-    await page.getByRole('checkbox', { name: /agree to the privacy policy/i }).check({ force: true });
-    await page.getByRole('radio', { name: 'Українська' }).check({ force: true });
+    // 2. Check consent and select Ukrainian edition (keyboard — custom mark blocks pointer clicks)
+    await form.scrollIntoViewIfNeeded();
+    await toggleConsent(form, page);
+    await selectEdition(form, page, 'Українська');
 
     await submitBtn.click();
     const statusEl = page.locator('[role="status"]').first();

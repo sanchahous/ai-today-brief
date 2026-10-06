@@ -7,6 +7,7 @@ import { getStrings } from '@/lib/i18n';
 import { pluralLabel } from '@/lib/home-stats';
 import type { Lang } from '@/lib/site';
 import { Tag } from '@/components/ui/tag';
+import catStyles from '@/components/category-presentation.module.css';
 
 export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView }) {
   const t = getStrings(lang);
@@ -19,12 +20,12 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
   return (
     <div className="mb-8">
       <header
-        className="cat-header rounded-card mb-6 flex flex-col sm:flex-row items-start gap-5 p-6 sm:p-7"
+        className={`${catStyles.header} rounded-card mb-6 flex flex-col sm:flex-row items-start gap-5 p-6 sm:p-7`}
         style={catStyle}
       >
         <span
           aria-hidden="true"
-          className="cat-icon-box grid h-16 w-16 shrink-0 place-items-center rounded-[18px]"
+          className={`${catStyles.iconBox} grid h-16 w-16 shrink-0 place-items-center rounded-[18px]`}
           style={catStyle}
         >
           <CategoryGlyph icon={hub.icon} size={34} strokeWidth={1.5} />
@@ -43,7 +44,7 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
               {hub.tagline}
             </p>
           ) : null}
-          <p className="cat-fg hub-meta m-0 text-xs font-mono uppercase tracking-[0.06em]" style={catStyle}>
+          <p className={`${catStyles.fg} hub-meta m-0 text-xs font-mono uppercase tracking-[0.06em]`} style={catStyle}>
             {hub.items.length} {countLabel}
             {hub.updatedDaily ? ` · ${t.updatedDaily}` : ''}
           </p>
@@ -57,7 +58,7 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
                   <li key={st}>
                     <Link
                       href={`/${lang}/news/search?q=${encodeURIComponent(st)}`}
-                      className="cat-chip rounded-pill inline-flex items-center px-3 py-1 text-[0.82rem] font-medium no-underline transition hover:border-[var(--cat-color)] [@media(pointer:coarse)]:min-h-[44px]"
+                      className={`${catStyles.chip} rounded-pill inline-flex items-center px-3 py-1 text-[0.82rem] font-medium no-underline transition hover:border-[var(--cat-color)] [@media(pointer:coarse)]:min-h-[44px]`}
                       style={catStyle}
                     >
                       {st}
@@ -89,7 +90,7 @@ export function CategoryPrimer({
   const t = getStrings(lang);
   return (
     <section
-      className="primer rounded-card border-border/80 bg-surface/60 mb-6 flex flex-wrap items-center justify-between gap-4 border p-4 sm:p-5"
+      className="primer rounded-card border-line/80 bg-surface/60 mb-6 flex flex-wrap items-center justify-between gap-4 border p-4 sm:p-5"
       aria-labelledby="primer-title"
     >
       <div className="flex flex-wrap items-center gap-3">

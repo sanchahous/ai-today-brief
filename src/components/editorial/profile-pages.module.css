@@ -70,7 +70,7 @@
 .section {
   margin-top: var(--section-y);
   padding-top: var(--space-10);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
 }
 .sectionHead {
   display: flex;
@@ -85,7 +85,7 @@
   align-items: center;
   min-height: var(--touch-target-min);
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   color: var(--accent);
   font-size: var(--text-sm);
@@ -93,7 +93,7 @@
 }
 .action:hover,
 .links a:hover {
-  background: var(--surface-2);
+  background: var(--raised);
 }
 .action:focus-visible,
 .links a:focus-visible {
@@ -110,7 +110,7 @@
 .process li,
 .editor,
 .panel {
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius-card);
   background: var(--surface);
   padding: var(--space-6);
@@ -181,7 +181,7 @@
   align-items: center;
   min-height: var(--touch-target-min);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   color: var(--accent);
   font-size: var(--text-sm);
@@ -218,7 +218,7 @@
 }
 .topics > li {
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   font-size: var(--text-sm);
 }

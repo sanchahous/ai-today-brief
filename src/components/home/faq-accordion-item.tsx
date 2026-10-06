@@ -21,7 +21,7 @@ export function FaqAccordionItem({
           trackEvent('faq_open', { question_index: questionIndex });
         }
       }}
-      className="group rounded-card border-border bg-surface overflow-hidden border"
+      className="group rounded-card border-line bg-surface overflow-hidden border"
     >
       <summary className="font-serif text-text flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-base font-semibold [&::-webkit-details-marker]:hidden">
         {question}

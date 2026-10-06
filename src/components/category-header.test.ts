@@ -84,7 +84,7 @@ describe('CategoryHeader', () => {
     );
     expect(markup).toContain('/en/news/search?q=MCP');
     expect(markup).toContain('/en/news/search?q=Tool%20use');
-    expect(markup).toContain('cat-chip');
+    expect(markup).toContain('--cat-color');
     expect(markup).toContain('min-h-[44px]');
   });
 
