@@ -97,6 +97,7 @@ Last updated: 2026-10-03
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
 | ✅ [analytics/2026-10-02-singapore-bot-traffic](analytics/2026-10-02-singapore-bot-traffic.md) | Singapore/direct = автоматизований трафік Tencent Cloud (AS132203), підтверджений Vercel Firewall і логами; Івано-Франківськ = власні headless-перевірки; Bot Protection у `Log`, план `Challenge` + bypass; правила читання GA4 | Vercel Firewall/Logs/Usage, GA4 Home, `item_events`, повідомлення власника 2026-10-02 |
 | ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: всі докази й AC прийнято; інтеграція через #376; GA4 Admin підтверджено, CWV home/news/article прийнято власником, daily/weekly виключено; підпис G0 2026-09-30 | GA4 Data API + повідомлення, скриншоти й HTML-звіти власника + JSON-витяги 2026-09-29…30 |
+| 📋 [analytics/2026-10-06-after-hours-impact](analytics/2026-10-06-after-hours-impact.md) | Оцінка впливу редизайну After Hours: 28-денний моніторинг Vercel/GSC/CWV/GA4 проти baseline AH-0.6, графік чекпоінтів і протокол рішення власника | AH-7.4, [redesign baseline](analytics/2026-09-29-redesign-baseline.md), [epic](product/after-hours-redesign-epic.md) |
 
 ## Marketing
 
@@ -165,6 +166,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | ✅ [ops/e2e-local](ops/e2e-local.md) | `PORT` / `E2E_BASE_URL` для Playwright і `e2e:affected` — паралельні checkout-и без чужого `:3000` | [PR #401](https://github.com/sanchahous/ai-today-brief/pull/401), ATB-66, 2026-10-02 |
 | ✅ [ops/video-render-runbook](ops/video-render-runbook.md) | Точні команди рендеру/озвучки/субтитрів/result-маніфесту в `ai-today-brief-video` | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 | ✅ [ops/video-weekly-checklist](ops/video-weekly-checklist.md) | Тижневий чеклист випуску weekly-відео, крок за кроком | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [ops/after-hours-release-and-rollback](ops/after-hours-release-and-rollback.md) | Реліз After Hours v3 та план відкату: опис змін для читача, пофазовий revert PR (фази 7→1), виділений PR для токенів, Vercel Instant Rollback | AH-7.4, [epic](product/after-hours-redesign-epic.md), [after-hours-redesign](product/after-hours-redesign.md) §9 |
 
 ## Audits
 
