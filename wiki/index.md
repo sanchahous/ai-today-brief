@@ -51,7 +51,7 @@ Last updated: 2026-10-03
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
 | ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Токени After Hours v2.1.0, WCAG AA, drift; єдиний контраст-гейт 222 пари (AH-1.2); реєстр усіх токенів (простір, форма, глибина, шари, рух, фокус, брейкпоінти D5) як gate (AH-1.6); AH-1.7 ratchet сирих кольорів, z-index, тіней і розмірів шрифту в `pr:check`, baseline та правила його зменшення | `src/lib/design-system/tokens.ts`; `scripts/report-raw-design-values.ts`; ADR 2026-09-29; звіт 2026-09-30 |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 107 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 108 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -156,6 +156,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader; origin JPEG карток; site delivery WebP | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts`, `pipeline/card-image.ts` |
 | ✅ [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md) | Free egress 15/5 GB; Pro до 21 Sep; #350 SSG categories 2063→30; skip `.gitignore`/`library`; Sonar `build:ci`; 30.09 регресія: build-memo пережив білд → прод віддавав знімок 02.09 | Usage Dashboard + edge_logs 2026-09-02; live check 2026-09-30 |
 | ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news була динамічна через searchParams і ніколи не кешувалась; заголовок Cache-Control не рятує — хаб зроблено prerendered, пошук винесено на /news/search; три способи, що не працюють. 2026-10-02: Hobby, 12,97 / 10 ГБ, бот не причина, TTL даних 1 год перекривав 24 год сторінки статті | нове 2026-08-24, live check заголовків прода; Vercel Usage/Logs 2026-10-02 |
+| ✅ [ops/vercel-fluid-cpu](ops/vercel-fluid-cpu.md) | Fluid Active CPU 4 год на Hobby вичерпано: ~0,18 год/добу; холості pg_cron-опитування Vercel кожні 5 хв і site-wide `revalidateTag` на кожну публікацію; гейт `internal_poll_has_work` + публікація лише через `revalidatePath` | нове 2026-10-26, `vercel usage`/`vercel logs requests`, Supabase `cron.job` live check |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
 | ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладка **Fixes & blockers**, Approve на quality фінальний, жовті warnings не тримають socials, blocker-free Ship, Етап 0 ревізій (carry-forward на service path, live preflight, cover більше не auto-revoke соцкопію), Ship без відео + окрема Publish video | нове 2026-08-04, оновлено 2026-09-03 |
