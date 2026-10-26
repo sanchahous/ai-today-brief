@@ -64,7 +64,7 @@ export function SearchTrigger({
         data-testid={testId ?? 'search-trigger-field'}
         onClick={(e) => openSearchDialog(source, e.currentTarget)}
         aria-haspopup="dialog"
-        aria-label={t.searchOpen}
+        aria-label={`${t.searchOpen}: ${label} ${hint}`}
         aria-keyshortcuts="Control+K Meta+K"
         className={`border-line bg-surface focus-visible:border-accent flex w-full min-w-0 items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors ${className}`}
       >
@@ -72,6 +72,7 @@ export function SearchTrigger({
           <SearchIcon size={18} />
         </span>
         <span className="text-faint min-w-0 flex-1 truncate text-sm">{label}</span>
+        {' '}
         <kbd className="text-faint hidden shrink-0 rounded border border-current px-1.5 py-0.5 text-2xs sm:inline">
           {hint}
         </kbd>
@@ -85,7 +86,7 @@ export function SearchTrigger({
       data-testid={testId ?? 'search-trigger-compact'}
       onClick={(e) => openSearchDialog(source, e.currentTarget)}
       aria-haspopup="dialog"
-      aria-label={t.searchOpen}
+      aria-label={`${t.searchOpen}: ${label} ${hint}`}
       aria-keyshortcuts="Control+K Meta+K"
       className={`border-line bg-surface focus-visible:border-accent flex max-w-[clamp(10rem,24vw,26rem)] min-w-[10rem] items-center gap-2 rounded-lg border px-3 py-2 text-left lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl ${className}`}
     >
@@ -93,6 +94,7 @@ export function SearchTrigger({
         <SearchIcon size={18} />
       </span>
       <span className="text-faint min-w-0 flex-1 truncate text-sm">{label}</span>
+      {' '}
       <kbd className="text-faint hidden shrink-0 rounded border border-current px-1.5 py-0.5 text-2xs md:inline">
         {hint}
       </kbd>

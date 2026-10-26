@@ -38,7 +38,10 @@ export function Byline({
       <Link 
         href={`/${lang}/author`} 
         className="hover:opacity-80 transition-opacity inline-flex items-center justify-center min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] -mx-2" 
-        aria-label={`Author ${authorName}`}
+        // Decorative twin of the name link below: the initials are not part of any accessible
+        // name (axe label-content-name-mismatch), so keep it out of the a11y tree and tab order.
+        aria-hidden
+        tabIndex={-1}
       >
         <span
           aria-hidden
