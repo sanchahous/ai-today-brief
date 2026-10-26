@@ -2,7 +2,6 @@
 
 import { analyticsConfigured } from '@/lib/analytics-config';
 import { CONSENT_STORAGE_KEY, parseConsentJson, type ConsentState } from '@/lib/consent';
-import { analyticsDefaultFor, readConsentRegion } from '@/lib/consent-region';
 import type {
   DailyVisualEntrySource,
   DailyVisualEngagementEvent,
@@ -30,21 +29,18 @@ function analyticsReady(): boolean {
 }
 
 /**
- * A stored CMP choice always wins. Without one, analytics follow the consent
- * region (`consent-region.ts`): opt-in in the EEA/UK/CH or when the region is
- * unknown, opt-out elsewhere.
+ * Opt-out model (owner decision 2026-10-26): analytics run unless the visitor
+ * stored a CMP choice with analytics off. Opt-in everywhere (PR #396) hid ~90%
+ * of readers from GA4 and from the `/api/ev` reward beacon.
  */
 export function hasAnalyticsConsent(): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
     const stored = raw ? parseConsentJson(raw) : null;
-    if (stored) return stored.analytics;
-    return analyticsDefaultFor(
-      readConsentRegion(typeof document === 'undefined' ? '' : document.cookie),
-    );
+    return stored ? stored.analytics : true;
   } catch {
-    return false;
+    return true;
   }
 }
 

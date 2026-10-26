@@ -44,33 +44,9 @@ describe('analytics-client', () => {
     expect(mod.hasAnalyticsConsent()).toBe(true);
   });
 
-  it('hasAnalyticsConsent is false without stored consent (opt-in default)', async () => {
-    const mod = await import('@/lib/analytics-client');
-    expect(mod.hasAnalyticsConsent()).toBe(false);
-  });
-
-  it('hasAnalyticsConsent defaults to true in the standard consent region', async () => {
-    vi.stubGlobal('document', { cookie: 'atb-lang=uk; atb-consent-region=standard' });
+  it('hasAnalyticsConsent is true without a stored choice (opt-out default)', async () => {
     const mod = await import('@/lib/analytics-client');
     expect(mod.hasAnalyticsConsent()).toBe(true);
-    mod.trackEvent('test_event', { foo: 'bar' });
-    expect(gtag).toHaveBeenCalledWith('event', 'test_event', { foo: 'bar' });
-  });
-
-  it('hasAnalyticsConsent stays opt-in in the strict consent region', async () => {
-    vi.stubGlobal('document', { cookie: 'atb-consent-region=strict' });
-    const mod = await import('@/lib/analytics-client');
-    expect(mod.hasAnalyticsConsent()).toBe(false);
-  });
-
-  it('a stored opt-out wins over the standard region default', async () => {
-    vi.stubGlobal('document', { cookie: 'atb-consent-region=standard' });
-    storage.set(
-      CONSENT_STORAGE_KEY,
-      JSON.stringify({ analytics: false, ads: false, updatedAt: '2026-01-01T00:00:00.000Z' }),
-    );
-    const mod = await import('@/lib/analytics-client');
-    expect(mod.hasAnalyticsConsent()).toBe(false);
   });
 
   it('hasAnalyticsConsent is false after explicit analytics opt-out', async () => {
@@ -92,11 +68,10 @@ describe('analytics-client', () => {
     expect(gtag).not.toHaveBeenCalled();
   });
 
-  it('does not call gtag without stored consent', async () => {
+  it('calls gtag without a stored choice', async () => {
     const mod = await import('@/lib/analytics-client');
-    mod.setGlobalParams({ lang: 'en', page_path: '/en/news' });
     mod.trackEvent('test_event', { foo: 'bar' });
-    expect(gtag).not.toHaveBeenCalled();
+    expect(gtag).toHaveBeenCalledWith('event', 'test_event', { foo: 'bar' });
   });
 
   it('merges global params into trackEvent after consent is granted', async () => {

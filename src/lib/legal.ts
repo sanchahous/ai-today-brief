@@ -40,8 +40,8 @@ const PRIVACY: LegalDoc = {
       heading: { uk: 'Які дані ми збираємо', en: 'What we collect' },
       body: [
         {
-          uk: 'Email-адреса та мова — коли ви підписуєтесь на дайджест. Технічні дані: знеособлена статистика відвідувань (див. «Правова підстава»), країна за IP (без зберігання повної IP-адреси).',
-          en: 'Email address and language — when you subscribe to the digest. Technical data: anonymised visit statistics (see “Legal basis”) and country derived from IP (we do not store the full IP).',
+          uk: 'Email-адреса та мова — коли ви підписуєтесь на дайджест. Технічні дані: знеособлена статистика відвідувань (увімкнена за замовчуванням, вимикається в «Налаштуваннях cookie»), країна за IP (без зберігання повної IP-адреси).',
+          en: 'Email address and language — when you subscribe to the digest. Technical data: anonymised visit statistics (on by default, can be switched off in "Cookie settings") and country derived from IP (we do not store the full IP).',
         },
       ],
     },
@@ -49,8 +49,8 @@ const PRIVACY: LegalDoc = {
       heading: { uk: 'Правова підстава (GDPR)', en: 'Legal basis (GDPR)' },
       body: [
         {
-          uk: 'Email-розсилка — на підставі вашої згоди (ст. 6(1)(a) GDPR) із підтвердженням через double opt-in. Аналітика — для відвідувачів із ЄЕЗ, Великої Британії та Швейцарії лише на підставі згоди через банер cookie; для решти — на підставі законного інтересу (ст. 6(1)(f) GDPR) покращувати сайт, з правом вимкнути її будь-коли. Ви можете відкликати згоду або заперечити проти аналітики в «Налаштуваннях cookie» у футері.',
-          en: 'Email digest — on the basis of your consent (Art. 6(1)(a) GDPR), confirmed via double opt-in. Analytics — for visitors from the EEA, the UK and Switzerland only on the basis of consent given in the cookie banner; for everyone else on the basis of our legitimate interest in improving the site (Art. 6(1)(f) GDPR), which you can switch off at any time. You may withdraw consent or object to analytics via "Cookie settings" in the footer.',
+          uk: 'Email-розсилка — на підставі вашої згоди (ст. 6(1)(a) GDPR) із підтвердженням через double opt-in. Аналітика — на підставі законного інтересу (ст. 6(1)(f) GDPR) покращувати сайт; вона увімкнена за замовчуванням, і ви можете вимкнути її або заперечити проти неї будь-коли в «Налаштуваннях cookie» у футері. Маркетингові cookies — лише за вашою згодою.',
+          en: 'Email digest — on the basis of your consent (Art. 6(1)(a) GDPR), confirmed via double opt-in. Analytics — on the basis of our legitimate interest in improving the site (Art. 6(1)(f) GDPR); it is on by default, and you can switch it off or object at any time via "Cookie settings" in the footer. Marketing cookies — only with your consent.',
         },
       ],
     },
@@ -76,8 +76,8 @@ const PRIVACY: LegalDoc = {
       heading: { uk: 'Cookies та зберігання', en: 'Cookies & retention' },
       body: [
         {
-          uk: 'Технічні cookies необхідні для роботи сайту; аналітичні — у ЄЕЗ, Великій Британії та Швейцарії лише за згодою, в інших країнах увімкнені за замовчуванням і вимикаються в «Налаштуваннях cookie» у футері. Регіон визначаємо за країною IP і зберігаємо в технічному cookie. Дані підписки зберігаємо, доки підписка активна, і видаляємо протягом 30 днів після відписки.',
-          en: 'Essential cookies are required for the site; analytics cookies run only with consent in the EEA, the UK and Switzerland, and are on by default elsewhere, switchable off via "Cookie settings" in the footer. We derive the region from the IP country and keep it in an essential cookie. We keep subscription data while the subscription is active and delete it within 30 days of unsubscribe.',
+          uk: 'Технічні cookies необхідні для роботи сайту; аналітичні увімкнені за замовчуванням і вимикаються в «Налаштуваннях cookie» у футері; маркетингові — лише за згодою. Дані підписки зберігаємо, доки підписка активна, і видаляємо протягом 30 днів після відписки.',
+          en: 'Essential cookies are required for the site; analytics cookies are on by default and can be switched off via "Cookie settings" in the footer; marketing cookies run only with consent. We keep subscription data while the subscription is active and delete it within 30 days of unsubscribe.',
         },
       ],
     },
