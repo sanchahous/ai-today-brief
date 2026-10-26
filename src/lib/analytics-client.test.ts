@@ -44,9 +44,9 @@ describe('analytics-client', () => {
     expect(mod.hasAnalyticsConsent()).toBe(true);
   });
 
-  it('hasAnalyticsConsent is false without stored consent (opt-in default)', async () => {
+  it('hasAnalyticsConsent is true without a stored choice (opt-out default)', async () => {
     const mod = await import('@/lib/analytics-client');
-    expect(mod.hasAnalyticsConsent()).toBe(false);
+    expect(mod.hasAnalyticsConsent()).toBe(true);
   });
 
   it('hasAnalyticsConsent is false after explicit analytics opt-out', async () => {
@@ -68,11 +68,10 @@ describe('analytics-client', () => {
     expect(gtag).not.toHaveBeenCalled();
   });
 
-  it('does not call gtag without stored consent', async () => {
+  it('calls gtag without a stored choice', async () => {
     const mod = await import('@/lib/analytics-client');
-    mod.setGlobalParams({ lang: 'en', page_path: '/en/news' });
     mod.trackEvent('test_event', { foo: 'bar' });
-    expect(gtag).not.toHaveBeenCalled();
+    expect(gtag).toHaveBeenCalledWith('event', 'test_event', { foo: 'bar' });
   });
 
   it('merges global params into trackEvent after consent is granted', async () => {

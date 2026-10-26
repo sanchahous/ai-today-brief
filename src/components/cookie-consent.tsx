@@ -45,7 +45,6 @@ function loadStoredConsent(): ConsentState | null {
 export function CookieConsent({ lang }: { lang: Lang }) {
   const strings = getStrings(lang);
   const c = strings.cookie;
-  const region = lang === 'uk' ? 'UA' : 'EU';
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -55,7 +54,8 @@ export function CookieConsent({ lang }: { lang: Lang }) {
   const [hasStoredConsent, setHasStoredConsent] = useState<boolean | null>(null);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [openedFromFooter, setOpenedFromFooter] = useState(false);
-  const [analytics, setAnalytics] = useState(false);
+  /** Opt-out model: analytics start on until the visitor stores a choice. */
+  const [analytics, setAnalytics] = useState(true);
   const [ads, setAds] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const acceptRef = useRef<HTMLButtonElement>(null);
@@ -147,16 +147,10 @@ export function CookieConsent({ lang }: { lang: Lang }) {
     >
       <div className="mb-2 flex items-center gap-2">
         <h2 className="text-base font-semibold">{c.cookieTitle}</h2>
-        <span
-          className="text-faint border-line ml-auto rounded-full border px-2 py-0.5 text-2xs font-bold tracking-wide uppercase"
-          title={c.cookieRegionNote}
-        >
-          {region}
-        </span>
       </div>
 
       <p className="text-muted mb-4 text-sm leading-relaxed">
-        {region === 'UA' ? c.cookieBodyUA : c.cookieBodyEU}{' '}
+        {c.cookieBody}{' '}
         <Link href={`/${lang}/privacy`} className="text-accent underline">
           {c.cookiePolicy}
         </Link>

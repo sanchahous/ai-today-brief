@@ -227,6 +227,14 @@ Config показує `analytics_storage=denied` до вибору, GA collect �
 «Essential only» лишає analytics denied. **Власник рішення:** власник продукту.
 (source: [ga4-gsc](analytics/ga4-gsc.md); PR #396; `e2e/cookie-overlay.spec.ts` 2026-10-02)
 
+**Оновлення 2026-10-26:** opt-in усюди сховав ≈90% читачів від GA4 і `item_events`
+(4–6 людських сесій на тиждень замість 41–46). Власник вирішив увімкнути аналітику за
+замовчуванням для всіх відвідувачів (opt-out) — див. [ga4-gsc](analytics/ga4-gsc.md).
+**Відкрито:** юридична оцінка — для ЄЕЗ/UK/CH ePrivacy вимагає попередньої згоди на
+аналітичні cookies, тож opt-out там, імовірно, не відповідає вимогам (assumption);
+альтернатива на випадок перегляду — opt-in лише для ЄЕЗ/UK/CH за країною з
+`x-vercel-ip-country`. (source: повідомлення власника 2026-10-26; prod Supabase SQL 2026-10-26)
+
 ## 12. Fast Origin Transfer над лімітом Hobby (12,97 / 10 ГБ за 30 днів)
 
 Проєкт на Hobby, FOT за останні 30 днів 12,97 ГБ при ліміті 10 ГБ; листи Vercel 24.08

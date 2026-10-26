@@ -62,51 +62,41 @@ test.describe('Cookie banner vs overlays (no consent seeded)', () => {
     expect(await bottomOwner(page)).toBe('menu');
   });
 
-  test('does not send GA collect requests before a consent choice', async ({ page }) => {
-    const collects: string[] = [];
-    page.on('request', (request) => {
-      const url = request.url();
-      if (url.includes('/g/collect') || url.includes('google-analytics.com')) {
-        collects.push(url);
-      }
-    });
+  test('defaults analytics on and turns them off after "Essential only"', async ({ page }) => {
+    // Opt-out model (owner decision 2026-10-26): analytics_storage starts granted;
+    // a stored "Essential only" choice must deny it on the next page load.
+    const consentDefault = () =>
+      page.evaluate(() => {
+        const layer = window.dataLayer ?? [];
+        for (const entry of layer) {
+          const args = Array.isArray(entry)
+            ? entry
+            : typeof entry === 'object' && entry !== null
+              ? Object.values(entry as Record<string, unknown>)
+              : [];
+          if (args[0] === 'consent' && args[1] === 'default') {
+            const params = args[2] as { analytics_storage?: string } | undefined;
+            return params?.analytics_storage ?? null;
+          }
+        }
+        return typeof window.gtag === 'function' ? 'missing-default' : 'ga-off';
+      });
 
     await page.setViewportSize(VIEWPORTS.phone390);
     await page.goto('/en', { waitUntil: 'domcontentloaded' });
     await expect(consentRegion(page)).toBeVisible({ timeout: 30_000 });
-    await page.waitForTimeout(1500);
 
-    const consentDefaults = await page.evaluate(() => {
-      for (const script of document.querySelectorAll('script')) {
-        const source = script.textContent ?? '';
-        if (
-          source.includes("gtag('consent','default'") &&
-          source.includes("analytics_storage:'denied'")
-        ) {
-          return 'denied';
-        }
-      }
-      const layer = window.dataLayer ?? [];
-      for (const entry of layer) {
-        const args = Array.isArray(entry)
-          ? entry
-          : typeof entry === 'object' && entry !== null
-            ? Object.values(entry as Record<string, unknown>)
-            : [];
-        if (args[0] === 'consent' && args[1] === 'default') {
-          const params = args[2] as { analytics_storage?: string } | undefined;
-          return params?.analytics_storage ?? null;
-        }
-      }
-      return typeof window.gtag === 'function' ? 'missing-script' : 'ga-off';
-    });
-
-    if (consentDefaults === 'ga-off') {
+    const before = await consentDefault();
+    if (before === 'ga-off') {
       test.info().annotations.push({ type: 'note', description: 'GA not configured in this build' });
-    } else {
-      expect(consentDefaults).toBe('denied');
+      return;
     }
-    expect(collects).toHaveLength(0);
+    expect(before).toBe('granted');
+
+    await consentRegion(page).getByRole('button', { name: 'Essential only' }).click();
+    await expect(consentRegion(page)).toBeHidden();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    expect(await consentDefault()).toBe('denied');
   });
 
   test('does not cover the homepage primary CTA at 360px', async ({ page }) => {
