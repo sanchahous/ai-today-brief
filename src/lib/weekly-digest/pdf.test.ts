@@ -114,7 +114,8 @@ interface PlacedText {
 }
 
 async function readPages(pdf: Buffer): Promise<PlacedText[][]> {
-  const document = await getDocument({ data: new Uint8Array(pdf) }).promise;
+  const task = getDocument({ data: new Uint8Array(pdf) });
+  const document = await task.promise;
   try {
     const pages: PlacedText[][] = [];
     for (let number = 1; number <= document.numPages; number += 1) {
@@ -137,7 +138,7 @@ async function readPages(pdf: Buffer): Promise<PlacedText[][]> {
     }
     return pages;
   } finally {
-    await document.destroy();
+    await task.destroy();
   }
 }
 
@@ -146,7 +147,8 @@ async function readPages(pdf: Buffer): Promise<PlacedText[][]> {
  * carries a named destination, which resolves to the page it was registered on.
  */
 async function readContentsJumps(pdf: Buffer) {
-  const document = await getDocument({ data: new Uint8Array(pdf) }).promise;
+  const task = getDocument({ data: new Uint8Array(pdf) });
+  const document = await task.promise;
   try {
     const annotations = await (await document.getPage(CONTENTS_PAGE)).getAnnotations();
     const links = annotations
@@ -159,7 +161,7 @@ async function readContentsJumps(pdf: Buffer) {
     }
     return jumps;
   } finally {
-    await document.destroy();
+    await task.destroy();
   }
 }
 
