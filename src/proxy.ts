@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { CONSENT_REGION_COOKIE, consentRegionForCountry } from '@/lib/consent-region';
 import type { Database } from '@/lib/database.types';
 import { LANG_COOKIE, LANG_COOKIE_MAX_AGE, resolvePreferredLang } from '@/lib/preferred-lang';
 import { isLangPublicRouteSegment, parseLangSingleSegmentPath } from '@/lib/lang-public-routes';
@@ -138,6 +139,21 @@ function persistLangCookie(response: NextResponse, lang: Lang): void {
   });
 }
 
+/**
+ * Region-dependent analytics default (`consent-region.ts`). Written only when it
+ * changes; readable by the inline Consent Mode script, so not httpOnly.
+ */
+function persistConsentRegionCookie(request: NextRequest, response: NextResponse): void {
+  const region = consentRegionForCountry(request.headers.get('x-vercel-ip-country'));
+  if (request.cookies.get(CONSENT_REGION_COOKIE)?.value === region) return;
+  response.cookies.set(CONSENT_REGION_COOKIE, region, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+}
+
 async function refreshSupabase(request: NextRequest, response: NextResponse) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -206,6 +222,7 @@ export async function proxy(request: NextRequest) {
       : NextResponse.next({ request });
 
   if (segment === 'en' || segment === 'uk') persistLangCookie(response, segment);
+  persistConsentRegionCookie(request, response);
   if (
     pathname.startsWith('/admin') ||
     pathname.startsWith('/auth') ||

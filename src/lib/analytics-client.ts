@@ -2,6 +2,7 @@
 
 import { analyticsConfigured } from '@/lib/analytics-config';
 import { CONSENT_STORAGE_KEY, parseConsentJson, type ConsentState } from '@/lib/consent';
+import { analyticsDefaultFor, readConsentRegion } from '@/lib/consent-region';
 import type {
   DailyVisualEntrySource,
   DailyVisualEngagementEvent,
@@ -29,16 +30,19 @@ function analyticsReady(): boolean {
 }
 
 /**
- * Opt-in model: analytics off until the user grants it in the CMP.
- * No stored choice → blocked; stored with analytics: true → granted.
+ * A stored CMP choice always wins. Without one, analytics follow the consent
+ * region (`consent-region.ts`): opt-in in the EEA/UK/CH or when the region is
+ * unknown, opt-out elsewhere.
  */
 export function hasAnalyticsConsent(): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
     const stored = raw ? parseConsentJson(raw) : null;
-    if (!stored) return false;
-    return stored.analytics;
+    if (stored) return stored.analytics;
+    return analyticsDefaultFor(
+      readConsentRegion(typeof document === 'undefined' ? '' : document.cookie),
+    );
   } catch {
     return false;
   }

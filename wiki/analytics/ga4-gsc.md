@@ -1,10 +1,10 @@
 # Analytics — довідник (підтримувати актуальним!)
 
 Summary: Єдина активна property 540206735; GSC link, newsletter_subscribe як key event, retention 14 місяців і Tag Assistant підтверджено доказами власника. Google tag продовжує надсилати звернення на три destinations; доля двох залишкових призначень — окреме рішення.
-Sources: повідомлення й скриншоти власника 2026-09-30 (селектор property і деталі GSC link); HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
-Last updated: 2026-10-02
+Sources: prod Supabase SQL 2026-10-26; `src/lib/consent-region.ts`; повідомлення й скриншоти власника 2026-09-30 (селектор property і деталі GSC link); HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
+Last updated: 2026-10-26
 
-> Оновлено: **2026-10-02** (правила читання Singapore/China; consent opt-in PR #396). Стан property — **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events, consent, env) — онови цей файл у тому ж PR.
+> Оновлено: **2026-10-26** (регіональний consent: opt-in лише ЄЕЗ/UK/CH; раніше — правила читання Singapore/China 2026-10-02). Стан property — **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events, consent, env) — онови цей файл у тому ж PR.
 
 ## Поточний стан (перевірка 2026-09-30)
 
@@ -57,15 +57,20 @@ GA4-destination всередині — він не збирав нічого і 
 Vercel більше не читається — можна видалити з env.
 
 - **Search Console:** `sc-domain:aitodaybrief.com`.
-- **Consent Mode v2 (код, PR #396 / AH-3.6, 2026-10-02):** `analytics_storage: denied`
-  за замовчуванням (opt-in CMP); `hasAnalyticsConsent()` → false без збереженого вибору;
-  до «Accept all» — без GA collect (e2e assertion). CMP оновлює gtag consent через
-  `applyConsentToGtag` (`src/lib/consent-mode-snippet.ts`, `src/lib/analytics-client.ts`).
-- ⚠️ **Conflict:** production Tag Assistant власника **2026-09-30** (див. Admin-чекліст нижче)
-  показував `analytics_storage = granted` за замовчуванням (opt-out). Код після PR #396
-  навмисно змінює дефолт на opt-in — потрібна повторна перевірка власника на Vercel Preview
-  перед merge. (source: [open-questions](../open-questions.md) §11; PR
-  [#396](https://github.com/sanchahous/ai-today-brief/pull/396))
+- **Consent Mode v2 — регіональний режим (код, 2026-10-26, замінює opt-in усюди з PR #396):**
+  proxy пише cookie `atb-consent-region` (`strict` | `standard`) з `x-vercel-ip-country`
+  (`src/lib/consent-region.ts`, `src/proxy.ts`). `strict` = ЄЕЗ, Велика Британія, Швейцарія
+  або невідома країна → `analytics_storage: denied` до «Accept all» (як після PR #396).
+  `standard` = решта країн → analytics увімкнені за замовчуванням, вимикаються в CMP.
+  Збережений вибір у CMP завжди має пріоритет. Той самий гейт керує first-party біконом
+  `/api/ev`. Ad storage — denied, поки не дано згоду. Причина: opt-in усюди сховав
+  ≈90% читачів — людські сесії `item_events` упали з 41–46 до 4–6 на тиждень після
+  2026-10-02 (source: prod Supabase SQL 2026-10-26; `src/lib/consent-mode-snippet.ts`,
+  `src/lib/analytics-client.ts`). Текст політики приватності оновлено: для не-ЄЕЗ
+  підстава — законний інтерес, ст. 6(1)(f) GDPR (`src/lib/legal.ts`; юридична
+  оцінка — needs verification).
+- **Як читати GA4:** дані до 2026-10-02 (opt-out), 02.10–деплой цієї зміни (opt-in усюди)
+  і після деплою (регіональний режим) не порівнювані без поправки.
 
 ## Admin-конфігурація канонічної property — перевірено 2026-09-30
 
@@ -124,8 +129,8 @@ HYPD live check 2026-09-30; GA4 Data API 2026-09-29;
 - ✅ Data retention (event data): **14 місяців** (був дефолт 2)
 - ✅ GSC ↔ GA4 link
 - ✅ Consent Mode v2 (production 2026-09-30): analytics granted / ads denied за замовчуванням
-  (opt-out). ⚠️ Код PR #396 / AH-3.6 → opt-in (`analytics_storage: denied`); conflict —
-  [§11 open-questions](../open-questions.md)
+  (opt-out). Далі PR #396 / AH-3.6 → opt-in усюди (2026-10-02), потім регіональний режим
+  (2026-10-26) — див. «Поточний стан» вище і [§11 open-questions](../open-questions.md)
 
 > **2026-08-21:** покриття подій розширено (хаби, топ-новини, дайджести, воронка
 > підписки, dwell) — повний каталог див.

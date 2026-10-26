@@ -479,10 +479,10 @@ export const STRINGS = {
     opensInNewTab: 'opens in a new tab',
     cookie: {
       cookieTitle: 'We respect your privacy',
-      cookieBodyEU:
+      cookieBodyStrict:
         'We use cookies for analytics to improve the product. Choose what to allow — essential cookies are always required.',
-      cookieBodyUA:
-        'Essential cookies keep the site working; analytics cookies run only with your consent. Shown here for transparency.',
+      cookieBodyStandard:
+        'Essential cookies keep the site working. Anonymous visit stats are on so we can improve the brief — you can switch them off at any time.',
       cookieAccept: 'Accept all',
       cookieReject: 'Essential only',
       cookieManage: 'Manage',
@@ -1065,10 +1065,10 @@ export const STRINGS = {
     opensInNewTab: 'відкриється в новій вкладці',
     cookie: {
       cookieTitle: 'Ми поважаємо вашу приватність',
-      cookieBodyEU:
+      cookieBodyStrict:
         'Використовуємо cookies для аналітики, щоб покращувати продукт. Оберіть, що дозволити — технічні cookies потрібні завжди.',
-      cookieBodyUA:
-        'Технічні cookies потрібні для роботи сайту, аналітичні — лише за вашою згодою. Показуємо це для прозорості.',
+      cookieBodyStandard:
+        'Технічні cookies потрібні для роботи сайту. Знеособлена статистика відвідувань увімкнена, щоб ми покращували бриф, — її можна вимкнути будь-коли.',
       cookieAccept: 'Прийняти всі',
       cookieReject: 'Лише необхідні',
       cookieManage: 'Налаштувати',

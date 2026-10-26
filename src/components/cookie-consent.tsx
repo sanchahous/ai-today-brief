@@ -10,6 +10,7 @@ import {
   parseConsentJson,
   type ConsentState,
 } from '@/lib/consent';
+import { analyticsDefaultFor, readConsentRegion, type ConsentRegion } from '@/lib/consent-region';
 import {
   applyConsentToGtag,
   dispatchOpenConsent,
@@ -45,7 +46,8 @@ function loadStoredConsent(): ConsentState | null {
 export function CookieConsent({ lang }: { lang: Lang }) {
   const strings = getStrings(lang);
   const c = strings.cookie;
-  const region = lang === 'uk' ? 'UA' : 'EU';
+  /** Set by the proxy from the visitor's country; `strict` until read on the client. */
+  const [region, setRegion] = useState<ConsentRegion>('strict');
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -80,11 +82,15 @@ export function CookieConsent({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     const stored = loadStoredConsent();
+    const visitorRegion = readConsentRegion(document.cookie);
+    setRegion(visitorRegion);
     setHasStoredConsent(stored !== null);
     if (stored) {
       setAnalytics(stored.analytics);
       setAds(stored.ads);
       applyConsentToGtag(stored);
+    } else {
+      setAnalytics(analyticsDefaultFor(visitorRegion));
     }
   }, []);
 
@@ -151,12 +157,12 @@ export function CookieConsent({ lang }: { lang: Lang }) {
           className="text-faint border-line ml-auto rounded-full border px-2 py-0.5 text-2xs font-bold tracking-wide uppercase"
           title={c.cookieRegionNote}
         >
-          {region}
+          {region === 'strict' ? 'EU' : 'Intl'}
         </span>
       </div>
 
       <p className="text-muted mb-4 text-sm leading-relaxed">
-        {region === 'UA' ? c.cookieBodyUA : c.cookieBodyEU}{' '}
+        {region === 'strict' ? c.cookieBodyStrict : c.cookieBodyStandard}{' '}
         <Link href={`/${lang}/privacy`} className="text-accent underline">
           {c.cookiePolicy}
         </Link>
