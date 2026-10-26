@@ -27,8 +27,13 @@ export function revalidatePathsForPublish(extraPaths: string[] = []): string[] {
 }
 
 /**
- * Bust anon PostgREST Data Cache so ISR regeneration does not reuse stale JSON.
- * Publish flows call this together with `revalidatePath` on public surfaces.
+ * Site-wide purge: marks every page that read anon PostgREST data as stale, so
+ * each one re-renders on its next hit (crawlers reach thousands of item pages a
+ * day). Reserve it for changes that touch every page (weekly release, manual
+ * `purgeAll`). Routine publishes must not call it: `revalidatePath` already
+ * makes the listed paths read fresh data, because Data Cache and
+ * `unstable_cache` entries are checked against the route's soft tags. Calling
+ * it on every publish burned the Hobby Fluid CPU quota (2026-10).
  */
 export function revalidatePublicContentTag(): void {
   try {
@@ -41,11 +46,11 @@ export function revalidatePublicContentTag(): void {
 
 /**
  * Revalidate shared site surfaces for both languages plus the given content
- * paths. Used by the publish flows (Telegram webhook, weekly release worker)
- * so hubs never serve a day-old list after new items ship.
+ * paths. Used by the publish flows (Telegram webhook, `/api/revalidate`) so
+ * hubs never serve a day-old list after new items ship. Existing item pages
+ * keep their cached "related stories" until their own 24 h ISR window.
  */
 export function revalidateSiteSurfaces(extraPaths: string[] = []): void {
-  revalidatePublicContentTag();
   for (const path of revalidatePathsForPublish(extraPaths)) {
     try {
       revalidatePath(path);

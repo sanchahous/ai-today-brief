@@ -142,7 +142,9 @@ Overview показує preflight blockers і Hallucination board. Іди зве
    Фінальна перевірка claims→URL — на Hallucination board, не 3× Approve.
 4. Лічильник **Approved research** має стати **3/3** після machine attest.
 5. Тоді `editorial_master` переходить у **queued** і отримує GitHub Actions worker
-   (cron ~кожні **5 хв** лишається safety-dispatcher).
+   (cron ~кожні **5 хв** лишається safety-dispatcher; з 2026-10-26 він викликає Vercel лише
+   коли є `queued`/`retry_scheduled` job — source:
+   `supabase/migrations/20261026120000_gate_idle_vercel_cron_polls.sql`).
 6. Коли з’явиться **Master quality**:
    - **джоба більше не падає через якість.** Якщо рушій не зміг закрити всі перевірки, він
      зберігає випуск як **робочу (активну) ревізію**, завершується `succeeded` і показує

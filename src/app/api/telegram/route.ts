@@ -24,7 +24,7 @@ import { formatCustomNewsError, parseCustomCommand } from '@/lib/telegram-custom
 import { LANGS, SITE_URL } from '@/lib/site';
 import { indexNowConfigured, submitToIndexNow } from '@/lib/indexnow';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { revalidateSiteSurfaces, revalidatePublicContentTag } from '@/lib/revalidate-site';
+import { revalidateSiteSurfaces } from '@/lib/revalidate-site';
 import {
   approvedBanner,
   buildRejectPrompt,
@@ -321,8 +321,9 @@ async function handleEditorTake(
     .select('status')
     .eq('id', item.brief_id)
     .maybeSingle();
+  // revalidatePath alone re-reads this item's data (soft tags); a site-wide
+  // tag purge here re-rendered every crawled page for one editor note.
   if (brief?.status === 'published' && item.category_slug && item.slug) {
-    revalidatePublicContentTag();
     revalidatePath(`/en/news/${item.category_slug}/${item.slug}`);
     revalidatePath(`/uk/news/${item.category_slug}/${item.slug}`);
   }
