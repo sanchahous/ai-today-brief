@@ -5,6 +5,7 @@ import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { withSocialClickToken } from '@/lib/social/tracked-url';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { autoApproveCleanPosts } from './auto-approve';
 import { socialContentHash } from './content-hash';
 import {
   renderDailyVisualSocialAssets,
@@ -1063,6 +1064,7 @@ export async function composeDailyVisualSocialPackage(
     try {
       const posts = await persistDailyVisualPackage(input, packageId, version, drafts);
       const supersededPackageIds = await supersedePriorDailyVisualDrafts(input, packageId);
+      await autoApproveCleanPosts([packageId]);
       return {
         packageId,
         postIds: posts.map((post) => post.id),
