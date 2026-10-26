@@ -125,14 +125,14 @@ export default async function SettingsPage() {
             type="checkbox"
             name="auto_publish_green"
             defaultChecked={settings?.auto_publish_green ?? false}
-            disabled={(settings?.green_success_count ?? 0) < 30}
             className="mt-1 size-5 accent-[#47e4d3]"
           />
           <span>
-            <strong className="block text-slate-200">Auto-publish green packages</strong>
+            <strong className="block text-slate-200">Auto-publish clean daily posts</strong>
             <span className="text-xs text-slate-500">
-              Unlocks after 30 incident-free green deliveries. Current:{' '}
-              {settings?.green_success_count ?? 0}/30.
+              Approves a daily variant on its own when it has no blocking quality issue and its
+              channel is enabled. Weekly digests still need review. Clean deliveries so far:{' '}
+              {settings?.green_success_count ?? 0}.
             </span>
           </span>
         </label>

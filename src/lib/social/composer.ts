@@ -18,6 +18,7 @@ import {
   selectEditorialDigestItems,
 } from '../../../pipeline/weekly-digest';
 import { renderSocialAssets } from './assets';
+import { autoApproveCleanPosts } from './auto-approve';
 import { socialContentHash } from './content-hash';
 import { attachCriticReport } from './critic';
 import { findBlindCrossPosts, runQualityGate } from './quality';
@@ -126,16 +127,41 @@ interface VariantSeed {
   trackingToken: string;
   sourceUrl: string;
   scheduledFor: string;
+  contentParts?: string[];
 }
 
 function text(value: string | null | undefined) {
   return value?.trim() ?? '';
 }
 
-function truncate(value: string, max: number) {
-  const clean = value.replace(/\s+/g, ' ').trim();
+/**
+ * Fits copy into `max` characters at a sentence, else a word, boundary. Never
+ * appends an ellipsis: the quality gate blocks `…` / `...` as artificial
+ * truncation, so an ellipsis here made every long variant unpublishable.
+ * Paragraph breaks survive; only runs of spaces collapse.
+ */
+function fitText(value: string, max: number) {
+  const clean = value
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   if (clean.length <= max) return clean;
-  return `${clean.slice(0, max - 1).replace(/[\s,;:–—-]+$/, '')}…`;
+  const head = clean.slice(0, max);
+  const sentenceEnd = Math.max(
+    head.lastIndexOf('. '),
+    head.lastIndexOf('! '),
+    head.lastIndexOf('? '),
+    head.lastIndexOf('.\n'),
+  );
+  if (sentenceEnd >= max * 0.5) return head.slice(0, sentenceEnd + 1);
+  const wordEnd = Math.max(head.lastIndexOf(' '), head.lastIndexOf('\n'));
+  return (wordEnd > 0 ? head.slice(0, wordEnd) : head).replace(/[\s,;:–—-]+$/, '');
+}
+
+/** Fits `body` so that `suffix` (a tracked URL line) always survives intact. */
+function fitWithSuffix(body: string, suffix: string, max: number) {
+  return `${fitText(body, max - suffix.length)}${suffix}`;
 }
 
 function factStrings(value: Json | null): string[] {
@@ -184,7 +210,7 @@ function dailyBriefUrl(brief: SourceBrief, channel: SocialChannel) {
   return url.toString();
 }
 
-function topStorySeeds(
+export function topStorySeeds(
   item: SourceItem,
   sourceDate: string,
   now: Date,
@@ -199,7 +225,7 @@ function topStorySeeds(
   const seeds: VariantSeed[] = [];
 
   if (channelRunsOnDate('x', sourceDate, cadence.x)) {
-    const xText = truncate(`${title}\n\n${why}`, 278);
+    const xText = fitText(`${title}\n\n${why}`, 278);
     const xDest = publicStoryUrl(item, 'en', 'x');
     seeds.push({
       channel: 'x',
@@ -215,14 +241,19 @@ function topStorySeeds(
 
   if (channelRunsOnDate('threads', sourceDate, cadence.threads)) {
     const threadsDest = publicStoryUrl(item, 'en', 'threads');
+    // Threads publishes a 3–5 part sequence (quality gate `threads_parts`);
+    // the root is the first part and the tracked URL lives only in the last.
+    const parts = [
+      fitText(hook && hook !== title ? `${title}\n\n${hook}` : `${title}\n\n${why}`, 480),
+      fitText(`Why it matters: ${why}`, 480),
+      `What changes for builders in practice? Full brief: ${withSocialClickToken(threadsDest, tokens.threads)}`,
+    ];
     seeds.push({
       channel: 'threads',
       locale: 'en',
       format: 'conversation',
-      text: truncate(
-        `${title}\n\n${hook}\n\nWhy it matters: ${why}\n\nWhat changes for builders in practice? ${withSocialClickToken(threadsDest, tokens.threads)}`,
-        498,
-      ),
+      text: parts[0]!,
+      contentParts: parts,
       trackingToken: tokens.threads,
       sourceUrl: threadsDest,
       scheduledFor: nextScheduledForChannel('threads', sourceDate, now, cadence.threads),
@@ -243,16 +274,15 @@ function topStorySeeds(
         : []),
       '',
       `Practical takeaway: teams should verify where this changes cost, reliability, or delivery speed before changing a production workflow.`,
-      '',
-      `Full analysis: ${withSocialClickToken(linkedinDest, tokens.linkedin)}`,
-      '',
-      '#AI #Engineering',
     ].join('\n');
     seeds.push({
       channel: 'linkedin',
       locale: 'en',
       format: 'company_insight',
-      text: truncate(linkedin, 1200),
+      // LinkedIn is link-free in the body (`root_url`); the tracked URL goes in
+      // the first comment (`linkedin_comment_url`).
+      text: `${fitText(linkedin, 1170)}\n\n#AI #Engineering`,
+      firstComment: `Full analysis: ${withSocialClickToken(linkedinDest, tokens.linkedin)}`,
       trackingToken: tokens.linkedin,
       sourceUrl: linkedinDest,
       scheduledFor: nextScheduledForChannel('linkedin', sourceDate, now, cadence.linkedin),
@@ -264,7 +294,7 @@ function topStorySeeds(
       channel: 'instagram',
       locale: 'en',
       format: 'carousel_4x5',
-      text: truncate(
+      text: fitText(
         `${title}\n\n${text(item.summary_en)}\n\nWhy it matters: ${why}\n\nSave this for your next AI engineering review. Full brief via the link in bio.\n\n#AI #AITools #Engineering`,
         1500,
       ),
@@ -280,8 +310,9 @@ function topStorySeeds(
       channel: 'facebook',
       locale: 'uk',
       format: 'top_story',
-      text: truncate(
-        `${ukTitle}\n\nЩо сталося: ${text(item.summary_uk)}\n\nЧому це важливо: ${ukWhy}\n\nПовний розбір: ${withSocialClickToken(facebookDest, tokens.facebook)}`,
+      text: fitWithSuffix(
+        `${ukTitle}\n\nЩо сталося: ${text(item.summary_uk)}\n\nЧому це важливо: ${ukWhy}`,
+        `\n\nПовний розбір: ${withSocialClickToken(facebookDest, tokens.facebook)}`,
         1400,
       ),
       trackingToken: tokens.facebook,
@@ -293,7 +324,7 @@ function topStorySeeds(
   return seeds;
 }
 
-function telegramSeed(
+export function telegramSeed(
   brief: SourceBrief,
   items: SourceItem[],
   sourceDate: string,
@@ -306,7 +337,7 @@ function telegramSeed(
   for (const [index, item] of items.slice(0, 5).entries()) {
     lines.push(
       `${index + 1}. ${text(item.title_uk) || text(item.title_en)}`,
-      truncate(text(item.summary_uk), 190),
+      fitText(text(item.summary_uk), 190),
       '',
     );
   }
@@ -465,6 +496,7 @@ async function saveVariants(
         format: seed.format,
         text: seed.text,
         firstComment: seed.firstComment ?? null,
+        contentParts: seed.contentParts,
         assets,
         altText,
         scheduledFor: seed.scheduledFor,
@@ -505,6 +537,7 @@ async function saveVariants(
       status: 'in_review',
       post_text: draft.text,
       first_comment: draft.firstComment ?? null,
+      content_parts: (draft.contentParts ?? []) as unknown as Json,
       asset_urls: draft.assets as unknown as Json,
       alt_text: draft.altText ?? null,
       quality_report: report as unknown as Json,
@@ -556,6 +589,8 @@ export interface ComposeResult {
   createdPackageIds: string[];
   skipped: string[];
   weeklyDigestId?: string;
+  /** Variants approved without a human by `autoApproveCleanPosts`. */
+  autoApproved?: number;
 }
 
 async function notifyPackagesReady(packageIds: string[], label: string) {
@@ -659,8 +694,9 @@ export async function composeDailySocial(
     createdPackageIds.push(packageId);
   }
 
+  const autoApproved = await autoApproveCleanPosts(createdPackageIds);
   await notifyPackagesReady(createdPackageIds, `Daily content · ${sourceDate}`);
-  return { createdPackageIds, skipped };
+  return { createdPackageIds, skipped, autoApproved };
 }
 
 export interface ComposeRecentDailyResult {

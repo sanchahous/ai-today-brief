@@ -2369,6 +2369,10 @@ export type Database = {
         Args: { p_package_id: string };
         Returns: boolean;
       };
+      auto_approve_clean_social_posts: {
+        Args: { p_package_id: string };
+        Returns: number;
+      };
       activate_daily_visual_candidate: {
         Args: {
           p_actor_id?: string | null;
