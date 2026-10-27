@@ -1,8 +1,8 @@
 # Custom social delivery — operator runbook
 
 Summary: Кастомна доставка соц-постів поза стандартним CMS-шляхом.
-Sources: none (analysis)
-Last updated: 2026-07-18
+Sources: none (analysis); prod Supabase SQL і Vercel env list 2026-10-26; `src/lib/social/composer.ts`, `src/lib/social/quality.ts`
+Last updated: 2026-10-26
 
 
 The site publishes social content directly through GitHub Actions and the
@@ -64,3 +64,35 @@ Current daily timing remains 17:00 UTC. Each tracked article URL uses
 `utm_source`, `utm_medium=social`, `utm_campaign=daily_news` and
 `utm_content=top_story`, so GA4 and first-party item events can be joined back
 to a platform and a published item.
+
+## Автопублікація чистих daily-постів (2026-10-26)
+
+До цієї зміни жоден daily-пост не публікувався без людини: 288 постів стояли в
+`in_review`, останній `posted` — 2026-09-03 (source: prod Supabase SQL
+2026-10-26).
+Причини були в коді: `truncate()` у `src/lib/social/composer.ts` додавав `…`
+(блокер `artificial_ellipsis`); Threads не отримував `contentParts`
+(`threads_parts`); LinkedIn клав URL у тіло (`root_url`); `auto_approve_green_package`
+ніхто не викликав, а перемикач в адмінці відкривався лише після 30 «зелених»
+доставок, яких не могло бути.
+
+Тепер:
+
+- Генератор не скорочує копію через `…`, URL не обрізається, Threads має 3 частини,
+  LinkedIn несе URL у першому коментарі. Тест — `src/lib/social/composer.test.ts`.
+- RPC `auto_approve_clean_social_posts` (міграція
+  `20261026150000_auto_approve_clean_social_posts.sql`) схвалює **окремий пост**,
+  якщо: `/admin/settings` → «Auto-publish clean daily posts» увімкнено, канал
+  увімкнений у `channel_enabled`, немає kill switch, у `quality_report.blocking`
+  порожньо. Weekly digest — як раніше, через редакторський реліз.
+- Викликається одразу після створення пакета (`composeDailySocial`,
+  `composeDailyVisualSocialPackage`). Старий бэклог не чіпається.
+
+Що лишається на власнику (source: Vercel env list і `social_accounts`, 2026-10-26):
+
+| Канал | Стан | Що зробити |
+| --- | --- | --- |
+| Telegram | Підключено, `channel_enabled = true` | Увімкнути перемикач автопублікації |
+| X | Немає `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` у Vercel | Додати ключі, підключити акаунт, увімкнути канал |
+| LinkedIn | Немає `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` — OAuth віддає 503 | Створити LinkedIn app, додати змінні, пройти OAuth |
+| Threads, Facebook, Instagram | `THREADS_APP_*`, `META_APP_*` є, але OAuth жодного разу не завершився (рядків у `social_accounts` немає) | Пройти OAuth в `/admin/settings`; причину збою не встановлено (needs verification) |

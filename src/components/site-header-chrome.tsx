@@ -150,10 +150,11 @@ export function SiteHeaderChrome({
   return (
     <header className="site-header-shell sticky top-0 tablet:-top-[4.75rem] z-50 flex h-(--header-h) flex-col border-b border-line bg-bg/90 backdrop-blur-[14px] backdrop-saturate-[1.2]">
       <div className="mx-auto flex min-h-0 w-full max-w-page flex-1 items-center gap-2 px-gutter phone:gap-6 tablet:h-[4.75rem] tablet:flex-none">
-        <Link href={`/${lang}`} data-brand-strum aria-label={`${SITE_NAME} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] min-w-0 items-center gap-2.5 whitespace-nowrap py-2 text-[1.0625rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text compact:text-[1.1875rem] phone:gap-3 phone:text-[1.4375rem]">
+        <Link href={`/${lang}`} data-brand-strum aria-label={`${SITE_NAME} ${t.header.intelligenceEdit} — ${t.navHome}`} className="mr-auto inline-flex min-h-[44px] min-w-0 items-center gap-2.5 whitespace-nowrap py-2 text-[1.0625rem] leading-none tracking-[-0.02em] text-text font-serif no-underline hover:text-text compact:text-[1.1875rem] phone:gap-3 phone:text-[1.4375rem]">
           <BrandMark size={40} className="size-[30px] shrink-0 compact:size-[34px] phone:size-10" />
           <span className="min-w-0">
             <span className="block truncate">AI Today Brief</span>
+            {' '}
             <small className="mt-[6px] hidden truncate font-mono text-[0.75rem] uppercase tracking-[0.14em] text-faint phone:block">
               {t.header.intelligenceEdit}
             </small>
@@ -192,7 +193,7 @@ export function SiteHeaderChrome({
           <Link
             href={langToggleHref}
             lang={targetLang}
-            aria-label={t.langSwitch}
+            aria-label={`${lang === 'uk' ? 'EN' : 'UA'} — ${t.langSwitch}`}
             onClick={trackLangSwitch}
             className="hidden tablet:inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-pill border border-line px-2.5 font-mono text-[0.75rem] font-semibold tracking-[0.06em] text-accent transition-colors hover:border-accent no-underline"
           >
@@ -389,7 +390,7 @@ export function SiteHeaderChrome({
            <Link
               href={langToggleHref}
               lang={targetLang}
-              aria-label={t.langSwitch}
+              aria-label={`${lang === 'uk' ? 'EN' : 'UA'} — ${t.langSwitch}`}
               onClick={() => {
                 trackLangSwitch();
                 setMenuOpen(false);

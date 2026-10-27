@@ -30,7 +30,7 @@ export type PolicyKey = (typeof POLICY_KEYS)[number];
 
 const PRIVACY: LegalDoc = {
   title: { uk: 'Політика приватності', en: 'Privacy Policy' },
-  updated: '2026-06-01',
+  updated: '2026-10-26',
   intro: {
     uk: 'Ця політика пояснює, які персональні дані збирає AI Today Brief, з якою метою та як ви можете ними керувати. Контролер даних — Oleksandr Kuzmenko (одноосібний оператор сервісу). Контакт: hello@sashakuzmenko.com.',
     en: 'This policy explains what personal data AI Today Brief collects, why, and how you can control it. Data controller — Oleksandr Kuzmenko (sole operator of the service). Contact: hello@sashakuzmenko.com.',
@@ -40,8 +40,8 @@ const PRIVACY: LegalDoc = {
       heading: { uk: 'Які дані ми збираємо', en: 'What we collect' },
       body: [
         {
-          uk: 'Email-адреса та мова — коли ви підписуєтесь на дайджест. Технічні дані: знеособлена статистика відвідувань (за вашою згодою), країна за IP (без зберігання повної IP-адреси).',
-          en: 'Email address and language — when you subscribe to the digest. Technical data: anonymised visit statistics (with your consent) and country derived from IP (we do not store the full IP).',
+          uk: 'Email-адреса та мова — коли ви підписуєтесь на дайджест. Технічні дані: знеособлена статистика відвідувань (увімкнена за замовчуванням, вимикається в «Налаштуваннях cookie»), країна за IP (без зберігання повної IP-адреси).',
+          en: 'Email address and language — when you subscribe to the digest. Technical data: anonymised visit statistics (on by default, can be switched off in "Cookie settings") and country derived from IP (we do not store the full IP).',
         },
       ],
     },
@@ -49,8 +49,8 @@ const PRIVACY: LegalDoc = {
       heading: { uk: 'Правова підстава (GDPR)', en: 'Legal basis (GDPR)' },
       body: [
         {
-          uk: 'Email-розсилка — на підставі вашої згоди (ст. 6(1)(a) GDPR) із підтвердженням через double opt-in. Аналітика — на підставі згоди через банер cookie. Ви можете відкликати згоду будь-коли.',
-          en: 'Email digest — on the basis of your consent (Art. 6(1)(a) GDPR), confirmed via double opt-in. Analytics — on the basis of consent given in the cookie banner. You may withdraw consent at any time.',
+          uk: 'Email-розсилка — на підставі вашої згоди (ст. 6(1)(a) GDPR) із підтвердженням через double opt-in. Аналітика — на підставі законного інтересу (ст. 6(1)(f) GDPR) покращувати сайт; вона увімкнена за замовчуванням, і ви можете вимкнути її або заперечити проти неї будь-коли в «Налаштуваннях cookie» у футері. Маркетингові cookies — лише за вашою згодою.',
+          en: 'Email digest — on the basis of your consent (Art. 6(1)(a) GDPR), confirmed via double opt-in. Analytics — on the basis of our legitimate interest in improving the site (Art. 6(1)(f) GDPR); it is on by default, and you can switch it off or object at any time via "Cookie settings" in the footer. Marketing cookies — only with your consent.',
         },
       ],
     },
@@ -76,8 +76,8 @@ const PRIVACY: LegalDoc = {
       heading: { uk: 'Cookies та зберігання', en: 'Cookies & retention' },
       body: [
         {
-          uk: 'Технічні cookies необхідні для роботи сайту; аналітичні — лише за згодою (керується в «Налаштуваннях cookie» у футері). Дані підписки зберігаємо, доки підписка активна, і видаляємо протягом 30 днів після відписки.',
-          en: 'Essential cookies are required for the site; analytics cookies run only with consent (managed via "Cookie settings" in the footer). We keep subscription data while the subscription is active and delete it within 30 days of unsubscribe.',
+          uk: 'Технічні cookies необхідні для роботи сайту; аналітичні увімкнені за замовчуванням і вимикаються в «Налаштуваннях cookie» у футері; маркетингові — лише за згодою. Дані підписки зберігаємо, доки підписка активна, і видаляємо протягом 30 днів після відписки.',
+          en: 'Essential cookies are required for the site; analytics cookies are on by default and can be switched off via "Cookie settings" in the footer; marketing cookies run only with consent. We keep subscription data while the subscription is active and delete it within 30 days of unsubscribe.',
         },
       ],
     },

@@ -2,8 +2,9 @@
 
 Summary: Runbook соц-CMS: хвилі підключення destination-ів.
 Sources: none (analysis), `src/app/admin/(cms)/page.tsx`, `src/app/admin/actions.ts`,
-weekly social URL rewrite on publish 2026-09-03
-Last updated: 2026-09-03
+weekly social URL rewrite on publish 2026-09-03,
+`supabase/migrations/20261026120000_gate_idle_vercel_cron_polls.sql`
+Last updated: 2026-10-26
 
 
 The CMS is deliberately safe on first deploy: migration `040_social_cms.sql`
@@ -77,7 +78,10 @@ select vault.create_secret(
 );
 ```
 
-Enable `pg_cron` and `pg_net`, then create the jobs:
+Enable `pg_cron` and `pg_net`, then create the jobs. The three 5-minute jobs POST only when
+`public.internal_poll_has_work(job)` finds due work — an idle POST is a billed Vercel cold
+start (source: `supabase/migrations/20261026120000_gate_idle_vercel_cron_polls.sql`;
+[vercel-fluid-cpu](vercel-fluid-cpu.md)):
 
 ```sql
 select cron.schedule(
@@ -92,7 +96,8 @@ select cron.schedule(
     ),
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
-  );
+  )
+  where public.internal_poll_has_work('social_publish_due');
   $$
 );
 
@@ -124,7 +129,8 @@ select cron.schedule(
     ),
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
-  );
+  )
+  where public.internal_poll_has_work('weekly_digest_generate');
   $$
 );
 
@@ -140,7 +146,8 @@ select cron.schedule(
     ),
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
-  );
+  )
+  where public.internal_poll_has_work('weekly_digest_release_due');
   $$
 );
 ```

@@ -29,18 +29,18 @@ function analyticsReady(): boolean {
 }
 
 /**
- * Opt-in model: analytics off until the user grants it in the CMP.
- * No stored choice → blocked; stored with analytics: true → granted.
+ * Opt-out model (owner decision 2026-10-26): analytics run unless the visitor
+ * stored a CMP choice with analytics off. Opt-in everywhere (PR #396) hid ~90%
+ * of readers from GA4 and from the `/api/ev` reward beacon.
  */
 export function hasAnalyticsConsent(): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
     const stored = raw ? parseConsentJson(raw) : null;
-    if (!stored) return false;
-    return stored.analytics;
+    return stored ? stored.analytics : true;
   } catch {
-    return false;
+    return true;
   }
 }
 

@@ -7,9 +7,11 @@ export const PUBLIC_CONTENT_TAG = 'public-content';
  * page's own `export const revalidate`: at 3600 the item page's declared 24 h was
  * silently an hour (Vercel log: `Cache TTL 1h`), and every crawler hit on a stale
  * article re-rendered it and re-queried Supabase. Content changes do not wait for
- * the timer — publish, editor-take, weekly release and `/api/revalidate` all call
- * `revalidatePublicContentTag()`. Hubs that declare 1 h (home, news, digests) still
- * regenerate hourly, now from the Data Cache instead of Supabase.
+ * the timer — publish flows `revalidatePath` the hubs and the touched items (soft
+ * tags make those renders re-read data); only the weekly release and an explicit
+ * `/api/revalidate` `purgeAll` call `revalidatePublicContentTag()`. Hubs that
+ * declare 1 h (home, news, digests) still regenerate hourly, now from the Data
+ * Cache instead of Supabase.
  */
 export const PUBLIC_CONTENT_REVALIDATE_SECONDS = 86400;
 
