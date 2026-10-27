@@ -51,6 +51,16 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
+  --color-newsletter: var(--newsletter);
+  --color-on-newsletter: var(--on-newsletter);
+  --color-weekly: var(--weekly);
+  --color-weekly-deep: var(--weekly-deep);
+  --color-on-weekly: var(--on-weekly);
+  --color-chart-surface: var(--chart-surface);
+  --color-chart-track: var(--chart-track);
+  --color-on-chart: var(--on-chart);
+  --color-hero-surface: var(--hero-surface);
+  --accent-gradient: var(--accent-gradient);
 
   /* Radii 3 / 4 / 8 / 14 / pill. `rounded-lg` stays Tailwind's own 0.5rem (8px). */
   --radius-xs: 3px;
@@ -161,6 +171,28 @@
   --art-stage: #0e100f;
   --accent-rgb: 212 180 131;
 
+  /*
+   * A1 (ATB-77) — reserved surfaces for post-release After Hours polish.
+   * Values from artifacts/after-hours/screens-v3 home/article mockups + prototype tokens.css.
+   * Components bind in later tasks; unused here so existing pages stay visually identical.
+   */
+  --newsletter: #d4b483;
+  --on-newsletter: #171918;
+  --weekly: #431a24;
+  --weekly-deep: #2e1118;
+  --on-weekly: #f6e6df;
+  --coverage-agents: #b2a6f0;
+  --coverage-tools: #7fcfae;
+  --coverage-models: #cfa0e6;
+  --coverage-vibe: #e59bc9;
+  --coverage-cost: #6fcad6;
+  --coverage-local: #8fb4ee;
+  --coverage-tutorials: #e6c071;
+  --chart-surface: #282d29;
+  --chart-track: #323832;
+  --on-chart: #f0e9dc;
+  --hero-surface: #1c1e1d;
+
   /* Elevation and surface effects — Day overrides all of them below. */
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 28px -18px rgb(0 0 0 / 0.7);
   --shadow-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 22px 48px -24px rgb(0 0 0 / 0.85);
@@ -168,6 +200,15 @@
   --stage-light: radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.11), transparent 62%);
   --sheen: linear-gradient(105deg, transparent 20%, rgb(255 240 208 / 0.28) 45%, transparent 70%);
   --grain-opacity: 0.07;
+  --scrim: rgb(5 8 7 / 0.72);
+  --scrim-banner: linear-gradient(90deg, rgb(5 8 7 / 0.95) 0%, rgb(5 8 7 / 0.72) 42%, rgb(5 8 7 / 0.35) 74%, transparent 100%), linear-gradient(0deg, rgb(5 8 7 / 0.78) 0%, transparent 54%);
+  --text-shadow-banner: 0 1px 2px rgb(0 0 0 / 0.55), 0 8px 28px rgb(0 0 0 / 0.45);
+  --newsletter-glow: radial-gradient(90% 120% at 100% 0%, rgb(255 244 220 / 0.18), transparent 60%);
+  --accent-gradient: linear-gradient(115deg, #6f5c3d, #ecd7a9 26%, #9a7f52 49%, #e8c995 72%, #746247);
+  --tint-accent: rgb(212 180 131 / 0.12);
+  --tint-signal: rgb(181 216 204 / 0.12);
+  --tint-claret: rgb(227 145 157 / 0.13);
+  --tint-hover: rgb(240 233 220 / 0.05);
 
   /* Space (4/8 scale) and fluid page rhythm. */
   --space-1: 4px;
@@ -271,12 +312,37 @@ html[data-theme='day'] {
   --art-text: #f0e9dc;
   --art-stage: #0e100f;
   --accent-rgb: 114 86 46;
+  --newsletter: #72562e;
+  --on-newsletter: #fdfaf4;
+  --weekly: #f3e1dc;
+  --weekly-deep: #ead0ca;
+  --on-weekly: #4a1522;
+  --coverage-agents: #b2a6f0;
+  --coverage-tools: #7fcfae;
+  --coverage-models: #cfa0e6;
+  --coverage-vibe: #e59bc9;
+  --coverage-cost: #6fcad6;
+  --coverage-local: #8fb4ee;
+  --coverage-tutorials: #e6c071;
+  --chart-surface: #fdfaf4;
+  --chart-track: #e6ddcc;
+  --on-chart: #1d211d;
+  --hero-surface: #e8e0d0;
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 12px 30px -20px rgb(74 56 28 / 0.4);
   --shadow-2: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 24px 50px -26px rgb(74 56 28 / 0.5);
   --shadow-pop: 0 28px 70px -30px rgb(58 44 22 / 0.45), 0 0 0 1px rgb(58 44 22 / 0.06);
   --stage-light: radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.28), transparent 62%);
   --sheen: linear-gradient(105deg, transparent 20%, rgb(255 255 255 / 0.55) 45%, transparent 70%);
   --grain-opacity: 0.05;
+  --scrim: rgb(29 33 29 / 0.5);
+  --scrim-banner: linear-gradient(90deg, rgb(29 33 29 / 0.88) 0%, rgb(29 33 29 / 0.55) 42%, rgb(29 33 29 / 0.22) 74%, transparent 100%), linear-gradient(0deg, rgb(29 33 29 / 0.6) 0%, transparent 54%);
+  --text-shadow-banner: 0 1px 2px rgb(0 0 0 / 0.55), 0 8px 28px rgb(0 0 0 / 0.45);
+  --newsletter-glow: radial-gradient(90% 120% at 100% 0%, rgb(255 255 255 / 0.35), transparent 60%);
+  --accent-gradient: linear-gradient(115deg, #6f5c3d, #ecd7a9 26%, #9a7f52 49%, #e8c995 72%, #746247);
+  --tint-accent: rgb(114 86 46 / 0.09);
+  --tint-signal: rgb(45 101 89 / 0.1);
+  --tint-claret: rgb(142 42 63 / 0.08);
+  --tint-hover: rgb(29 33 29 / 0.045);
 }
 
 @layer base {
