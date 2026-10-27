@@ -8,8 +8,9 @@ Data Cache на anon GET, `cachePublicRead`, e2e prerender cap, і SSG disk-memo
 Sources: Supabase Usage Dashboard (цикл 21 Aug 2026 – 21 Sep 2026); `edge_logs` через
 MCP `query_logs` 2026-09-01T10:00Z–2026-09-02T13:10Z; `src/lib/supabase.ts`,
 `src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`;
-live check production + prod Supabase 2026-09-30 (регресія memo, див. нижче).
-Last updated: 2026-09-30
+live check production + prod Supabase 2026-09-30 (регресія memo, див. нижче);
+`vercel.json` `git.deploymentEnabled` 2026-10-27.
+Last updated: 2026-10-27
 
 ---
 
@@ -76,7 +77,9 @@ Next Data Cache їх не бачить. Три повні прод-білди в
    цей cap **не** ставить — індексовані item-сторінки далі prerender. Не Promote preview
    на прод: merge в `main` стартує новий production build.
 4. **Wiki/pipeline-only деплой**: `vercel.json` `ignoreCommand` (`scripts/vercel-should-build.mjs`)
-   пропускає Vercel SSG, якщо в коміті немає site-файлів. E2e на `push` у `main` так само
+   пропускає Vercel SSG, якщо в коміті немає site-файлів. Окремо `git.deploymentEnabled`
+   взагалі не створює деплой для `next` і для `feat/*`; `main` лишається увімкненим
+   (2026-10-27). E2e на `push` у `main` так само
    пропускає docs-only (раніше завжди білдив). **2026-09-03:** skip також `.gitignore`,
    `LICENSE`, `scripts/`, `library/` (інструменти відео не змінюють HTML). Sonar більше
    не збирає повний каталог — `npm run build:ci`; `library/` і `scripts/` не запускають

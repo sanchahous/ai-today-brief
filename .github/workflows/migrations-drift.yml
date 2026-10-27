@@ -3,8 +3,10 @@ name: Prod migration drift
 # Catches the 2026-08-28 class of bug: a migration is on main (and in the
 # repo) but was never applied to prod, so RPCs 404 at Ship time.
 on:
+  # PRs into `next` and into `main`. The job still diffs origin/main vs prod
+  # (a migration is "on main but not applied"). Push stays `main` only.
   pull_request:
-    branches: [main]
+    branches: [main, next]
   push:
     branches: [main]
   workflow_dispatch:

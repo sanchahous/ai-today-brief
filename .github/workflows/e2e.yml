@@ -7,8 +7,11 @@ on:
   # filter therefore moved INSIDE the job: the workflow always runs and always
   # reports, and on an irrelevant PR it finishes in ~10 s without checking out,
   # installing or building anything.
+  # Task PRs target `next`; the daily release is a PR `next` → `main`.
+  # Required checks must report on both bases. `push` stays `main` only:
+  # that run is the one that saves the shared Actions cache.
   pull_request:
-    branches: [main]
+    branches: [main, next]
 
   # Runs on main for ONE reason: caches. A cache written from a `refs/pull/N/merge`
   # ref is invisible to every other PR, so while this workflow was PR-only each PR
