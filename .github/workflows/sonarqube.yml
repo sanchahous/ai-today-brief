@@ -8,8 +8,9 @@ on:
   # post-merge push to main re-scanned an identical tree (duplicate work).
   # NOTE: once the main-branch baseline matters, add `push: [main]` back.
   workflow_dispatch:
+  # Same bases as e2e: task PRs into `next`, plus the daily `next` → `main` release.
   pull_request:
-    branches: [main]
+    branches: [main, next]
 
 concurrency:
   group: sonar-${{ github.event.pull_request.number || github.ref }}

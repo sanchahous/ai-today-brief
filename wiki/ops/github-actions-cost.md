@@ -5,8 +5,10 @@ Summary: скільки Actions-хвилин палив репозиторій �
 Sources: GitHub REST live check 2026-08-18 (`/actions/runs`, `/actions/runs/{id}/timing`,
 `/actions/caches`, `/actions/permissions`), `.github/workflows/e2e.yml`, `playwright.config.ts`,
 `.github/dependabot.yml`, GitHub Actions live check 2026-10-04 (runs 37131677760, 37209797493),
-`scripts/e2e-affected.ts`
-Last updated: 2026-10-04
+`scripts/e2e-affected.ts`, `vercel.json` (`git.deploymentEnabled`),
+`.github/workflows/sonarqube.yml`, `.github/workflows/migrations-drift.yml`,
+`.github/workflows/deps-integrity.yml`
+Last updated: 2026-10-27
 
 ---
 
@@ -221,6 +223,32 @@ notes — тобто бамп потребує ручної перевірки, 
 **Очікування (не виміряно):** типовий PR із 1–3 зачепленими спеками на одному рушії — у межах
 кількох хвилин замість 17; найгірший PR (широка зміна) — приблизно третина попереднього часу.
 Фактичне прискорення звірити на перших PR після мержу. (assumption)
+
+## 9. Інтеграційна гілка `next` (2026-10-27)
+
+Задачі мерджаться в `next`. Продакшн — один PR `next` → `main` раз на день.
+Щоб ті самі перевірки з’являлись на PR у `next`, у `on.pull_request.branches`
+додано `next` там, де раніше був лише `main`:
+
+| Workflow | Job | `pull_request` | `push` |
+|---|---|---|---|
+| `e2e.yml` | Playwright smoke | `main`, `next` | лише `main` (запис кешу) |
+| `sonarqube.yml` | SonarQube Scan | `main`, `next` | немає |
+| `migrations-drift.yml` | origin/main vs prod schema_migrations | `main`, `next` | лише `main` |
+| `deps-integrity.yml` | Clean install (npm ci) | усі бази (фільтра гілок не було) | лише `main` |
+
+`migrations-drift` і на PR у `next` порівнює `origin/main` із продом, не файли лише
+на `next`. (source: `scripts/check-prod-migrations.ts`)
+
+Vercel: `git.deploymentEnabled` лишає автоматичний деплой увімкненим для `main`
+і вимикає його для `next` і для `feat/*` (minimatch). Незадана гілка, як і раніше,
+деплоїться. `ignoreCommand` на `main` не змінювався.
+(source: [Git configuration](https://vercel.com/docs/project-configuration/git-configuration);
+`vercel.json`)
+
+Захист гілки `next` у GitHub (required status checks) цим комітом не змінюється:
+workflow лише починають репортити чеки. Правила захисту — окреме налаштування
+репозиторію. (source: `vercel.json`, workflow-файли вище)
 
 ## Related pages
 

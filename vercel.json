@@ -1,3 +1,10 @@
 {
-  "ignoreCommand": "node scripts/vercel-should-build.mjs"
+  "ignoreCommand": "node scripts/vercel-should-build.mjs",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "next": false,
+      "feat/*": false
+    }
+  }
 }
