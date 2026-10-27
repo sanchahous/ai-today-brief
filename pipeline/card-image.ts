@@ -420,6 +420,68 @@ export async function fillCardImages(
   return { generated, skipped: all.length - pending.length, failed };
 }
 
+export type RegenerateCardImageResult =
+  | {
+      ok: true;
+      url: string;
+      previousUrl: string | null;
+      scene: string;
+      sceneSource: string;
+    }
+  | { ok: false; reason: 'not_found' | 'rejected' | 'generation_failed' | 'upload_failed' | 'db_update_failed' };
+
+/**
+ * Regenerate one news-card cover in place (new JPEG origin + `card_image_url` with a fresh `?v=`).
+ * Used for editorial repairs; normal publish flow stays idempotent via {@link fillCardImages}.
+ */
+export async function regenerateCardImageForSlug(
+  db: PipelineDb,
+  slug: string,
+  cfg: CardImageConfig,
+): Promise<RegenerateCardImageResult> {
+  const { data: it, error } = await db
+    .from('brief_items')
+    .select(
+      'id, slug, title_en, title_uk, summary_en, summary_uk, category_slug, card_image_url, review_status',
+    )
+    .eq('slug', slug)
+    .maybeSingle();
+  if (error) throw new Error(`[card-image] load item failed: ${error.message}`);
+  if (!it?.slug) return { ok: false, reason: 'not_found' };
+  if (it.review_status === 'rejected') return { ok: false, reason: 'rejected' };
+
+  const colorBySlug = await loadCategoryColors(db);
+  const sceneRegistry = await resolveSceneRegistry({ ...cfg, db });
+  const itemCfg: CardImageConfig = { ...cfg, db, registry: sceneRegistry };
+
+  const title = (it.title_en || it.title_uk || '').trim();
+  const summary = (it.summary_en || it.summary_uk || '').trim();
+  const accent = hueName(colorBySlug.get(it.category_slug ?? '') ?? FALLBACK_ACCENT);
+  const result = await generateEditorialIllustration(
+    { title, summary, accent, seedKey: it.slug },
+    itemCfg,
+  );
+  if (!result?.scene) return { ok: false, reason: 'generation_failed' };
+
+  const url = await uploadCardImage(db, it.slug, result.bytes);
+  if (!url) return { ok: false, reason: 'upload_failed' };
+
+  const { error: updErr } = await db
+    .from('brief_items')
+    .update({ card_image_url: url })
+    .eq('id', it.id);
+  if (updErr) return { ok: false, reason: 'db_update_failed' };
+
+  await cfg.onImageGenerated?.(result);
+  return {
+    ok: true,
+    url,
+    previousUrl: it.card_image_url,
+    scene: result.scene,
+    sceneSource: result.sceneSource ?? 'unknown',
+  };
+}
+
 async function loadCategoryColors(db: PipelineDb): Promise<Map<string, string | null>> {
   const { data } = await db.from('categories').select('slug, color');
   return new Map((data ?? []).map((c) => [c.slug, c.color]));
@@ -445,6 +507,8 @@ export function buildPrompt(accent: string, scene: string, storyContext = ''): s
     `central 78% of frame width and central 64% of frame height; use only atmospheric background ` +
     `outside that safe area. No fake UI, dashboard, screen, code panel, terminal, document, chart, ` +
     `collage, split panel, information-card pile, or card-soup. ${roboticsRule} ` +
+    `Never make a human face, portrait, headshot, or any person the subject -- illustrate the ` +
+    `technology, mechanism, or outcome itself, never a person using, announcing, or representing it. ` +
     `Never generate text, letters, numbers, labels, logos, or gibberish.`;
 }
 
@@ -464,6 +528,9 @@ export function negativePrompt(storyContext = ''): string {
     `${roboticsNegative}glowing brain, human brain, brain, neural-network mesh, circuit board, ` +
     `generic glowing orb, floating sphere, abstract blob, anonymous server aisle, lone laptop on desk, ` +
     `generic data-center corridor, stock server room, interchangeable tech stock, generated gibberish, ` +
+    `human face, human portrait, portrait photography, headshot, close-up face, selfie, ` +
+    `woman's face, man's face, person's face, model posing, glamour photography, beauty photography, ` +
+    `stock photo of a person, person looking at camera, ` +
     `low quality, blurry, jpeg artifacts, distorted, deformed, extra fingers, extra limbs, cluttered, ` +
     `busy, stock-photo look`
   );
@@ -499,6 +566,17 @@ const FORBIDDEN_NEWS_SCENE_PATTERN =
   /\b(?:fake ui|dashboard|interface|screen|code panel|terminal|ide|document|chart|collage|split panel|moodboard|information card|card-soup|card soup)\b/iu;
 
 const ROBOTIC_SCENE_PATTERN = /\b(?:humanoid|android|robot(?:s|ic|ics)?|robot mascot)\b/iu;
+
+/**
+ * No human portrait is ever the correct cover for a news item -- the story is about
+ * technology, not a stock-photo face. Unconditional (unlike the robotics pattern,
+ * which has a literal-story exception): a recurring production bug generated an
+ * AI portrait of an unrelated person as the cover for a story about an edge-inference
+ * model release, and it had reappeared after an earlier fix, so the ban here has no
+ * "unless literally about them" escape hatch for the director to find again.
+ */
+const HUMAN_PORTRAIT_SCENE_PATTERN =
+  /\b(?:portrait|headshot|head[-\s]?and[-\s]?shoulders|close-?up (?:of )?(?:a |an )?(?:woman|man|person|girl|boy|face)|selfie|glamour (?:shot|photography)|beauty (?:shot|photography)|human face|(?:woman|man|person|girl|boy)(?:'s)? face|looking (?:directly )?(?:in|at) the camera|model posing)\b/iu;
 
 /** Physical robotics is allowed only when it is the literal subject of the news. */
 export function isPhysicalRoboticsStory(text: string): boolean {
@@ -550,6 +628,7 @@ function causalSceneFromStructuredOutput(value: string): string | null {
 
 function hasForbiddenNewsSceneObject(scene: string, storyContext: string): boolean {
   if (FORBIDDEN_NEWS_SCENE_PATTERN.test(scene)) return true;
+  if (HUMAN_PORTRAIT_SCENE_PATTERN.test(scene)) return true;
   return !isPhysicalRoboticsStory(storyContext) && ROBOTIC_SCENE_PATTERN.test(scene);
 }
 
@@ -866,7 +945,9 @@ export function buildNewsCardSceneInstruction(title: string, summary: string): s
     `belongs outside that safe area. Use at most two supporting objects. Prefer a literal, grounded scene ` +
     `over an abstract metaphor, generic technology stock, or a collection of symbols. ` +
     `Do not show humanoid robots, androids, robot mascots, or robotic arms unless this item is literally ` +
-    `about physical robotics hardware. Ban fake UI, dashboards, screens, code panels, terminals, documents, ` +
+    `about physical robotics hardware. Never make a human face, portrait, headshot, or any person the ` +
+    `subject -- illustrate the technology, mechanism, or outcome itself, never a person using, announcing, ` +
+    `or representing it. Ban fake UI, dashboards, screens, code panels, terminals, documents, ` +
     `charts, split panels, collages, information-card piles, and card-soup. Ban glowing brains, generic ` +
     `orbs, circuit-board wallpaper, anonymous server aisles, and lone laptops. No text, letters, numbers, ` +
     `logos, labels, watermarks, or gibberish. ` +

@@ -11,7 +11,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code
 library 2026-08-23, daily production cover 2026-08-24, image-only QA Likert 2026-08-25
-Last updated: 2026-08-25
+Last updated: 2026-10-27
 
 ---
 
@@ -85,6 +85,18 @@ Daily generation runs **once, post-publish** (`pipeline/card-image.ts` from
 `pipeline/run-daily.ts`) and is idempotent. Estimated image spend can land in
 `generation_cost_events` (see `/admin/costs`).
 
+### News cards: no human portraits (2026-10-27)
+
+Daily **news** covers (`brief_items.card_image_url`) must never centre a human face,
+portrait, headshot, or stock-photo person — the story is about technology, not a
+model posing for the camera. The art-director prompt, FLUX positive/negative
+prompts, and `prepareNewsCardScene` all enforce this; portrait/headshot scene
+language is discarded for the causal **topic fallback** (`fallbackScene`) before
+pixels are sent to `@cf/black-forest-labs/flux-2-klein-9b` (default
+`DEFAULT_CF_IMAGE_MODEL`). There is no “unless the story is about them” escape
+hatch (unlike the physical-robotics exception). (source: ATB-89,
+`pipeline/card-image.ts` `HUMAN_PORTRAIT_SCENE_PATTERN`, 2026-10-27)
+
 Цей абзац описує **news-card** images. Він не є daily digest cover: з 2026-08-24 daily cover має
 окремий production workflow з однією тезою, pinned dynamic OpenRouter Image route, bounded
 $5/month spend, semantic QA, manual source/editor choice і шість social draft’ів. News cards
@@ -132,8 +144,15 @@ npx tsx scripts/backfill-card-images.ts --reencode-png
 `--reencode-png` downloads existing PNG origins, runs `encodeCardOrigin`, writes
 `${slug}.jpg`, updates `card_image_url`, then removes the PNG. **No image-model
 call** and no Cloudflare key. Idempotent: JPEG URLs are skipped. Cap 250/run
-(`CARD_ORIGIN_REENCODE_MAX`). Do not use `--force` for this — that regenerates
-pixels via FLUX. (source: `pipeline/card-image.ts`, 2026-08-15)
+(`CARD_ORIGIN_REENCODE_MAX`). (source: `pipeline/card-image.ts`, 2026-08-15)
+
+**Single-item repair** (regenerates pixels via FLUX, upserts `${slug}.jpg`, bumps `?v=`):
+
+```
+npx tsx --env-file=.env.local pipeline/scripts/regenerate-card-image.ts --slug <item-slug>
+```
+
+(source: `pipeline/scripts/regenerate-card-image.ts`, ATB-89, 2026-10-27)
 
 ## Verify a render offline
 
