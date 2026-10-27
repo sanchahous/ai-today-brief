@@ -298,6 +298,7 @@ describe('buildPrompt', () => {
     expect(prompt).toContain('central 64% of frame height');
     expect(prompt).toContain('No fake UI, dashboard, screen, code panel');
     expect(prompt).toContain('Never depict humanoid robots');
+    expect(prompt).toContain('Never make a human face, portrait, headshot, or any person the subject');
   });
 
   it('removes planning labels before they can leak into fallback image pixels', () => {
@@ -340,6 +341,35 @@ describe('buildPrompt', () => {
     expect(safe).toContain('small cluster of expert modules');
     expect(safe.toLowerCase()).not.toMatch(/robot|dashboard|screen|panel/);
   });
+
+  // Regression: production published an AI-generated portrait of an unrelated
+  // woman as the cover for "Liquid AI releases open d1 decision models for
+  // sub-10ms edge inference" -- a story with no human subject at all. The art
+  // director occasionally returns a portrait/headshot scene anyway; it must be
+  // discarded for the topic-based keyword fallback, never forwarded to FLUX.
+  it('replaces a portrait scene unrelated to the story with the topic-based causal fallback', () => {
+    const story =
+      'Liquid AI released open d1 decision models for sub-10ms edge inference on resource-constrained devices.';
+    const safe = prepareNewsCardScene(
+      'a close-up portrait of a young woman smiling softly, studio lighting, shallow depth of field',
+      story,
+    );
+
+    expect(safe).not.toMatch(/portrait|woman|face|headshot/i);
+    expect(safe).toBe(fallbackScene(story));
+  });
+
+  it('flags portrait/headshot/selfie language as a forbidden news scene object', () => {
+    const story = 'Liquid AI released open d1 decision models for edge inference.';
+    for (const scene of [
+      'a portrait of a developer',
+      'close-up of a woman looking at the camera',
+      'a headshot on a plain backdrop',
+      "the model's face fills the frame, selfie style",
+    ]) {
+      expect(prepareNewsCardScene(scene, story)).toBe(fallbackScene(story));
+    }
+  });
 });
 
 describe('negativePrompt', () => {
@@ -355,6 +385,9 @@ describe('negativePrompt', () => {
     expect(neg).toContain('humanoid robot');
     expect(neg).toContain('code panel');
     expect(neg).toContain('card-soup');
+    expect(neg).toContain('human portrait');
+    expect(neg).toContain('headshot');
+    expect(neg).toContain('selfie');
   });
 
   it('keeps physical robots available only for literal robotics stories', () => {
@@ -718,6 +751,9 @@ describe('sceneBrief', () => {
     expect(instruction).toContain('Do not output those labels or your reasoning');
     expect(instruction).toContain('Ban fake UI, dashboards, screens, code panels');
     expect(instruction).toContain('unless this item is literally about physical robotics hardware');
+    expect(instruction).toContain(
+      'Never make a human face, portrait, headshot, or any person the subject',
+    );
   });
 });
 
