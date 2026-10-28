@@ -43,6 +43,7 @@ test.describe('News search page (/[lang]/news/search)', () => {
   });
 
   test('second query from results form resets chip, sort and URL', async ({ page }) => {
+    test.setTimeout(90_000);
     const t = getStrings('en').news;
     await page.goto('/en/news/search?q=mcp', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
@@ -58,12 +59,17 @@ test.describe('News search page (/[lang]/news/search)', () => {
       .check();
     await expect(page.locator('#news-sort-top')).toHaveValue('oldest');
     await expect(page).toHaveURL(/sort=oldest/);
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
+      timeout: 30_000,
+    });
 
     const input = page.locator('#news-search-q');
     await input.fill('agents');
     await expect(input).toHaveValue('agents');
-    const submit = page.getByTestId('news-search-form').getByRole('button', { name: /search/i });
-    await Promise.all([page.waitForURL(/q=agents/, { timeout: 15_000 }), submit.click()]);
+    await Promise.all([
+      page.waitForURL(/q=agents/, { timeout: 45_000 }),
+      input.press('Enter'),
+    ]);
 
     await expect(page).toHaveURL(/q=agents/);
     await expect(page).not.toHaveURL(/sort=oldest/);

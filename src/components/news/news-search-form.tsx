@@ -41,10 +41,11 @@ export function NewsSearchForm({
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // Read from the form, not React state — automation can submit before a controlled
-    // input's onChange commit when workers are busy (second search on /news/search).
-    const raw = new FormData(e.currentTarget).get('q');
-    const q = (typeof raw === 'string' ? raw : '').trim();
+    // Read the live control value — not React state — so a busy main thread cannot
+    // submit a stale query after the user edits the field (search results page).
+    const field = e.currentTarget.elements.namedItem('q');
+    const q =
+      field instanceof HTMLInputElement ? field.value.trim() : value.trim();
     setValue(q);
     trackSearch(q, 'search-page', lang);
     router.push(q ? `/${lang}/news/search?q=${encodeURIComponent(q)}` : `/${lang}/news/search`);
