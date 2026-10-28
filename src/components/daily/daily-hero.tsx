@@ -1,10 +1,11 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { DailyVisualEngagement } from '@/components/daily/daily-visual-engagement';
 import { ReadProgressRing } from '@/components/daily/daily-read-state';
+import styles from '@/components/daily/daily.module.css';
 import { CategoryBanner } from '@/components/editorial/category-banner';
-import { BannerHeroCopy, BannerHeroFrame } from '@/components/editorial/editorial-hero';
-import { AiDisclosureNote } from '@/components/ai-disclosure-note';
-import { ClockIcon } from '@/components/icons';
+import { BannerHeroFrame } from '@/components/editorial/editorial-hero';
+import { ClockIcon, ListIcon, SparkleIcon } from '@/components/icons';
 import type { DailyBriefView } from '@/lib/briefs';
 import { briefDateParts } from '@/lib/daily-edition';
 import { pluralLabel, readMinutesForParts } from '@/lib/home-stats';
@@ -23,10 +24,6 @@ function cleanIntro(value: string | null | undefined): string | null {
   return normalized || null;
 }
 
-// No daily brief has a separately-authored short lead (unlike the weekly
-// digest's `standfirst`), so a long single paragraph is cut at a sentence.
-// This budget roughly matches one opening sentence without competing with
-// the hero visual. A real paragraph break (decision #360) wins first.
 const EXCERPT_MAX_CHARS = 220;
 
 function splitExcerpt(text: string, maxChars: number): { excerpt: string; more: string | null } {
@@ -63,11 +60,6 @@ function splitParagraphs(text: string): { excerpt: string; more: string | null }
   return { excerpt: first, more: paragraphs.slice(1).join('\n\n') };
 }
 
-/**
- * The display title gives the immediate orientation, and the first paragraph
- * of the intro stays visible for on-page SEO/AEO. The rest, when there is
- * more, stays behind Show more so it doesn't compete with the visual.
- */
 export function dailyHeroDescriptions(intro: string | null | undefined): {
   excerpt: string | null;
   more: string | null;
@@ -77,6 +69,60 @@ export function dailyHeroDescriptions(intro: string | null | undefined): {
   const paragraphs = splitParagraphs(cleaned);
   if (paragraphs) return paragraphs;
   return splitExcerpt(cleaned, EXCERPT_MAX_CHARS);
+}
+
+function DailyMeta({ lang, minutes, count }: { lang: Lang; minutes: number; count: number }) {
+  const t = getStrings(lang);
+  return (
+    <div className={styles.metaRow}>
+      {minutes > 0 ? (
+        <span>
+          <ClockIcon size={16} />
+          {minutes} {pluralLabel(minutes, lang, 'minutes')}
+        </span>
+      ) : null}
+      {count > 0 ? (
+        <span>
+          <ListIcon size={16} />
+          {count} {pluralLabel(count, lang, 'stories')}
+        </span>
+      ) : null}
+      <span>
+        <SparkleIcon size={14} />
+        <Link className={styles.aiNoteLink} href={`/${lang}/ai-disclosure`}>
+          {t.aiNoteLabel}
+        </Link>
+      </span>
+    </div>
+  );
+}
+
+function IntroBlock({
+  lang,
+  excerpt,
+  more,
+}: {
+  lang: Lang;
+  excerpt: string | null;
+  more: string | null;
+}) {
+  const t = getStrings(lang);
+  if (!excerpt) return null;
+
+  if (!more) {
+    return <p className={styles.introLead}>{excerpt}</p>;
+  }
+
+  return (
+    <details className={styles.introDetails}>
+      <summary className={styles.introSummary}>
+        <span className={styles.introLead}>{excerpt}</span>
+        <span className={styles.introToggleMore}>{t.briefShowMore}</span>
+        <span className={styles.introToggleLess}>{t.briefShowLess}</span>
+      </summary>
+      <p className={styles.introBody}>{more}</p>
+    </details>
+  );
 }
 
 export function DailyHero({ brief, lang }: { brief: DailyBriefView; lang: Lang }) {
@@ -89,32 +135,38 @@ export function DailyHero({ brief, lang }: { brief: DailyBriefView; lang: Lang }
   const lead = brief.allItems[0];
 
   return (
-    <header className="mb-8" data-testid="daily-hero">
-      <div className="mb-6 flex flex-col gap-6 tablet:flex-row tablet:items-start tablet:justify-between">
+    <header data-testid="daily-hero">
+      <div className={styles.masthead}>
         {parts ? (
-          <p className="m-0 flex items-end gap-3" aria-hidden="true">
-            <span className="font-serif text-text text-6xl leading-none">{parts.day}</span>
-            <span className="text-muted text-sm leading-snug">
+          <p className={styles.dateBlock} aria-hidden="true">
+            <span className={styles.dayNum}>{parts.day}</span>
+            <span className={styles.monthBlock}>
               {parts.month}
               <br />
               {parts.weekday}
             </span>
           </p>
         ) : null}
-        <ReadProgressRing />
+
+        <div className={styles.headCopy}>
+          <p className={styles.eyebrow}>
+            {t.dailyBriefEyebrow}
+            {parts ? (
+              <>
+                {' · '}
+                <time dateTime={parts.iso}>{parts.full}</time>
+              </>
+            ) : null}
+          </p>
+          <h1 className={styles.headTitle}>{displayTitle}</h1>
+          <IntroBlock lang={lang} excerpt={excerpt} more={more} />
+          <DailyMeta lang={lang} minutes={minutes} count={count} />
+        </div>
+
+        <ReadProgressRing variant="masthead" />
       </div>
 
-      <DailyVisual
-        brief={brief}
-        lang={lang}
-        lead={lead}
-        displayTitle={displayTitle}
-        excerpt={excerpt}
-        more={more}
-        minutes={minutes}
-        count={count}
-        parts={parts}
-      />
+      <DailyVisual brief={brief} lang={lang} lead={lead} />
     </header>
   );
 }
@@ -123,71 +175,14 @@ function DailyVisual({
   brief,
   lang,
   lead,
-  displayTitle,
-  excerpt,
-  more,
-  minutes,
-  count,
-  parts,
 }: {
   brief: DailyBriefView;
   lang: Lang;
   lead: DailyBriefView['allItems'][number] | undefined;
-  displayTitle: string;
-  excerpt: string | null;
-  more: string | null;
-  minutes: number;
-  count: number;
-  parts: ReturnType<typeof briefDateParts>;
 }) {
   const t = getStrings(lang);
   const visual = brief.visual;
   if (!visual && !lead) return null;
-
-  const eyebrow = (
-    <>
-      {t.dailyBriefEyebrow}
-      {parts ? (
-        <>
-          {' · '}
-          <time dateTime={parts.iso}>{parts.full}</time>
-        </>
-      ) : null}
-    </>
-  );
-
-  const dek = excerpt ? <p className="m-0">{excerpt}</p> : null;
-
-  const footer = more ? (
-    <details className="group max-w-[70ch]">
-      <summary className="rounded-pill border-line bg-surface/80 text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] list-none items-center gap-2 border px-4 text-sm font-semibold backdrop-blur-sm [&::-webkit-details-marker]:hidden">
-        <span className="group-open:hidden">{t.briefShowMore}</span>
-        <span className="hidden group-open:inline">{t.briefShowLess}</span>
-      </summary>
-      <p className="text-muted m-0 mt-4 text-base leading-7 whitespace-pre-line">{more}</p>
-    </details>
-  ) : null;
-
-  const meta = (
-    <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-2 p-0">
-      {minutes > 0 ? (
-        <li className="inline-flex items-center gap-1.5">
-          <ClockIcon size={16} />
-          <span>
-            {minutes} {pluralLabel(minutes, lang, 'minutes')}
-          </span>
-        </li>
-      ) : null}
-      {count > 0 ? (
-        <li>
-          {count} {pluralLabel(count, lang, 'stories')}
-        </li>
-      ) : null}
-      <li>
-        <AiDisclosureNote lang={lang} variant="inline" />
-      </li>
-    </ul>
-  );
 
   const art = visual ? (
     <Image
@@ -212,27 +207,21 @@ function DailyVisual({
 
   return (
     <>
-      <BannerHeroFrame id="daily-visual-hero" testId="daily-visual" art={art}>
-        <BannerHeroCopy
-          eyebrow={eyebrow}
-          title={displayTitle}
-          dek={dek}
-          meta={meta}
-          footer={footer}
-        />
-      </BannerHeroFrame>
-      <figcaption className="text-faint mt-2 text-sm">
-        {visual ? (
-          <>
-            <span className="text-text font-semibold">{t.dailyVisualLabel}.</span> {visual.alt}
-          </>
-        ) : (
-          <>
-            {t.dailyVisualFallback}
-            {lead?.categoryName ? ` · ${lead.categoryName}` : ''}
-          </>
-        )}
-      </figcaption>
+      <figure className={styles.visual}>
+        <BannerHeroFrame id="daily-visual-hero" testId="daily-visual" art={art} overlay={false} />
+        <figcaption className="text-faint mt-2 text-sm">
+          {visual ? (
+            <>
+              <span className="text-text font-semibold">{t.dailyVisualLabel}.</span> {visual.alt}
+            </>
+          ) : (
+            <>
+              {t.dailyVisualFallback}
+              {lead?.categoryName ? ` · ${lead.categoryName}` : ''}
+            </>
+          )}
+        </figcaption>
+      </figure>
       {visual ? (
         <DailyVisualEngagement
           targetId="daily-visual-hero"

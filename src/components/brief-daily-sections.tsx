@@ -2,6 +2,7 @@ import type { BriefPackSection } from '@/lib/briefs';
 import { formatPackUpdateLabel } from '@/lib/briefs';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
+import styles from '@/components/daily/daily.module.css';
 import { DailyItem } from '@/components/daily/daily-item';
 
 function packOffsets(packs: readonly BriefPackSection[]): { pack: BriefPackSection; startIndex: number }[] {
@@ -27,17 +28,21 @@ export function BriefDailySections({
   return (
     <div>
       {sections.map(({ pack, startIndex }, packIdx) => (
-        <section key={pack.slug} className={packIdx > 0 ? 'mt-10' : ''} aria-labelledby={packIdx > 0 ? `pack-${pack.slug}` : undefined}>
+        <section
+          key={pack.slug}
+          className={packIdx > 0 ? styles.packSection : undefined}
+          aria-labelledby={packIdx > 0 ? `pack-${pack.slug}` : undefined}
+        >
           {packIdx > 0 ? (
-            <header className="mb-4">
-              <h2 id={`pack-${pack.slug}`} className="text-accent m-0 text-xs font-bold tracking-[0.14em] uppercase">
-                {formatPackUpdateLabel(lang, pack.publishedAt)}
+            <header>
+              <h2 id={`pack-${pack.slug}`} className={styles.packTitle}>
+                <span>{formatPackUpdateLabel(lang, pack.publishedAt)}</span>
               </h2>
               {pack.intro ? <p className="text-muted m-0 mt-2 text-base leading-relaxed">{pack.intro}</p> : null}
             </header>
           ) : null}
 
-          <ol className="m-0 grid list-none gap-4 p-0" start={startIndex + 1}>
+          <ol className={styles.itemList} start={startIndex + 1}>
             {pack.items.map((item, itemIdx) => (
               <DailyItem
                 key={item.id}

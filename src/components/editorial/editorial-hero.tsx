@@ -6,12 +6,15 @@ export function BannerHeroFrame({
   className = '',
   id,
   testId,
+  overlay = true,
 }: {
   art: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   id?: string;
   testId?: string;
+  /** When false, art-only frame (daily visual) — no scrim or copy slot. */
+  overlay?: boolean;
 }) {
   return (
     <figure
@@ -20,8 +23,8 @@ export function BannerHeroFrame({
       className={`banner-hero-frame ${className}`.trim()}
     >
       <div className="banner-hero-art">{art}</div>
-      <div aria-hidden className="banner-hero-scrim" />
-      <div className="banner-hero-copy">{children}</div>
+      {overlay ? <div aria-hidden className="banner-hero-scrim" /> : null}
+      {children ? <div className="banner-hero-copy">{children}</div> : null}
     </figure>
   );
 }
