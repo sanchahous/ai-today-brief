@@ -1,10 +1,10 @@
-# Дизайн-система After Hours: архітектура токенів і governance (v3.0.0)
+# Дизайн-система After Hours: архітектура токенів і governance (v3.1.0)
 
-Summary: єдина канонічна специфікація токенів дизайн-системи After Hours фінальної версії v3.0.0 (major AH-7.3: прибрано legacy-аліаси `--bg-soft`, `--surface-2`, `--border`, `--border-soft`; дизайн-систему повністю впроваджено в production): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
-Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29; PR #369, #381, #382, #384, #385, #386, #438.
-Last updated: 2026-10-06
+Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v3.1.0 (minor A1/ATB-77: зарезервовані поверхні newsletter/weekly/coverage/scrim/chart/hero з макетів screens-v3; major AH-7.3: прибрано legacy-аліаси `--bg-soft`, `--surface-2`, `--border`, `--border-soft`): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
+Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/screens-v3/home-desktop-night.webp`; `artifacts/after-hours/screens-v3/home-desktop-day.webp`; `artifacts/after-hours/screens-v3/article-desktop-night.webp`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29; PR #369, #381, #382, #384, #385, #386, #438, #458.
+Last updated: 2026-10-27
 
-**Статус:** прийнято й реалізовано в production (фінальна версія v3.0.0). Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md; PR #438).
+**Статус:** прийнято й реалізовано в production (v3.1.0). Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md; PR #438; A1 PR #458).
 
 ---
 
@@ -82,8 +82,9 @@ fallback невідомих. Day color-mix overrides прибрано.
    - Patch: виправлення контрастності або коригування відтінку в межах ±5% яскравості.
    - Minor: додавання нових токенів або компонентних ролей без ламання наявних інтерфейсів.
    - Major: перейменування чи видалення токенів, зміна шкали типографіки чи сітки.
-3. **Changelog v3.0.0 (2026-10-05, major, AH-7.3, фінальна версія епіку):** видалено legacy-аліаси `--bg-soft` → `--bg-deep`, `--surface-2` → `--raised`/`--overlay`, `--border` → `--line`, `--border-soft` → `--line-soft`; Tailwind `sm/md/lg/xl` вирівняно з D5; legacy CSS-класи з `globals.css` перенесено в CSS-модулі; видалено невикористані `video-teaser`, `post-card`, `category-thumb`. У коді 0 входжень застарілих аліасів підтверджено Vitest гейтом. ([PR #438](https://github.com/sanchahous/ai-today-brief/pull/438))
-4. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
+3. **Changelog v3.1.0 (2026-10-27, minor, A1 / ATB-77):** зарезервовано поверхні з макетів `screens-v3` (home night/day, article night) без підключення компонентів: `--newsletter` / `--on-newsletter` (теплий tan блоку розсилки), `--weekly` / `--weekly-deep` / `--on-weekly` (бордовий weekly-блок), сім `--coverage-*` для смуги покриття на головній, `--scrim` / `--scrim-banner` / `--text-shadow-banner` для тексту поверх банерів, `--chart-surface` / `--chart-track` / `--on-chart` (вищий контраст графіки Article), `--hero-surface` (тональна смуга hero), плюс `--newsletter-glow`, `--brass-gradient`, `--tint-*` з прототипу. Контраст тексту на нових поверхнях ≥ 4.5:1 у `tokens:check`. ([PR #458](https://github.com/sanchahous/ai-today-brief/pull/458); [задача a1](../tasks/a1.md))
+4. **Changelog v3.0.0 (2026-10-05, major, AH-7.3, фінальна версія епіку):** видалено legacy-аліаси `--bg-soft` → `--bg-deep`, `--surface-2` → `--raised`/`--overlay`, `--border` → `--line`, `--border-soft` → `--line-soft`; Tailwind `sm/md/lg/xl` вирівняно з D5; legacy CSS-класи з `globals.css` перенесено в CSS-модулі; видалено невикористані `video-teaser`, `post-card`, `category-thumb`. У коді 0 входжень застарілих аліасів підтверджено Vitest гейтом. ([PR #438](https://github.com/sanchahous/ai-today-brief/pull/438))
+5. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
 4. **Продовження v2.1.0 (2026-09-30, AH-1.2):** єдиний контраст-гейт 2.0 (222 пари замість 158) і сім токенів прототипу, яких бракувало в коді: `--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`, `--selection-text` (Night і Day; споживачі з'являться з компонентами фази 2 і 3). Візуально нічого не змінюється.
 5. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: стандартні `sm/md/lg/xl` Tailwind. Значення `--header-h` оновлено в AH-3.3.
 6. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
@@ -178,6 +179,15 @@ Ratchet після AH-1.4: 30 кольорових входжень (було 42
 | `--success` | успіх | `success` |
 | `--warning` | попередження | `warning` |
 | `--accent-rgb` | канали accent для `rgb(var(--accent-rgb) / α)` у градієнтах | не з `tokens.ts` |
+| `--newsletter` | теплий tan блоку розсилки (Night brass-400 / Day brass-700; макет home) | `newsletter` |
+| `--on-newsletter` | текст і контролі на newsletter | `onNewsletter` |
+| `--weekly` | бордова заливка weekly-блоку (дорівнює velvet; окреме ім'я для A2+) | `weekly` |
+| `--weekly-deep` | глибший шар weekly cover | `weeklyDeep` |
+| `--on-weekly` | текст на weekly / weekly-deep | `onWeekly` |
+| `--chart-surface` | панель графіки/таблиці Article з вищим контрастом до `--bg` | `chartSurface` |
+| `--chart-track` | трек барів у графіці | `chartTrack` |
+| `--on-chart` | основний текст на chart-surface / chart-track | `onChart` |
+| `--hero-surface` | тональна поверхня hero/masthead для контрасту з `--bg` | `heroSurface` |
 
 ### 7.1.1 Кольори категорій (AH-1.4)
 
@@ -206,6 +216,13 @@ Ratchet після AH-1.4: 30 кольорових входжень (було 42
 | `--art-neutral` | нейтральний відтінок банера невідомої категорії | `artNeutral` |
 | `--art-text` | текст на темному банері | `artText` |
 | `--art-stage` | фон темної сцени банера | `artStage` |
+| `--coverage-agents` | смуга покриття home · Agents (незмінний chroma, як `--art-agents`) | `coverageAgents` |
+| `--coverage-tools` | смуга покриття · Tools | `coverageTools` |
+| `--coverage-models` | смуга покриття · Models | `coverageModels` |
+| `--coverage-vibe` | смуга покриття · Vibe | `coverageVibe` |
+| `--coverage-cost` | смуга покриття · Cost | `coverageCost` |
+| `--coverage-local` | смуга покриття · Local | `coverageLocal` |
+| `--coverage-tutorials` | смуга покриття · Tutorials | `coverageTutorials` |
 
 ### 7.2 Типографіка
 
@@ -308,8 +325,17 @@ AH-1.5 підключає локальні OFL subset-и через `next/font/l
 | `--stage-light` | плями світла на темній сцені, градієнт | `PRIMITIVES.effects.<тема>.stageLight` |
 | `--sheen` | блиск при русі, градієнт | `sheen` |
 | `--grain-opacity` | непрозорість зерна (0.07 Night, 0.05 Day) | `grainOpacity` |
+| `--scrim` | напівпрозорий оверлей модалок і sheet | `scrim` |
+| `--scrim-banner` | градієнтний scrim під текстом поверх банерів / cover art | `scrimBanner` |
+| `--text-shadow-banner` | тінь тексту поверх фото/банерів | `textShadowBanner` |
+| `--newsletter-glow` | радіальний блиск на tan-блоці розсилки | `newsletterGlow` |
+| `--accent-gradient` | латунний градієнт номерів weekly cover | `accentGradient` |
+| `--tint-accent` | легка латунна заливка іконок / hover | `tintAccent` |
+| `--tint-signal` | легка celadon-заливка | `tintSignal` |
+| `--tint-claret` | легка claret-заливка | `tintClaret` |
+| `--tint-hover` | нейтральний hover-tint | `tintHover` |
 
-Споживачі `--stage-light`, `--sheen`, `--grain-opacity` з'являться з hero й editorial-патернами (AH-5.x); до того токени лише зарезервовано.
+Споживачі `--stage-light`, `--sheen`, `--grain-opacity` і A1-ефектів підключаються в наступних задачах ATB-E2; до того токени лише зарезервовано.
 
 ### 7.7 Шари
 

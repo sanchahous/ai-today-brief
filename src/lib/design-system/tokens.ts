@@ -1,5 +1,5 @@
 /**
- * AI Today Brief — Design System Tokens (After Hours v3.0.0)
+ * AI Today Brief — Design System Tokens (After Hours v3.1.0)
  *
  * 3-tier architecture:
  * 1. Primitives: raw immutable palettes, spacing, type scale, motion, breakpoints, z-index.
@@ -13,7 +13,7 @@
  * Decision record: wiki/decisions/2026-09-29-design-tokens-2-0-migration.md
  */
 
-export const TOKENS_VERSION = '3.0.0';
+export const TOKENS_VERSION = '3.1.0';
 
 /** Legacy token names removed in 3.0.0 — `tokens.test.ts` fails if any appear under `src/`. */
 export const DEPRECATED_TOKEN_PATTERNS = [
@@ -32,6 +32,10 @@ export const DEPRECATED_TOKEN_PATTERNS = [
 
 export const CATEGORY_TOKEN_KEYS = ['tools', 'tutorials', 'cost', 'agents', 'vibe', 'creative', 'local', 'career', 'models'] as const;
 export type CategoryTokenKey = (typeof CATEGORY_TOKEN_KEYS)[number];
+
+/** Seven coverage-strip hues on the home mix bar (mockup home-desktop-*; career omitted as empty). */
+export const COVERAGE_TOKEN_KEYS = ['agents', 'tools', 'models', 'vibe', 'cost', 'local', 'tutorials'] as const;
+export type CoverageTokenKey = (typeof COVERAGE_TOKEN_KEYS)[number];
 
 export const PRIMITIVES = {
   categoryPalette: {
@@ -76,6 +80,15 @@ export const PRIMITIVES = {
       velvet: '#431a24',
       velvetDeep: '#2e1118',
       onVelvet: '#f6e6df',
+      newsletter: '#d4b483',
+      onNewsletter: '#171918',
+      weekly: '#431a24',
+      weeklyDeep: '#2e1118',
+      onWeekly: '#f6e6df',
+      chartSurface: '#282d29',
+      chartTrack: '#323832',
+      onChart: '#f0e9dc',
+      heroSurface: '#1c1e1d',
       line: '#3b413c',
       lineStrong: '#737a73',
       error: '#ff9b8a',
@@ -100,6 +113,15 @@ export const PRIMITIVES = {
       velvet: '#f3e1dc',
       velvetDeep: '#ead0ca',
       onVelvet: '#4a1522',
+      newsletter: '#72562e',
+      onNewsletter: '#fdfaf4',
+      weekly: '#f3e1dc',
+      weeklyDeep: '#ead0ca',
+      onWeekly: '#4a1522',
+      chartSurface: '#fdfaf4',
+      chartTrack: '#e6ddcc',
+      onChart: '#1d211d',
+      heroSurface: '#e8e0d0',
       line: '#d6cebf',
       lineStrong: '#8c8577',
       error: '#b3261e',
@@ -149,17 +171,40 @@ export const PRIMITIVES = {
       pop: '0 28px 70px -30px rgb(58 44 22 / 0.45), 0 0 0 1px rgb(58 44 22 / 0.06)',
     },
   },
-  /** Surface effects (consumers arrive with the hero and editorial patterns, AH-5.x). */
+  /**
+   * Surface effects. A1 adds scrim / banner text-shadow / newsletter glow / tints / brass gradient
+   * from screens-v3 mockups and artifacts/after-hours/tokens.css (consumers in later ATB-E2 tasks).
+   */
   effects: {
     night: {
       stageLight: 'radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.11), transparent 62%)',
       sheen: 'linear-gradient(105deg, transparent 20%, rgb(255 240 208 / 0.28) 45%, transparent 70%)',
       grainOpacity: '0.07',
+      scrim: 'rgb(5 8 7 / 0.72)',
+      scrimBanner:
+        'linear-gradient(90deg, rgb(5 8 7 / 0.95) 0%, rgb(5 8 7 / 0.72) 42%, rgb(5 8 7 / 0.35) 74%, transparent 100%), linear-gradient(0deg, rgb(5 8 7 / 0.78) 0%, transparent 54%)',
+      textShadowBanner: '0 1px 2px rgb(0 0 0 / 0.55), 0 8px 28px rgb(0 0 0 / 0.45)',
+      newsletterGlow: 'radial-gradient(90% 120% at 100% 0%, rgb(255 244 220 / 0.18), transparent 60%)',
+      accentGradient: 'linear-gradient(115deg, #6f5c3d, #ecd7a9 26%, #9a7f52 49%, #e8c995 72%, #746247)',
+      tintAccent: 'rgb(212 180 131 / 0.12)',
+      tintSignal: 'rgb(181 216 204 / 0.12)',
+      tintClaret: 'rgb(227 145 157 / 0.13)',
+      tintHover: 'rgb(240 233 220 / 0.05)',
     },
     day: {
       stageLight: 'radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.28), transparent 62%)',
       sheen: 'linear-gradient(105deg, transparent 20%, rgb(255 255 255 / 0.55) 45%, transparent 70%)',
       grainOpacity: '0.05',
+      scrim: 'rgb(29 33 29 / 0.5)',
+      scrimBanner:
+        'linear-gradient(90deg, rgb(29 33 29 / 0.88) 0%, rgb(29 33 29 / 0.55) 42%, rgb(29 33 29 / 0.22) 74%, transparent 100%), linear-gradient(0deg, rgb(29 33 29 / 0.6) 0%, transparent 54%)',
+      textShadowBanner: '0 1px 2px rgb(0 0 0 / 0.55), 0 8px 28px rgb(0 0 0 / 0.45)',
+      newsletterGlow: 'radial-gradient(90% 120% at 100% 0%, rgb(255 255 255 / 0.35), transparent 60%)',
+      accentGradient: 'linear-gradient(115deg, #6f5c3d, #ecd7a9 26%, #9a7f52 49%, #e8c995 72%, #746247)',
+      tintAccent: 'rgb(114 86 46 / 0.09)',
+      tintSignal: 'rgb(45 101 89 / 0.1)',
+      tintClaret: 'rgb(142 42 63 / 0.08)',
+      tintHover: 'rgb(29 33 29 / 0.045)',
     },
   },
   /** Fluid page rhythm and fixed measures. */
@@ -311,6 +356,22 @@ export const SEMANTIC_TOKENS = {
     velvet: N.velvet,
     velvetDeep: N.velvetDeep,
     onVelvet: N.onVelvet,
+    newsletter: N.newsletter,
+    onNewsletter: N.onNewsletter,
+    weekly: N.weekly,
+    weeklyDeep: N.weeklyDeep,
+    onWeekly: N.onWeekly,
+    coverageAgents: PRIMITIVES.categoryPalette.night.agents,
+    coverageTools: PRIMITIVES.categoryPalette.night.tools,
+    coverageModels: PRIMITIVES.categoryPalette.night.models,
+    coverageVibe: PRIMITIVES.categoryPalette.night.vibe,
+    coverageCost: PRIMITIVES.categoryPalette.night.cost,
+    coverageLocal: PRIMITIVES.categoryPalette.night.local,
+    coverageTutorials: PRIMITIVES.categoryPalette.night.tutorials,
+    chartSurface: N.chartSurface,
+    chartTrack: N.chartTrack,
+    onChart: N.onChart,
+    heroSurface: N.heroSurface,
     selectionBg: N.brass,
     selectionText: N.ink,
     focus: N.mint,
@@ -362,6 +423,22 @@ export const SEMANTIC_TOKENS = {
     velvet: D.velvet,
     velvetDeep: D.velvetDeep,
     onVelvet: D.onVelvet,
+    newsletter: D.newsletter,
+    onNewsletter: D.onNewsletter,
+    weekly: D.weekly,
+    weeklyDeep: D.weeklyDeep,
+    onWeekly: D.onWeekly,
+    coverageAgents: PRIMITIVES.categoryPalette.night.agents,
+    coverageTools: PRIMITIVES.categoryPalette.night.tools,
+    coverageModels: PRIMITIVES.categoryPalette.night.models,
+    coverageVibe: PRIMITIVES.categoryPalette.night.vibe,
+    coverageCost: PRIMITIVES.categoryPalette.night.cost,
+    coverageLocal: PRIMITIVES.categoryPalette.night.local,
+    coverageTutorials: PRIMITIVES.categoryPalette.night.tutorials,
+    chartSurface: D.chartSurface,
+    chartTrack: D.chartTrack,
+    onChart: D.onChart,
+    heroSurface: D.heroSurface,
     selectionBg: D.selectionBg,
     selectionText: D.text,
     focus: D.mint,
@@ -416,6 +493,22 @@ export const CSS_VAR_BY_ROLE: Record<keyof typeof SEMANTIC_TOKENS.night, string>
   velvet: '--velvet',
   velvetDeep: '--velvet-deep',
   onVelvet: '--on-velvet',
+  newsletter: '--newsletter',
+  onNewsletter: '--on-newsletter',
+  weekly: '--weekly',
+  weeklyDeep: '--weekly-deep',
+  onWeekly: '--on-weekly',
+  coverageAgents: '--coverage-agents',
+  coverageTools: '--coverage-tools',
+  coverageModels: '--coverage-models',
+  coverageVibe: '--coverage-vibe',
+  coverageCost: '--coverage-cost',
+  coverageLocal: '--coverage-local',
+  coverageTutorials: '--coverage-tutorials',
+  chartSurface: '--chart-surface',
+  chartTrack: '--chart-track',
+  onChart: '--on-chart',
+  heroSurface: '--hero-surface',
   selectionBg: '--selection-bg',
   selectionText: '--selection-text',
   focus: '--focus',
@@ -527,6 +620,15 @@ function themedVars(theme: 'night' | 'day'): Record<string, string> {
     '--stage-light': effects.stageLight,
     '--sheen': effects.sheen,
     '--grain-opacity': effects.grainOpacity,
+    '--scrim': effects.scrim,
+    '--scrim-banner': effects.scrimBanner,
+    '--text-shadow-banner': effects.textShadowBanner,
+    '--newsletter-glow': effects.newsletterGlow,
+    '--accent-gradient': effects.accentGradient,
+    '--tint-accent': effects.tintAccent,
+    '--tint-signal': effects.tintSignal,
+    '--tint-claret': effects.tintClaret,
+    '--tint-hover': effects.tintHover,
   };
 }
 

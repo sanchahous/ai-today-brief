@@ -91,6 +91,11 @@ const PAIR_RULES: PairRule[] = [
   ...pairs(['onVelvet'], ['velvet', 'velvetDeep'], TEXT_MIN, 'text'),
   ...pairs(['selectionText'], ['selectionBg'], TEXT_MIN, 'text'),
   ...pairs(['claret'], ['velvet'], UI_MIN, 'ui'),
+  // A1 surfaces: newsletter tan, weekly burgundy, chart panels, hero tonal band.
+  ...pairs(['onNewsletter'], ['newsletter'], TEXT_MIN, 'text'),
+  ...pairs(['onWeekly'], ['weekly', 'weeklyDeep'], TEXT_MIN, 'text'),
+  ...pairs(['onChart'], ['chartSurface', 'chartTrack'], TEXT_MIN, 'text'),
+  ...pairs(['text', 'muted', 'faint'], ['heroSurface', 'chartSurface', 'chartTrack'], TEXT_MIN, 'text'),
   // Control edges, focus ring and fills against the surfaces they are drawn on.
   ...pairs(['lineStrong', 'focus', 'accentFill'], ['bg', 'surface', 'raised'], UI_MIN, 'ui'),
   ...pairs(['accent'], ['bg', 'surface'], UI_MIN, 'ui'),

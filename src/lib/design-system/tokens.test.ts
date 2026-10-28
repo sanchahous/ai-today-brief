@@ -33,8 +33,8 @@ const globalsCss = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf
 const tokenDoc = readFileSync(join(process.cwd(), TOKEN_DOC), 'utf8');
 
 describe('Design Tokens & Accessibility Contrast', () => {
-  it('is version 3.0.0', () => {
-    expect(TOKENS_VERSION).toBe('3.0.0');
+  it('is version 3.1.0', () => {
+    expect(TOKENS_VERSION).toBe('3.1.0');
   });
 
   it('passes all WCAG AA contrast checks in runContrastAudit', () => {
@@ -71,6 +71,11 @@ describe('Design Tokens & Accessibility Contrast', () => {
         'onVelvet on velvetDeep',
         'selectionText on selectionBg',
         'claret on velvet',
+        'onNewsletter on newsletter',
+        'onWeekly on weeklyDeep',
+        'onChart on chartSurface',
+        'text on heroSurface',
+        'faint on chartTrack',
         'accentFill on raised',
         'focus on raised',
         'text(night) on stage',

@@ -23,6 +23,21 @@ async function tabTo(page: Page, target: Locator) {
   await expect(target).toBeFocused();
 }
 
+/**
+ * Playwright `selectOption` on the controlled toolbar `<Select>` often skips React's
+ * onChange (DOM flickers, URL stays on default newest). Sidebar radios call `onSort`
+ * directly — same path as a real click.
+ */
+async function chooseSort(
+  page: Page,
+  label: string,
+  value: 'newest' | 'oldest' | 'relevance',
+) {
+  const radio = page.getByTestId('news-sidebar').getByRole('radio', { name: label, exact: true });
+  await radio.check();
+  await expect(page.locator('#news-sort-top')).toHaveValue(value);
+}
+
 // D12 replaces moderated sessions with automation, not evidence of human task completion.
 // These eight tasks use the site's published data, never intercepted fixture responses.
 for (const lang of ['en', 'uk'] as const) {
@@ -152,7 +167,8 @@ for (const lang of ['en', 'uk'] as const) {
           .getByTestId('news-sidebar')
           .getByRole('checkbox', { name: /Agents.*MCP|Агенти.*MCP/i })
           .check();
-        await page.locator('#news-sort-top').selectOption('oldest');
+        await chooseSort(page, t.sortOldest, 'oldest');
+        await expect(page).toHaveURL(/sort=oldest/);
         const pagination = page.getByTestId('pagination');
         const page2 = pagination.getByRole('link', { name: '2', exact: true });
         await expect(page2).toHaveAttribute(
@@ -196,7 +212,8 @@ for (const lang of ['en', 'uk'] as const) {
           .first()
           .check();
         await sidebar.getByRole('button', { name: t.dateMonth, exact: true }).click();
-        await page.locator('#news-sort-top').selectOption('oldest');
+        await chooseSort(page, t.sortOldest, 'oldest');
+        await expect(page).toHaveURL(/sort=oldest/);
         const url = page.url();
         const stories = await results(page);
         const status = await page.getByRole('status').textContent();
@@ -207,7 +224,9 @@ for (const lang of ['en', 'uk'] as const) {
         await expect.poll(() => results(page)).toEqual(stories);
         await expect(page.getByRole('status')).toHaveText(status ?? '');
         await expect(page.getByTestId('active-filter-chips')).toHaveText(chips ?? '');
-        await expect(page.locator('#news-sort-top')).toHaveValue('oldest');
+        await expect
+          .poll(async () => page.locator('#news-sort-top').inputValue(), { timeout: 15_000 })
+          .toBe('oldest');
         const copied = await context.newPage();
         try {
           await copied.setViewportSize(NEWS_DESKTOP_VIEWPORT);
@@ -217,7 +236,9 @@ for (const lang of ['en', 'uk'] as const) {
           await expect.poll(() => results(copied)).toEqual(stories);
           await expect(copied.getByRole('status')).toHaveText(status ?? '');
           await expect(copied.getByTestId('active-filter-chips')).toHaveText(chips ?? '');
-          await expect(copied.locator('#news-sort-top')).toHaveValue('oldest');
+          await expect
+            .poll(async () => copied.locator('#news-sort-top').inputValue(), { timeout: 15_000 })
+            .toBe('oldest');
         } finally {
           await copied.close();
         }
@@ -244,7 +265,7 @@ for (const lang of ['en', 'uk'] as const) {
         ).toEqual(['relevance', 'newest', 'oldest']);
         const relevance = await results(page);
         expect(relevance.length).toBeGreaterThan(0);
-        await sort.selectOption('newest');
+        await chooseSort(page, t.sortNewest, 'newest');
         await expect(page).toHaveURL(/q=mcp.*sort=newest/);
         const dates = await page
           .getByTestId('story-card')
@@ -320,7 +341,7 @@ test('pagination boundaries clamp invalid pages and reset to page 1 on filtering
   await expect(pagination.locator('[aria-current="page"]')).toBeVisible();
   await expect(pagination.locator('a[rel="next"]')).toHaveCount(0);
   expect((await results(page)).length).toBeGreaterThan(0);
-  await page.locator('#news-sort-top').selectOption('oldest');
+  await chooseSort(page, getStrings('en').news.sortOldest, 'oldest');
   await expect(page).not.toHaveURL(/page=/);
   await expect(pagination.getByRole('link', { name: '1', exact: true })).toHaveAttribute(
     'aria-current',
