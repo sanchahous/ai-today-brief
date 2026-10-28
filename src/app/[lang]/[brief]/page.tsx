@@ -15,6 +15,7 @@ import { DailyPractice } from '@/components/daily/daily-item';
 import { EditionNav } from '@/components/daily/edition-nav';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { NewsletterForm } from '@/components/home/newsletter-form';
+import styles from '@/components/daily/daily.module.css';
 
 // 24 h: a brief's content is fixed at publish; new briefs render on first hit
 // (dynamicParams). Short windows here only burned ISR writes via bot crawls.
@@ -160,28 +161,26 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
         <DailyHero brief={b} lang={lang} />
 
         {takeaways.length > 0 ? (
-          <section className="mb-10" aria-labelledby="thirty-title">
-            <h2 id="thirty-title" className="font-serif text-2xl">
-              {t.briefIn30}
-            </h2>
-            <ul className="m-0 grid list-none gap-3 p-0">
+          <section className={styles.thirty} aria-labelledby="thirty-title">
+            <h2 id="thirty-title">{t.briefIn30}</h2>
+            <ul className={styles.thirtyList}>
               {takeaways.map((line, index) => (
-                <li key={`${line.text}-${index}`} className="flex flex-wrap items-start gap-3">
+                <li key={`${line.text}-${index}`} className={styles.thirtyItem}>
                   <CategoryBadge slug={line.categorySlug} name={line.categoryName} color={line.categoryColor} />
-                  <span className="text-text min-w-0 flex-1 text-base leading-relaxed">{line.text}</span>
+                  <span>{line.text}</span>
                 </li>
               ))}
             </ul>
           </section>
         ) : null}
 
-        <div className="tablet:grid tablet:grid-cols-3 tablet:items-start tablet:gap-8">
-          <div className="tablet:col-span-2">
+        <div className={styles.layout}>
+          <div>
             <BriefDailySections lang={lang} packs={b.packs} />
             {practice ? <DailyPractice lang={lang} step={practice.step} /> : null}
             <DailyBriefFinale />
           </div>
-          <aside className="mt-10 grid gap-4 tablet:sticky tablet:top-[var(--header-h)] tablet:mt-0">
+          <aside className="grid gap-4 tablet:sticky tablet:top-[var(--header-h)]">
             <DailyIssueToc items={tocItems} />
             <ConceptOtherChips
               lang={lang}

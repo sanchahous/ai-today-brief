@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { CheckIcon } from '@/components/icons';
+import styles from '@/components/daily/daily.module.css';
 import { fillCountTemplate } from '@/lib/daily-edition';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
@@ -19,6 +20,11 @@ function useDailyRead(): ReadState {
   const value = useContext(ReadContext);
   if (!value) throw new Error('Daily read controls must render inside DailyReadProvider');
   return value;
+}
+
+/** Optional hook for list items that may render outside the provider in tests. */
+export function useDailyReadOptional(): ReadState | null {
+  return useContext(ReadContext);
 }
 
 const controlClass =
@@ -62,7 +68,7 @@ export function DailyReadProvider({
   );
 }
 
-export function ReadProgressRing() {
+export function ReadProgressRing({ variant = 'inline' }: { variant?: 'inline' | 'masthead' }) {
   const { lang, readIds, total } = useDailyRead();
   if (total === 0) return null;
   const t = getStrings(lang);
@@ -71,29 +77,43 @@ export function ReadProgressRing() {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - read / total);
 
+  const wrapClass = variant === 'masthead' ? styles.progressWrap : 'flex items-center gap-3';
+
   return (
-    <div role="group" aria-label={t.readingProgress} className="flex items-center gap-3">
-      <svg viewBox="0 0 44 44" className="h-11 w-11 shrink-0" aria-hidden="true">
+    <div role="group" aria-label={t.readingProgress} className={wrapClass} data-variant={variant}>
+      <svg
+        viewBox="0 0 44 44"
+        className={variant === 'masthead' ? styles.progressSvg : 'h-11 w-11 shrink-0'}
+        aria-hidden="true"
+        style={variant === 'masthead' ? undefined : { transform: 'rotate(-90deg)' }}
+      >
         <circle cx="22" cy="22" r={radius} fill="none" className="stroke-border" strokeWidth="3" />
         <circle
           cx="22"
           cy="22"
           r={radius}
           fill="none"
-          className="stroke-accent transition-[stroke-dashoffset] duration-200 motion-reduce:transition-none"
+          className="stroke-[var(--signal)] transition-[stroke-dashoffset] duration-200 motion-reduce:transition-none"
           strokeWidth="3"
-          strokeLinecap="butt"
+          strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          transform="rotate(-90 22 22)"
         />
       </svg>
-      <p className="m-0 text-sm text-muted">
+      <p className={variant === 'masthead' ? styles.progressLabel : 'm-0 text-sm text-muted'}>
         <span className="text-text font-semibold">
           <strong data-read-count>{read}</strong>
           {` / ${total}`}
         </span>
-        <span className="mt-0.5 block">{t.readCountLabel}</span>
+        <span
+          className={
+            variant === 'masthead'
+              ? styles.progressCountLabel
+              : 'text-faint mt-0.5 block text-2xs uppercase tracking-[0.08em]'
+          }
+        >
+          {t.readCountLabel}
+        </span>
       </p>
     </div>
   );

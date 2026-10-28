@@ -170,6 +170,14 @@ export function PlayIcon({ size = 18, strokeWidth = 1.7, style, className }: Ico
     </svg>
   );
 }
+export function ListIcon({ size = 16, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
+  );
+}
+
 export function ClockIcon({ size = 16, strokeWidth = 1.7, style, className }: IconProps) {
   return (
     <svg {...base(size, strokeWidth, style, className)}>
