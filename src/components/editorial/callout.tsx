@@ -14,19 +14,6 @@ export function Callout({
   title?: string;
   children: ReactNode;
 }) {
-  const getIcon = () => {
-    switch (variant) {
-      case 'why-it-matters':
-        return '💡';
-      case 'definition':
-        return '📖';
-      case 'editor-take':
-        return '✍️';
-      case 'limits':
-        return '⚠️';
-    }
-  };
-
   const getTitle = () => {
     if (title) return title;
     const isUk = lang === 'uk';
@@ -43,31 +30,26 @@ export function Callout({
   };
 
   const isEditorTake = variant === 'editor-take';
+  const accentBar =
+    variant === 'limits'
+      ? 'border-l-warning'
+      : variant === 'editor-take'
+        ? 'border-l-accent'
+        : 'border-l-accent';
 
   return (
-    <aside className={`my-6 rounded-xl border p-4 sm:p-5 ${
-      variant === 'limits' ? 'border-warning/30 bg-warning/5 text-warning-contrast' :
-      variant === 'editor-take' ? 'border-accent/30 bg-accent/5' :
-      'border-line bg-raised'
-    }`}>
-      <div className="flex items-start gap-3">
-        <span aria-hidden className="text-xl leading-none select-none mt-0.5">
-          {getIcon()}
-        </span>
-        <div className="flex-1">
-          <div className="font-serif text-lg font-semibold mb-2">
-            {getTitle()}
-          </div>
-          <div className="reading-copy text-[0.95em] opacity-90">
-            {children}
-          </div>
-          {isEditorTake && (
-            <div className="mt-3 text-xs font-mono text-muted uppercase tracking-wider">
-              {lang === 'uk' ? 'Редакційна думка' : 'Opinion disclaimer'}
-            </div>
-          )}
-        </div>
+    <aside
+      className={`border-line bg-surface my-6 scroll-mt-[calc(var(--header-h,4rem)+2.5rem)] rounded-r-[var(--radius-md)] border border-l-[3px] py-5 pr-5 pl-[calc(1.25rem-3px)] sm:py-6 sm:pr-6 ${accentBar}`}
+    >
+      <div className="text-text font-serif text-lg font-semibold">{getTitle()}</div>
+      <div className="reading-copy text-text mt-2 max-w-none text-[length:var(--text-lg)]">
+        {children}
       </div>
+      {isEditorTake && (
+        <div className="text-muted mt-3 font-mono text-2xs tracking-[0.08em] uppercase">
+          {lang === 'uk' ? 'Редакційна думка' : 'Opinion disclaimer'}
+        </div>
+      )}
     </aside>
   );
 }
