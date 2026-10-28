@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { getStrings } from '@/lib/i18n';
 import type { HomeEdition, HomeItem } from '@/lib/home';
 import type { Lang } from '@/lib/site';
-import { BrandStage } from '@/components/brand/brand-stage';
 import { ArrowRight } from '@/components/icons';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
@@ -36,50 +35,45 @@ export function LeadGrid({
       className="mx-auto grid w-full max-w-[1160px] gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.72fr)]"
     >
       {featured ? (
-        <article className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
-          <div>
-            <p className="text-accent eyebrow">
-              {t.leadEyebrow}
-              {featured.categoryName ? ` / ${featured.categoryName}` : ''}
-            </p>
-            <WeeklyTopClickTracker
-              slot="featured"
-              target={{ id: featured.id, slug: itemSlugFromHref(featured.href), lang }}
-            >
-              <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">
-                <Link href={featured.href} className="text-text hover:text-accent no-underline">
-                  {featured.title}
-                </Link>
-              </h2>
-              {featured.summary ? (
-                <p className="text-muted mt-4 max-w-xl text-base leading-7">{featured.summary}</p>
-              ) : null}
-              <p className="text-faint mt-4 flex flex-wrap items-center gap-2 text-sm">
-                <time dateTime={featured.date}>
-                  {new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    timeZone: 'UTC',
-                  }).format(new Date(`${featured.date}T00:00:00Z`))}
-                </time>
-                <span aria-hidden>·</span>
-                <span>
-                  {featured.readMinutes} {t.readMin}
-                </span>
-              </p>
-              <Link
-                href={featured.href}
-                className="rounded-pill border-line text-text hover:border-accent hover:text-accent mt-5 inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-5 py-3 text-sm font-semibold no-underline"
-              >
-                {t.leadCta}
-                <ArrowRight size={16} />
+        <article className="max-w-[42rem]">
+          <p className="text-accent eyebrow">
+            {t.leadEyebrow}
+            {featured.categoryName ? ` / ${featured.categoryName}` : ''}
+          </p>
+          <WeeklyTopClickTracker
+            slot="featured"
+            target={{ id: featured.id, slug: itemSlugFromHref(featured.href), lang }}
+          >
+            <h2 className="mt-3 max-w-[36ch] text-2xl leading-snug sm:text-[1.75rem] sm:leading-snug">
+              <Link href={featured.href} className="text-text hover:text-accent no-underline">
+                {featured.title}
               </Link>
-            </WeeklyTopClickTracker>
-          </div>
-          <div className="lead-stage min-w-0">
-            <BrandStage lang={lang} />
-          </div>
+            </h2>
+            {featured.summary ? (
+              <p className="text-muted mt-4 text-base leading-7">{featured.summary}</p>
+            ) : null}
+            <p className="text-faint mt-4 flex flex-wrap items-center gap-2 text-sm">
+              <time dateTime={featured.date}>
+                {new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  timeZone: 'UTC',
+                }).format(new Date(`${featured.date}T00:00:00Z`))}
+              </time>
+              <span aria-hidden>·</span>
+              <span>
+                {featured.readMinutes} {t.readMin}
+              </span>
+            </p>
+            <Link
+              href={featured.href}
+              className="rounded-pill border-line text-text hover:border-accent hover:text-accent mt-5 inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-5 py-3 text-sm font-semibold no-underline"
+            >
+              {t.leadCta}
+              <ArrowRight size={16} />
+            </Link>
+          </WeeklyTopClickTracker>
         </article>
       ) : null}
 
