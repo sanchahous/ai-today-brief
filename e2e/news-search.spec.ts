@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { getStrings } from '../src/lib/i18n';
 import { expectedSiteUrl } from '../scripts/e2e-server-url';
 
 test.describe('News search page (/[lang]/news/search)', () => {
@@ -42,6 +43,7 @@ test.describe('News search page (/[lang]/news/search)', () => {
   });
 
   test('second query from results form resets chip, sort and URL', async ({ page }) => {
+    const t = getStrings('en').news;
     await page.goto('/en/news/search?q=mcp', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
       timeout: 30_000,
@@ -50,12 +52,16 @@ test.describe('News search page (/[lang]/news/search)', () => {
     const activeChips = page.getByTestId('active-filter-chips');
     await expect(activeChips).toContainText('mcp');
 
-    const sortSelect = page.getByLabel(/sort/i);
-    await sortSelect.selectOption('oldest');
+    await page
+      .getByTestId('news-sidebar')
+      .getByRole('radio', { name: t.sortOldest, exact: true })
+      .check();
+    await expect(page.locator('#news-sort-top')).toHaveValue('oldest');
     await expect(page).toHaveURL(/sort=oldest/);
 
     const input = page.locator('#news-search-q');
     await input.fill('agents');
+    await expect(input).toHaveValue('agents');
     await page.getByTestId('news-search-form').getByRole('button', { name: /search/i }).click();
 
     await expect(page).toHaveURL(/q=agents/);
@@ -63,7 +69,7 @@ test.describe('News search page (/[lang]/news/search)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('agents');
     await expect(activeChips).toContainText('agents');
     await expect(activeChips).not.toContainText('mcp');
-    await expect(sortSelect).toHaveValue('relevance');
+    await expect(page.locator('#news-sort-top')).toHaveValue('relevance');
   });
 
   test('popular query syncs the search field and back restores idle input', async ({ page }) => {
