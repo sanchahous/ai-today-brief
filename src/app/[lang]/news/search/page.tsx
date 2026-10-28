@@ -88,7 +88,7 @@ export default async function NewsSearchPage({
     >
       <Breadcrumbs items={crumbs} />
 
-      <header className="mb-8 max-w-[720px]">
+      <header className="mb-8 w-full max-w-full">
         <p className="text-accent eyebrow mb-2">{sp.eyebrow}</p>
         <h1 className="text-text mb-6 font-serif text-[clamp(1.8rem,4.5vw,2.7rem)] leading-[1.12] font-semibold tracking-tight">
           {query ? (

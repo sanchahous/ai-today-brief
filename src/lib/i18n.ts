@@ -519,10 +519,20 @@ export const STRINGS = {
     rights: 'All rights reserved.',
     news: {
       title: 'All news',
+      h1Lead: 'A clearer',
+      h1Em: 'signal.',
+      heroLead:
+        'What is changing in AI engineering, and why it matters to your work. Every story carries its sources and a “why it matters” note.',
       lead: 'Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.',
       resultsCount: 'Stories found:',
       showingCountOf: 'Showing {start}–{end} of {total} · latest {max} stories',
       newsEyebrow: 'The newsroom',
+      threeLinesTitle: 'This week in three lines',
+      threeLines: [
+        'Agent tooling now competes on memory boundaries and delegation, not raw capability.',
+        'Prompt caching and harness trimming are the cheapest wins teams report.',
+        'Local inference crosses from hobby to viable for regulated teams.',
+      ],
       sortLabel: 'Sort',
       sortNewest: 'Newest',
       sortOldest: 'Oldest',
@@ -562,7 +572,7 @@ export const STRINGS = {
       breadcrumbHome: 'Home',
       curatedBy: 'Curated by',
       bylineRole: 'AI Product Engineer',
-      sourcesCited: 'Sources cited on every story',
+      sourcesCited: 'sources cited on every story',
       trendingSidebar: 'Hot topics',
       searchPage: {
         breadcrumb: 'Search',
@@ -1103,10 +1113,20 @@ export const STRINGS = {
     rights: 'Усі права захищені.',
     news: {
       title: 'Усі новини',
+      h1Lead: 'Чіткіший',
+      h1Em: 'сигнал.',
+      heroLead:
+        'Що змінюється в AI-інженерії та чому це важливо для вашої роботи. Кожна історія має джерела та пояснення «чому це важливо».',
       lead: 'Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.',
       resultsCount: 'Знайдено матеріалів:',
       showingCountOf: 'Показано {start}–{end} з {total} · останні {max} матеріалів',
-      newsEyebrow: 'Стрічка новин',
+      newsEyebrow: 'Редакція',
+      threeLinesTitle: 'Цей тиждень у трьох рядках',
+      threeLines: [
+        'Агентні інструменти змагаються межами пам’яті й делегуванням, а не сирою потужністю.',
+        'Кешування промптів і скорочення харнесу — найдешевші виграші, про які звітують команди.',
+        'Локальний інференс переходить від хобі до реального варіанта для регульованих команд.',
+      ],
       sortLabel: 'Сортування',
       sortNewest: 'Найновіші',
       sortOldest: 'Найстаріші',
@@ -1144,9 +1164,9 @@ export const STRINGS = {
       emptyTitle: 'Нічого не знайдено',
       emptyBody: 'Спробуйте ширший запит або скиньте фільтри.',
       breadcrumbHome: 'Головна',
-      curatedBy: 'Куратор',
+      curatedBy: 'курує',
       bylineRole: 'AI Product Engineer',
-      sourcesCited: 'Джерела вказані в кожному матеріалі',
+      sourcesCited: 'джерела на кожній історії',
       trendingSidebar: 'Популярні теми',
       searchPage: {
         breadcrumb: 'Пошук',
