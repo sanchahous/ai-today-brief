@@ -140,30 +140,6 @@
       "count": 1
     },
     {
-      "path": "src/components/concept-header.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.12)",
-      "count": 1
-    },
-    {
-      "path": "src/components/concept-header.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.35)",
-      "count": 1
-    },
-    {
-      "path": "src/components/concepts-grid.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.1)",
-      "count": 1
-    },
-    {
-      "path": "src/components/concepts-grid.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.3)",
-      "count": 1
-    },
-    {
       "path": "src/components/cookie-consent.tsx",
       "kind": "z-index",
       "value": "z-[100]",
