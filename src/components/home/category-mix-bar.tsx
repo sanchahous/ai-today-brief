@@ -40,7 +40,7 @@ export function CategoryMixBar({
             data-gesture="grow"
             className="min-w-[2px]"
             style={{
-              width: `${(segment.count / sampleSize) * 100}%`,
+              width: `${(segment.count / total) * 100}%`,
               background: categoryColor(segment.slug, segment.color),
             }}
           />

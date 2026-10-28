@@ -38,19 +38,26 @@ export function TrendingTopicLink({
           ? `${topic.name}: ${topic.mentions} ${mentionsLabel}, ${deltaText}`
           : `${topic.name}: ${topic.mentions} ${mentionsLabel}`
       }
-      className="hover:border-accent grid min-h-[var(--touch-target-min)] grid-cols-[7.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-transparent px-1"
+      className="hover:border-accent grid min-h-[var(--touch-target-min)] gap-1.5 rounded-md border border-transparent px-1 py-1.5"
     >
-      <span className="text-text truncate text-sm font-semibold">{topic.name}</span>
-      <span className="bg-raised h-2.5 overflow-hidden rounded-pill">
-        <span className="bg-accent block h-full rounded-pill" style={{ width: `${width}%` }} />
-      </span>
-      <span className="text-faint flex items-baseline gap-2 text-xs font-semibold tabular-nums">
-        <span>{topic.mentions}</span>
+      <span className="text-text text-sm leading-snug font-semibold">{topic.name}</span>
+      <span className="grid grid-cols-[minmax(0,1fr)_3.5rem_4.5rem] items-center gap-3">
+        <span aria-hidden className="bg-raised h-2.5 overflow-hidden rounded-pill">
+          <span className="bg-accent block h-full rounded-pill" style={{ width: `${width}%` }} />
+        </span>
+        <span className="text-faint text-right text-xs font-semibold tabular-nums">{topic.mentions}</span>
         {delta !== null && delta !== 0 ? (
-          <span className={delta > 0 ? 'text-accent' : 'text-muted'}>
+          <span
+            title={deltaText}
+            className={`text-xs font-semibold tabular-nums ${delta > 0 ? 'text-success' : 'text-muted'}`}
+          >
             {delta > 0 ? '▲' : '▼'} {Math.abs(delta)}
           </span>
-        ) : null}
+        ) : (
+          <span aria-hidden className="text-faint text-xs">
+            —
+          </span>
+        )}
       </span>
     </Link>
   );
