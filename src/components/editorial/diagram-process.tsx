@@ -24,11 +24,14 @@ export function ProcessDiagram({
   nodes,
   title,
   caption,
+  visibleTitle = true,
 }: {
   lang: Lang;
   nodes: ProcessDiagramNode[];
   title?: string;
   caption: string;
+  /** Page supplies its own heading; the figure name stays available to assistive tech. */
+  visibleTitle?: boolean;
 }) {
   const titleId = useId();
   const descId = useId();
@@ -48,7 +51,9 @@ export function ProcessDiagram({
     >
       <figcaption
         id={titleId}
-        className="text-accent m-0 font-mono text-2xs font-medium tracking-[var(--tracking-eyebrow)] uppercase"
+        className={`text-accent m-0 font-mono text-2xs font-medium tracking-[var(--tracking-eyebrow)] uppercase ${
+          visibleTitle ? '' : 'sr-only'
+        }`}
       >
         {heading}
       </figcaption>

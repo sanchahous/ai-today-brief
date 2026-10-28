@@ -7,10 +7,7 @@ import { getConceptHub, getConceptPaths } from '@/lib/concepts';
 import { socialMeta } from '@/lib/seo';
 import { markdownToPlainText } from '@/lib/markdown';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
-import { ConceptHeader } from '@/components/concept-header';
-import { ConceptHubBody } from '@/components/concept-hub-body';
-import { ConceptOtherChips } from '@/components/concept-other-chips';
-import { PostFeed } from '@/components/post-feed';
+import { ConceptArticle } from '@/components/concept-article';
 import { HubViewTracker } from '@/components/analytics/hub-view-tracker';
 
 // 24 h: concept hubs are evergreen and change only via the backfill workflow.
@@ -112,7 +109,7 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
+    <div className="mx-auto w-full min-w-0 max-w-[1160px] flex-1 overflow-x-clip px-4 py-8 sm:px-6">
       <HubViewTracker hubType="concept" slug={slug} />
       <script
         type="application/ld+json"
@@ -120,25 +117,12 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
       />
 
       <Breadcrumbs items={crumbs} />
-      <ConceptHeader
+      <ConceptArticle
         lang={lang}
         concept={hub.concept}
-        icon={hub.icon}
-        storyCount={hub.stories.length}
+        stories={hub.stories}
+        others={hub.others}
       />
-      <ConceptHubBody
-        lang={lang}
-        body={hub.concept.body}
-        faq={hub.concept.faq}
-        verification={hub.concept.verification}
-        verifiedAt={hub.concept.verifiedAt}
-        relatedConcepts={hub.others}
-      />
-      {hub.stories.length > 0 && (
-        <h2 className="mb-4 text-xl">{t.conceptLatest}</h2>
-      )}
-      <PostFeed key={slug} lang={lang} items={hub.stories} showNewsletter={false} />
-      <ConceptOtherChips lang={lang} concepts={hub.others} />
     </div>
   );
 }
