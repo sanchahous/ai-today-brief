@@ -58,11 +58,18 @@ test.describe('News search page (/[lang]/news/search)', () => {
       .check();
     await expect(page.locator('#news-sort-top')).toHaveValue('oldest');
     await expect(page).toHaveURL(/sort=oldest/);
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
+      timeout: 30_000,
+    });
 
     const input = page.locator('#news-search-q');
     await input.fill('agents');
     await expect(input).toHaveValue('agents');
-    await page.getByTestId('news-search-form').getByRole('button', { name: /search/i }).click();
+    const submit = page.getByTestId('news-search-form').getByRole('button', { name: /search/i });
+    await Promise.all([
+      page.waitForURL(/q=agents/, { timeout: 45_000 }),
+      submit.click(),
+    ]);
 
     await expect(page).toHaveURL(/q=agents/);
     await expect(page).not.toHaveURL(/sort=oldest/);
