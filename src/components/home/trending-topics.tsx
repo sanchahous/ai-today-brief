@@ -35,7 +35,15 @@ export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingT
           <ArrowRight size={16} />
         </Link>
       </div>
-      <ol className="mt-6 grid max-w-3xl gap-2">
+      <div
+        aria-hidden
+        className="mt-6 hidden max-w-3xl grid-cols-[minmax(0,1fr)_3.5rem_4.5rem] gap-3 px-1 text-2xs font-bold tracking-[0.08em] text-faint uppercase sm:grid"
+      >
+        <span />
+        <span className="text-right">{t.trendingChartTitle}</span>
+        <span>{t.trendChangeColumn}</span>
+      </div>
+      <ol className="mt-2 grid max-w-3xl gap-2">
         {topics.map((topic) => (
           <li key={topic.name}>
             <TrendingTopicLink

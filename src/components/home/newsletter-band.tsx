@@ -32,32 +32,35 @@ export function NewsletterBand({
     <section aria-labelledby={showHeader ? 'newsletter-title' : undefined} className={outer}>
       <div
         data-gesture="fold"
-        className={`${styles.cardBg} rounded-card border-line relative overflow-hidden border ${innerPadding}`}
+        className={`${styles.cardBg} rounded-card relative overflow-hidden ${innerPadding}`}
       >
         {showHeader ? (
-          <>
-            <p className="text-accent eyebrow">{t.subEyebrow}</p>
+          <div className={styles.copy}>
+            <p className={`eyebrow ${styles.muted}`}>{t.subEyebrow}</p>
             <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">
-              {t.subTitle}
+              {t.subTitleLead}{' '}
+              <em className="font-[family-name:var(--font-display)] italic">{t.subTitleEmphasis}</em>
             </h2>
-            <p className="text-muted mt-2 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
-            <ul className="text-muted mt-4 mb-5 flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm">
+            <p className={`mt-2 max-w-xl text-sm leading-relaxed ${styles.muted}`}>{t.subBody}</p>
+            <ul className={`${styles.proof} mt-4 mb-2`}>
               {t.subProofItems.map((item) => (
-                <li key={item} className="flex items-center gap-1.5">
-                  <span aria-hidden="true" className="text-accent">
+                <li key={item}>
+                  <span aria-hidden="true" className={styles.check}>
                     ✓
                   </span>
                   {item}
                 </li>
               ))}
             </ul>
-          </>
+          </div>
         ) : null}
-        <NewsletterForm
-          lang={lang}
-          variant="band"
-          placement={placement ?? (embedded ? 'subscribe-page' : 'home-band')}
-        />
+        <div className={styles.formCol}>
+          <NewsletterForm
+            lang={lang}
+            variant="band"
+            placement={placement ?? (embedded ? 'subscribe-page' : 'home-band')}
+          />
+        </div>
       </div>
     </section>
   );

@@ -799,7 +799,7 @@ html[data-tension] {
 .brand-caption {
   position: absolute;
   left: 22px;
-  right: 76px;
+  right: 22px;
   bottom: 22px;
   margin: 0;
   color: #f0e9dc;
@@ -866,12 +866,71 @@ html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .rs-lead
 html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .brand-line > span {
   opacity: 0;
 }
-.lead-stage .brand-stage {
-  min-height: 460px;
+.hero-stage .brand-stage {
+  min-height: 420px;
+}
+@media (min-width: 64em) {
+  .hero-stage .brand-stage {
+    min-height: 460px;
+  }
+}
+.home-hero-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+@media (min-width: 64em) {
+  .home-hero-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 22.5rem);
+    align-items: start;
+    gap: var(--space-10);
+  }
+}
+.home-hero {
+  background: var(--hero-surface);
+}
+.home-hero-copy {
+  position: relative;
+}
+.home-hero-copy > div:first-child {
+  position: relative;
+  padding: var(--space-6) 0 var(--space-6) var(--space-5);
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--raised) 55%, transparent);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+@supports not (background: color-mix(in srgb, black 50%, transparent)) {
+  .home-hero-copy > div:first-child {
+    background: var(--raised);
+  }
+}
+.home-hero-lede {
+  color: var(--text);
+}
+@media (max-width: 63.9375em) {
+  .home-hero-copy {
+    display: contents;
+  }
+  .home-hero-copy > div:first-child {
+    order: 1;
+  }
+  .hero-stage {
+    order: 2;
+  }
+  .home-hero-actions {
+    order: 3;
+  }
+}
+@media (min-width: 64em) {
+  .home-hero-copy {
+    display: grid;
+    gap: var(--space-8);
+  }
 }
 @media (max-width: 47.5em) {
   .brand-stage,
-  .lead-stage .brand-stage {
+  .hero-stage .brand-stage {
     min-height: 400px;
   }
   .brand-stage > svg {

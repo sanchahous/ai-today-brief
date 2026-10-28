@@ -1,6 +1,30 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { categoryColor } from '../src/lib/category-meta';
+
+/** Windows pre-push runs ~880 specs with 4 workers; TCP exhaustion can flake goto or console. */
+const TRANSIENT_NETWORK =
+  /ERR_NO_BUFFER_SPACE|destination stream closed|ECONNRESET|Cookie\s*[“"][^”"]*__cf_bm[^”"]*[”"]\s*has been rejected/i;
+
+function isTransientNetworkError(message: string): boolean {
+  return TRANSIENT_NETWORK.test(message);
+}
+
+async function gotoResilient(page: Page, route: string) {
+  const attempts = 3;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await page.goto(route, { waitUntil: 'load', timeout: 30_000 });
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (attempt === attempts || !isTransientNetworkError(message)) throw error;
+      await page.waitForTimeout(400 * attempt);
+    }
+  }
+  throw lastError;
+}
 
 // Fixed article path from the production AH-1.4 before manifest; fixtures work in CI too.
 const suffixes = ["", "/news", "/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme", "/category/agents-and-mcp"];
@@ -24,8 +48,10 @@ test.describe('category colour gate', () => {
           await cdp.send('Page.setFontSizes', { fontSizes: { standard: 32, fixed: 26 } });
         }
         const errors: string[] = [];
-        page.on('pageerror', (error) => errors.push(error.message));
-        await page.goto(route.path);
+        page.on('pageerror', (error) => {
+          if (!isTransientNetworkError(error.message)) errors.push(error.message);
+        });
+        await gotoResilient(page, route.path);
         await expect(page.locator('main h1')).toBeVisible();
         if (route.key === '/news' || route.key.startsWith('/category/'))
           await expect(page.getByTestId('story-card').first()).toBeVisible();
