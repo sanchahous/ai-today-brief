@@ -447,16 +447,6 @@ export function NewsletterForm({
           <Notice tone="error">{generalError || failed || copy.failed}</Notice>
         </div>
       ) : null}
-      <p className="text-faint mt-2.5 text-xs">
-        {copy.note}{' '}
-        <a
-          href={`/${lang}/privacy`}
-          className="text-muted hover:text-text underline underline-offset-2"
-        >
-          {copy.privacyPolicy}
-        </a>
-        .
-      </p>
     </form>
   );
 }
