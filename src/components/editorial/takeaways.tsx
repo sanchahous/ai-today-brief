@@ -4,7 +4,7 @@ export function Takeaways({ lang, items }: { lang: Lang; items: string[] }) {
   const title = lang === 'uk' ? 'Головне' : 'Key Takeaways';
 
   return (
-    <section className="border-line bg-surface my-8 rounded-[var(--radius-md)] border px-5 py-6 sm:px-6">
+    <section className="border-line bg-surface my-8 min-w-0 max-w-full overflow-x-clip rounded-[var(--radius-md)] border px-5 py-6 sm:px-6">
       <h3 className="text-text m-0 font-serif text-xl font-semibold">{title}</h3>
       <ol className="m-0 mt-3 list-none space-y-0 p-0">
         {items.map((item, i) => (

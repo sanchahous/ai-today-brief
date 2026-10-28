@@ -39,7 +39,7 @@ export function Callout({
 
   return (
     <aside
-      className={`border-line bg-surface my-6 scroll-mt-[calc(var(--header-h,4rem)+2.5rem)] rounded-r-[var(--radius-md)] border border-l-[3px] py-5 pr-5 pl-[calc(1.25rem-3px)] sm:py-6 sm:pr-6 ${accentBar}`}
+      className={`border-line bg-surface my-6 min-w-0 max-w-full scroll-mt-[calc(var(--header-h,4rem)+2.5rem)] rounded-r-[var(--radius-md)] border border-l-[3px] py-5 pr-5 pl-[calc(1.25rem-3px)] sm:py-6 sm:pr-6 ${accentBar}`}
     >
       <div className="text-text font-serif text-lg font-semibold">{getTitle()}</div>
       <div className="reading-copy text-text mt-2 max-w-none text-[length:var(--text-lg)]">

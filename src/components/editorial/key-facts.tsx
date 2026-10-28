@@ -9,7 +9,7 @@ export function KeyFacts({ lang, title, facts }: { lang: Lang; title?: string; f
   const heading = title || (lang === 'uk' ? 'Ключові факти' : 'Key facts');
 
   return (
-    <section className="border-line bg-surface my-8 overflow-hidden rounded-[var(--radius-md)] border">
+    <section className="border-line bg-surface my-8 min-w-0 max-w-full overflow-hidden rounded-[var(--radius-md)] border">
       <h3 className="text-accent border-line m-0 border-b px-5 py-3 font-mono text-2xs font-medium tracking-[var(--tracking-eyebrow)] uppercase">
         {heading}
       </h3>
