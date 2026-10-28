@@ -560,6 +560,113 @@ html[lang='uk'],
   }
 }
 
+/* Shared editorial banner frame — height from screens-v3 daily/article (16:5 @ content width). */
+.banner-hero {
+  aspect-ratio: 16 / 5;
+}
+
+.banner-hero-frame {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  margin: 0;
+  aspect-ratio: 16 / 5;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+.banner-hero-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.banner-hero-art > .cat-banner,
+.banner-hero-art > .banner-hero-art-fill {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
+.banner-hero-art img,
+.banner-hero-art .banner-hero-art-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: right center;
+}
+
+.banner-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--scrim-banner);
+  pointer-events: none;
+}
+
+.banner-hero-copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 100%;
+  max-width: min(56%, 34rem);
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(var(--space-4), 3vw, var(--space-8));
+  padding-right: 44%;
+  text-shadow: var(--text-shadow-banner);
+}
+
+.banner-hero-eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.banner-hero-title {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: clamp(1.65rem, 2.6vw, 2.75rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.banner-hero-dek {
+  margin-top: var(--space-3);
+  color: var(--text);
+  font-size: clamp(0.875rem, 1.45vw, 1rem);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.banner-hero-meta {
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-shadow: var(--text-shadow-banner);
+}
+
+@media (max-width: 639px) {
+  .banner-hero-frame {
+    aspect-ratio: 16 / 6;
+  }
+
+  .banner-hero-copy {
+    max-width: 100%;
+    padding-right: clamp(var(--space-4), 3vw, var(--space-8));
+  }
+
+  .banner-hero-title {
+    font-size: clamp(1.35rem, 6.5vw, 1.85rem);
+  }
+}
+
 @supports (background: color-mix(in srgb, black 50%, transparent)) {
   .site-header-shell {
     background: color-mix(in srgb, var(--bg) 96%, transparent);

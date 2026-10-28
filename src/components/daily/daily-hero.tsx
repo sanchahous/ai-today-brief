@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { DailyVisualEngagement } from '@/components/daily/daily-visual-engagement';
 import { ReadProgressRing } from '@/components/daily/daily-read-state';
 import { CategoryBanner } from '@/components/editorial/category-banner';
+import { BannerHeroCopy, BannerHeroFrame } from '@/components/editorial/editorial-hero';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
 import { ClockIcon } from '@/components/icons';
 import type { DailyBriefView } from '@/lib/briefs';
@@ -80,73 +81,40 @@ export function dailyHeroDescriptions(intro: string | null | undefined): {
 
 export function DailyHero({ brief, lang }: { brief: DailyBriefView; lang: Lang }) {
   const t = getStrings(lang);
-  const visual = brief.visual;
   const parts = briefDateParts(brief.date, lang);
   const { excerpt, more } = dailyHeroDescriptions(brief.intro);
-  const displayTitle = visual?.displayTitle || brief.title || t.todaysBrief;
+  const displayTitle = brief.visual?.displayTitle || brief.title || t.todaysBrief;
   const minutes = readMinutesForParts(brief.allItems);
   const count = brief.allItems.length;
   const lead = brief.allItems[0];
 
   return (
     <header className="mb-8" data-testid="daily-hero">
-      <div className="flex flex-col gap-6 tablet:flex-row tablet:items-start tablet:justify-between">
-        <div className="min-w-0 flex-1">
-          {parts ? (
-            <p className="m-0 mb-4 flex items-end gap-3" aria-hidden="true">
-              <span className="font-serif text-text text-6xl leading-none">{parts.day}</span>
-              <span className="text-muted text-sm leading-snug">
-                {parts.month}
-                <br />
-                {parts.weekday}
-              </span>
-            </p>
-          ) : null}
-          <p className="text-accent m-0 text-xs font-bold tracking-[0.14em] uppercase">
-            {t.dailyBriefEyebrow}
-            {parts ? (
-              <>
-                {' · '}
-                <time dateTime={parts.iso}>{parts.full}</time>
-              </>
-            ) : null}
+      <div className="mb-6 flex flex-col gap-6 tablet:flex-row tablet:items-start tablet:justify-between">
+        {parts ? (
+          <p className="m-0 flex items-end gap-3" aria-hidden="true">
+            <span className="font-serif text-text text-6xl leading-none">{parts.day}</span>
+            <span className="text-muted text-sm leading-snug">
+              {parts.month}
+              <br />
+              {parts.weekday}
+            </span>
           </p>
-          <h1 className="text-text mt-3 mb-0 font-serif text-4xl leading-tight sm:text-5xl">{displayTitle}</h1>
-          {excerpt ? (
-            <p className="text-muted m-0 mt-4 max-w-[70ch] text-base leading-7">{excerpt}</p>
-          ) : null}
-          {more ? (
-            <details className="group mt-4 max-w-[70ch]">
-              <summary className="rounded-pill border-line bg-surface text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] list-none items-center gap-2 border px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
-                <span className="group-open:hidden">{t.briefShowMore}</span>
-                <span className="hidden group-open:inline">{t.briefShowLess}</span>
-              </summary>
-              <p className="text-muted m-0 mt-4 text-base leading-7 whitespace-pre-line">{more}</p>
-            </details>
-          ) : null}
-          <ul className="m-0 mt-4 flex list-none flex-wrap items-center gap-x-4 gap-y-2 p-0 text-sm text-muted">
-            {minutes > 0 ? (
-              <li className="inline-flex items-center gap-1.5">
-                <ClockIcon size={16} />
-                <span>
-                  {minutes} {pluralLabel(minutes, lang, 'minutes')}
-                </span>
-              </li>
-            ) : null}
-            {count > 0 ? (
-              <li>
-                {count} {pluralLabel(count, lang, 'stories')}
-              </li>
-            ) : null}
-            <li>
-              <AiDisclosureNote lang={lang} variant="inline" />
-            </li>
-          </ul>
-        </div>
+        ) : null}
         <ReadProgressRing />
       </div>
 
-      <DailyVisual brief={brief} lang={lang} lead={lead} />
+      <DailyVisual
+        brief={brief}
+        lang={lang}
+        lead={lead}
+        displayTitle={displayTitle}
+        excerpt={excerpt}
+        more={more}
+        minutes={minutes}
+        count={count}
+        parts={parts}
+      />
     </header>
   );
 }
@@ -155,42 +123,104 @@ function DailyVisual({
   brief,
   lang,
   lead,
+  displayTitle,
+  excerpt,
+  more,
+  minutes,
+  count,
+  parts,
 }: {
   brief: DailyBriefView;
   lang: Lang;
   lead: DailyBriefView['allItems'][number] | undefined;
+  displayTitle: string;
+  excerpt: string | null;
+  more: string | null;
+  minutes: number;
+  count: number;
+  parts: ReturnType<typeof briefDateParts>;
 }) {
   const t = getStrings(lang);
   const visual = brief.visual;
   if (!visual && !lead) return null;
 
+  const eyebrow = (
+    <>
+      {t.dailyBriefEyebrow}
+      {parts ? (
+        <>
+          {' · '}
+          <time dateTime={parts.iso}>{parts.full}</time>
+        </>
+      ) : null}
+    </>
+  );
+
+  const dek = excerpt ? <p className="m-0">{excerpt}</p> : null;
+
+  const footer = more ? (
+    <details className="group max-w-[70ch]">
+      <summary className="rounded-pill border-line bg-surface/80 text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] list-none items-center gap-2 border px-4 text-sm font-semibold backdrop-blur-sm [&::-webkit-details-marker]:hidden">
+        <span className="group-open:hidden">{t.briefShowMore}</span>
+        <span className="hidden group-open:inline">{t.briefShowLess}</span>
+      </summary>
+      <p className="text-muted m-0 mt-4 text-base leading-7 whitespace-pre-line">{more}</p>
+    </details>
+  ) : null;
+
+  const meta = (
+    <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-2 p-0">
+      {minutes > 0 ? (
+        <li className="inline-flex items-center gap-1.5">
+          <ClockIcon size={16} />
+          <span>
+            {minutes} {pluralLabel(minutes, lang, 'minutes')}
+          </span>
+        </li>
+      ) : null}
+      {count > 0 ? (
+        <li>
+          {count} {pluralLabel(count, lang, 'stories')}
+        </li>
+      ) : null}
+      <li>
+        <AiDisclosureNote lang={lang} variant="inline" />
+      </li>
+    </ul>
+  );
+
+  const art = visual ? (
+    <Image
+      src={visual.publicUrl}
+      alt=""
+      width={visual.width}
+      height={visual.height}
+      priority
+      unoptimized
+      className="banner-hero-art-fill"
+    />
+  ) : (
+    <CategoryBanner
+      id={lead?.id}
+      slug={lead?.categorySlug}
+      name={lead?.categoryName}
+      color={lead?.categoryColor}
+      variant="hero"
+      className="h-full w-full"
+    />
+  );
+
   return (
-    <figure id="daily-visual-hero" data-testid="daily-visual" className="mt-8 mb-0">
-      {visual ? (
-        <Image
-          src={visual.publicUrl}
-          alt=""
-          width={visual.width}
-          height={visual.height}
-          priority
-          // The shared loader sends Supabase objects to render/image, whose
-          // default resize=cover keeps the origin height and crops the width.
-          // A 1600×900 daily visual then arrives as 640×900 or 1200×900.
-          // The stored file is already WebP at the publication size, so this
-          // hero serves that file and lets object-contain scale it.
-          unoptimized
-          className="h-auto w-full object-contain"
-          style={{ width: '100%', height: 'auto' }}
+    <>
+      <BannerHeroFrame id="daily-visual-hero" testId="daily-visual" art={art}>
+        <BannerHeroCopy
+          eyebrow={eyebrow}
+          title={displayTitle}
+          dek={dek}
+          meta={meta}
+          footer={footer}
         />
-      ) : (
-        <CategoryBanner
-          id={lead?.id}
-          slug={lead?.categorySlug}
-          name={lead?.categoryName}
-          color={lead?.categoryColor}
-          variant="hero"
-        />
-      )}
+      </BannerHeroFrame>
       <figcaption className="text-faint mt-2 text-sm">
         {visual ? (
           <>
@@ -211,6 +241,6 @@ function DailyVisual({
           lang={lang}
         />
       ) : null}
-    </figure>
+    </>
   );
 }

@@ -19,6 +19,7 @@ import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Byline } from '@/components/byline';
 import { CategoryBadge } from '@/components/ui/category-badge';
 import { CategoryBanner } from '@/components/category-banner';
+import { BannerHeroCopy, BannerHeroFrame } from '@/components/editorial/editorial-hero';
 import { StoryBody } from '@/components/story-body';
 import { ItemShareBar } from '@/components/item-share-bar';
 import { ItemEngagementTracker } from '@/components/item-engagement-tracker';
@@ -204,10 +205,40 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
               </span>
             )}
           </div>
-          <h1 className="text-3xl leading-tight break-words sm:text-5xl">{detail.title}</h1>
-          {detail.summary && (
-            <p className="text-muted mt-4 text-lg leading-relaxed">{detail.summary}</p>
-          )}
+
+          <BannerHeroFrame
+            art={
+              heroImage ? (
+                <Image
+                  src={heroImage}
+                  alt=""
+                  width={1280}
+                  height={720}
+                  preload
+                  sizes="(max-width: 47.5rem) 100vw, 42.5rem"
+                  className="banner-hero-art-fill"
+                />
+              ) : (
+                <CategoryBanner
+                  name={detail.categoryName ?? 'AI'}
+                  slug={detail.categorySlug}
+                  color={detail.categoryColor}
+                  icon={detail.categoryIcon}
+                  motif={detail.rank}
+                  videoBadge={detail.hasVideo}
+                  videoLabel={t.landing.watchVideo}
+                  variant="hero"
+                  className="h-full w-full"
+                />
+              )
+            }
+          >
+            <BannerHeroCopy
+              title={detail.title}
+              dek={detail.summary ? <p className="m-0">{detail.summary}</p> : undefined}
+            />
+          </BannerHeroFrame>
+
           {detail.sourceName && <p className="text-muted mt-4 text-sm">{detail.sourceName}</p>}
           <div className="mt-4">
             <Byline
@@ -223,32 +254,6 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
             />
           </div>
         </header>
-
-        <div className="max-w-reading mx-auto mb-8">
-          {heroImage ? (
-            <figure className="border-line bg-surface relative m-0 aspect-video overflow-hidden rounded-xl border">
-              <Image
-                src={heroImage}
-                alt={detail.title}
-                width={1280}
-                height={720}
-                preload
-                sizes="(max-width: 47.5rem) 100vw, 42.5rem"
-                className="h-full w-full object-contain"
-              />
-            </figure>
-          ) : (
-            <CategoryBanner
-              name={detail.categoryName ?? 'AI'}
-              slug={detail.categorySlug}
-              color={detail.categoryColor}
-              icon={detail.categoryIcon}
-              motif={detail.rank}
-              videoBadge={detail.hasVideo}
-              videoLabel={t.landing.watchVideo}
-            />
-          )}
-        </div>
 
         {videoId && (
           <div className="max-w-reading mx-auto mb-8">
