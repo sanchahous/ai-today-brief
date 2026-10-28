@@ -24,16 +24,24 @@ export function CategoryGrid({
   coverageSampleSize?: number;
 }) {
   if (categories.length === 0 && coverage.length === 0) return null;
-  const t = getStrings(lang).landing;
+  const strings = getStrings(lang);
+  const t = strings.landing;
   return (
     <section aria-labelledby="cats-title" className="mx-auto w-full max-w-[1160px] px-6 py-12">
-      <div data-gesture="settle">
+      <div data-gesture="settle" className="flex flex-wrap items-end justify-between gap-4">
         <SectionHead
           id="cats-title"
           eyebrow={t.categoriesEyebrow}
           title={t.categoriesTitle}
           subtitle={t.categoriesSubtitle}
         />
+        <Link
+          href={`/${lang}/categories`}
+          className="rounded-pill border-line text-text hover:border-accent hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center gap-2 border px-4 py-2 text-sm font-semibold no-underline"
+        >
+          {strings.header.allCategories}
+          <ArrowRight size={16} />
+        </Link>
       </div>
       <div className="mt-7">
         <CategoryMixBar lang={lang} segments={coverage} sampleSize={coverageSampleSize} />
