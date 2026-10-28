@@ -290,18 +290,29 @@ test.describe('NewsletterForm state machine and interaction contract (AH-3.4)', 
   });
 
   test('fires newsletter_impression and newsletter_form_start funnels', async ({ page }) => {
-    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
-    const emailInput = page.locator('input[type="email"]').first();
-    await emailInput.scrollIntoViewIfNeeded();
+    // Fresh session so a prior HOME visit in this worker cannot suppress the once-per-placement gate.
+    await page.addInitScript(() => {
+      try {
+        sessionStorage.removeItem('atb-nl-imp');
+      } catch {
+        /* private mode */
+      }
+    });
+    // readyNewsletterForm waits for client hydration (noValidate) after scroll — under parallel
+    // workers a bare goto+scroll races the impression useEffect and sees dataLayer length 0.
+    const { emailInput } = await readyNewsletterForm(page, HOME);
+    await expect
+      .poll(async () => (await getDataLayerEvents(page, 'newsletter_impression')).length, {
+        timeout: 10_000,
+      })
+      .toBeGreaterThanOrEqual(1);
 
-    // Impression event
-    const impressions = await getDataLayerEvents(page, 'newsletter_impression');
-    expect(impressions.length).toBeGreaterThanOrEqual(1);
-
-    // Form start event on interaction
     await emailInput.focus();
-    const starts = await getDataLayerEvents(page, 'newsletter_form_start');
-    expect(starts.length).toBeGreaterThanOrEqual(1);
+    await expect
+      .poll(async () => (await getDataLayerEvents(page, 'newsletter_form_start')).length, {
+        timeout: 10_000,
+      })
+      .toBeGreaterThanOrEqual(1);
   });
 
   test('full variant on subscribe page validates consent and language edition', async ({ page }) => {
