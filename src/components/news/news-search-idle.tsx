@@ -28,7 +28,7 @@ export function NewsSearchIdle({
 
   return (
     <section
-      className="search-idle mt-10"
+      className="search-idle mt-10 w-full"
       data-testid="news-search-idle"
       aria-live="polite"
     >

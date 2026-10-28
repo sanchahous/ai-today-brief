@@ -3,7 +3,7 @@
 import { categoryColor } from '@/lib/category-meta';
 
 import Link from 'next/link';
-import { type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { getStrings } from '@/lib/i18n';
 import { trackEvent } from '@/lib/analytics-client';
 import type { TrendingTopic } from '@/lib/home';
@@ -80,10 +80,8 @@ function SidebarControls({
   const t = getStrings(lang).news;
   const dates: DatePreset[] = ['today', 'week', 'month', 'all'];
 
-  // Only show relevance if there is an active search query
-  const sorts: SortMode[] = filters.q.trim()
-    ? ['relevance', 'newest', 'oldest']
-    : ['newest', 'oldest'];
+  // Sorting strictly by date (newest/oldest)
+  const sorts: SortMode[] = ['newest', 'oldest'];
 
   const sortLabel = (s: SortMode) => {
     if (s === 'newest') return t.sortNewest;
@@ -316,5 +314,42 @@ export function NewsSidebar({
         </OverlayDrawer>
       </div>
     </>
+  );
+}
+
+/** Card: "This week in three lines" / «Цей тиждень у трьох рядках». */
+export function ThisWeekThreeLines({ lang }: { lang: Lang }) {
+  const t = getStrings(lang).news;
+  const [open, setOpen] = useState(true);
+
+  if (!open) return null;
+
+  return (
+    <aside
+      className="border-line bg-surface text-text mb-6 rounded-xl border p-4 sm:p-5"
+      data-testid="this-week-three-lines"
+      aria-label={t.threeLinesTitle}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="m-0 text-sm font-semibold tracking-wide">
+          {t.threeLinesTitle}
+        </h2>
+        <IconButton
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label={lang === 'uk' ? 'Закрити' : 'Close'}
+          className="-mr-1.5 -mt-1.5 text-muted hover:text-text"
+        >
+          <CloseIcon size={16} />
+        </IconButton>
+      </div>
+      <ul className="text-muted m-0 list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
+        {t.threeLines.map((line, idx) => (
+          <li key={idx} className="pl-0.5">
+            {line}
+          </li>
+        ))}
+      </ul>
+    </aside>
   );
 }

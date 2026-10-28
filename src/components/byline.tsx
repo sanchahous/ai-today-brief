@@ -30,14 +30,15 @@ export function Byline({
     year: 'numeric',
   });
   
-  const pubDate = formatter.format(new Date(`${publishedAt}T00:00:00`));
-  const updDate = updatedAt ? formatter.format(new Date(`${updatedAt}T00:00:00`)) : null;
+  const parseDate = (d: string) => new Date(d.includes('T') ? d : `${d}T00:00:00`);
+  const pubDate = formatter.format(parseDate(publishedAt));
+  const updDate = updatedAt ? formatter.format(parseDate(updatedAt)) : null;
 
   return (
-    <div className="text-muted flex flex-wrap items-center gap-2 text-[0.82rem]">
+    <p className="text-muted m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.82rem] leading-normal">
       <Link 
         href={`/${lang}/author`} 
-        className="hover:opacity-80 transition-opacity inline-flex items-center justify-center min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] -mx-2" 
+        className="hover:opacity-80 transition-opacity inline-flex shrink-0 items-center justify-center" 
         // Decorative twin of the name link below: the initials are not part of any accessible
         // name (axe label-content-name-mismatch), so keep it out of the a11y tree and tab order.
         aria-hidden
@@ -50,14 +51,14 @@ export function Byline({
           {initials}
         </span>
       </Link>
-      <span>
+      <span className="inline-flex items-center">
         <Link
           href={`/${lang}/author`}
-          className="text-text hover:text-accent inline-flex min-h-[var(--touch-target-min)] items-center align-middle font-semibold no-underline transition-colors"
+          className="text-text hover:text-accent font-semibold no-underline transition-colors"
         >
           {authorName}
         </Link>
-        , {role}
+        <span>, {role}</span>
       </span>
       
       <span aria-hidden className="text-faint">·</span>
@@ -85,6 +86,6 @@ export function Byline({
           <AiDisclosureNote lang={lang} variant="inline" />
         </>
       )}
-    </div>
+    </p>
   );
 }

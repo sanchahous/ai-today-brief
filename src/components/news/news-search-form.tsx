@@ -48,7 +48,7 @@ export function NewsSearchForm({
 
   return (
     <form
-      className="news-search-form"
+      className="news-search-form w-full !max-w-none"
       role="search"
       data-testid="news-search-form"
       onSubmit={onSubmit}
