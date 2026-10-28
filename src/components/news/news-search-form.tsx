@@ -41,7 +41,11 @@ export function NewsSearchForm({
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const q = value.trim();
+    // Read from the form, not React state — automation can submit before a controlled
+    // input's onChange commit when workers are busy (second search on /news/search).
+    const raw = new FormData(e.currentTarget).get('q');
+    const q = (typeof raw === 'string' ? raw : '').trim();
+    setValue(q);
     trackSearch(q, 'search-page', lang);
     router.push(q ? `/${lang}/news/search?q=${encodeURIComponent(q)}` : `/${lang}/news/search`);
   }

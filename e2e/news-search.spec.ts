@@ -62,7 +62,8 @@ test.describe('News search page (/[lang]/news/search)', () => {
     const input = page.locator('#news-search-q');
     await input.fill('agents');
     await expect(input).toHaveValue('agents');
-    await page.getByTestId('news-search-form').getByRole('button', { name: /search/i }).click();
+    const submit = page.getByTestId('news-search-form').getByRole('button', { name: /search/i });
+    await Promise.all([page.waitForURL(/q=agents/, { timeout: 15_000 }), submit.click()]);
 
     await expect(page).toHaveURL(/q=agents/);
     await expect(page).not.toHaveURL(/sort=oldest/);
