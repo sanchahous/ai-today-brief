@@ -1,4 +1,4 @@
-export function SleeveArt({ seed }: { seed: string }) {
+export function SleeveArt({ seed, className = '' }: { seed: string; className?: string }) {
   // A deterministic SVG fallback pattern for weekly digests without an image cover
   // Simple abstract generative art based on seed string
   const num = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -6,7 +6,11 @@ export function SleeveArt({ seed }: { seed: string }) {
   const hue2 = (num * 7) % 360;
   
   return (
-    <svg viewBox="0 0 400 300" className="w-full h-full object-cover" preserveAspectRatio="none">
+    <svg
+      viewBox="0 0 400 300"
+      className={`banner-hero-art-fill ${className}`.trim()}
+      preserveAspectRatio="xMidYMid slice"
+    >
       <defs>
         <linearGradient id={`grad-${num}`} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor={`hsl(${hue1}, 70%, 20%)`} />
