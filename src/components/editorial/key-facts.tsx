@@ -7,18 +7,23 @@ export interface Fact {
 
 export function KeyFacts({ lang, title, facts }: { lang: Lang; title?: string; facts: Fact[] }) {
   const heading = title || (lang === 'uk' ? 'Ключові факти' : 'Key facts');
-  
+
   return (
-    <div className="my-8">
-      <h3 className="mb-4 font-serif text-xl font-semibold">{heading}</h3>
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+    <section className="border-line bg-surface my-8 min-w-0 max-w-full overflow-hidden rounded-[var(--radius-md)] border">
+      <h3 className="text-accent border-line m-0 border-b px-5 py-3 font-mono text-2xs font-medium tracking-[var(--tracking-eyebrow)] uppercase">
+        {heading}
+      </h3>
+      <dl className="m-0">
         {facts.map((fact, i) => (
-          <div key={i} className="flex flex-col border-t border-line pt-3">
-            <dt className="text-sm font-semibold text-text">{fact.term}</dt>
-            <dd className="mt-1 text-sm text-muted">{fact.definition}</dd>
+          <div
+            key={i}
+            className={`grid grid-cols-1 gap-x-4 gap-y-1 px-5 py-3 sm:grid-cols-[minmax(120px,0.6fr)_minmax(0,1fr)] ${i % 2 === 1 ? 'bg-raised' : ''}`}
+          >
+            <dt className="text-muted m-0 text-sm">{fact.term}</dt>
+            <dd className="text-text m-0 text-base font-semibold leading-snug">{fact.definition}</dd>
           </div>
         ))}
       </dl>
-    </div>
+    </section>
   );
 }

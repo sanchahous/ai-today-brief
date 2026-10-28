@@ -20,6 +20,6 @@ export { DataTable } from './data-table';
 export { Faq, type FaqItem } from './faq';
 export { RelatedContent } from './related-content';
 export { DigestCard, type DigestCardProps } from './digest-card';
-export { EditorialHero } from './editorial-hero';
+export { BannerHeroCopy, BannerHeroFrame, EditorialHero } from './editorial-hero';
 export { SleeveArt } from './sleeve-art';
 export { VideoFacade } from './video-facade';

@@ -306,16 +306,22 @@ export function NewsFeed({
     }
   };
 
-  const sortOptions = filters.q.trim()
-    ? [
-        { value: 'relevance', label: t.sortRelevance },
-        { value: 'newest', label: t.sortNewest },
-        { value: 'oldest', label: t.sortOldest },
-      ]
-    : [
-        { value: 'newest', label: t.sortNewest },
-        { value: 'oldest', label: t.sortOldest },
-      ];
+  const sortOptions =
+    feedContext === 'hub'
+      ? [
+          { value: 'newest', label: t.sortNewest },
+          { value: 'oldest', label: t.sortOldest },
+        ]
+      : filters.q.trim()
+        ? [
+            { value: 'relevance', label: t.sortRelevance },
+            { value: 'newest', label: t.sortNewest },
+            { value: 'oldest', label: t.sortOldest },
+          ]
+        : [
+            { value: 'newest', label: t.sortNewest },
+            { value: 'oldest', label: t.sortOldest },
+          ];
 
   const activeCount =
     filters.categories.length +
@@ -324,30 +330,11 @@ export function NewsFeed({
     (filters.q.trim() ? 1 : 0);
 
   return (
-    <div className="news-layout" data-testid="news-feed" data-hydrated={ready}>
-      <NewsSidebar
-        lang={lang}
-        filters={filters}
-        facets={facets}
-        categories={categories}
-        trending={trending}
-        onToggleCategory={toggleCategory}
-        onDate={setDateFilter}
-        onSort={setSortFilter}
-        onReset={reset}
-        topicOptions={topicOptions}
-        onToggleTopic={toggleTopic}
-        hasActive={hasActive}
-        drawerOpen={drawerOpen}
-        setDrawerOpen={setDrawerOpen}
-        triggerRef={filtersTriggerRef}
-        resultsCount={filtered.length}
-      />
-
-      <section aria-label={t.title} className="min-w-0">
-        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {feedContext === 'hub' && (
-            <div className="flex-1 min-w-[200px] max-w-md">
+    <div data-testid="news-feed" data-hydrated={ready}>
+      <div className="mb-4">
+        {feedContext === 'hub' ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="w-full flex-1 min-w-0">
               <SearchInput
                 lang={lang}
                 value={searchValue}
@@ -359,96 +346,163 @@ export function NewsFeed({
                   }
                 }}
                 onClear={() => setSearchQuery('')}
+                placeholder={
+                  lang === 'uk'
+                    ? 'Пошук по історіях, інструментах, темах…'
+                    : 'Search stories, tools, topics…'
+                }
+                className="w-full"
               />
             </div>
-          )}
-          <div className={`flex items-center gap-2 ${feedContext === 'search' ? 'w-full justify-between' : ''}`}>
+            <div className="flex w-full items-center justify-between gap-2 shrink-0 sm:w-auto sm:justify-end">
+              <ActionButton
+                variant="outline"
+                ref={filtersTriggerRef}
+                type="button"
+                disabled={!ready}
+                aria-expanded={drawerOpen}
+                onClick={() => setDrawerOpen(true)}
+                className="mobile-only !rounded-pill"
+                leftIcon={<SlidersIcon size={16} />}
+              >
+                {t.filters}
+                {activeCount > 0 && (
+                  <span className="bg-accent text-on-accent size-5 rounded-full text-xs flex items-center justify-center font-bold">
+                    {activeCount}
+                  </span>
+                )}
+              </ActionButton>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="news-sort-top"
+                  className="text-muted hidden text-sm shrink-0 sm:inline"
+                >
+                  {t.sortLabel}
+                </label>
+                <div className="min-w-[140px]">
+                  <Select
+                    id="news-sort-top"
+                    value={filters.sort}
+                    onChange={(e) => setSortFilter(e.target.value as SortMode)}
+                    options={sortOptions}
+                    aria-label={t.sortLabel}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex w-full items-center justify-between gap-2">
             <p className="text-muted m-0 text-sm" aria-live="polite" role="status">
               {showingText}
             </p>
-            <label htmlFor="news-sort-top" className="sr-only">
-              {t.sortLabel}
-            </label>
-            <div className="min-w-[150px]">
-              <Select
-                id="news-sort-top"
-                value={filters.sort}
-                onChange={(e) => setSortFilter(e.target.value as SortMode)}
-                options={sortOptions}
-                aria-label={t.sortLabel}
-              />
-            </div>
-            <ActionButton variant="outline"
-              ref={filtersTriggerRef}
-              type="button"
-              disabled={!ready}
-              aria-expanded={drawerOpen}
-              onClick={() => setDrawerOpen(true)}
-              className="mobile-only !rounded-pill"
-              leftIcon={<SlidersIcon size={16} />}
-            >
-              {t.filters}
-              {activeCount > 0 && (
-                <span className="bg-accent text-on-accent size-5 rounded-full text-xs flex items-center justify-center font-bold">
-                  {activeCount}
-                </span>
-              )}
-            </ActionButton>
-          </div>
-        </div>
-        
-        {hasActive && (
-          <div data-testid="active-filter-chips" className="mb-6 flex flex-wrap items-center gap-2">
-            {filters.q.trim() && (
-              <FilterChip
-                lang={lang}
-                label={filters.q}
-                active
-                onRemove={() => setSearchQuery('')}
-                removeAriaLabel={t.removeTopic.replace('{name}', filters.q)}
-              />
-            )}
-            {filters.categories.map(slug => {
-              const cat = categories.find(c => c.slug === slug);
-              return cat ? (
-                <FilterChip
-                  lang={lang}
-                  key={slug}
-                  label={cat.name}
-                  active
-                  onRemove={() => toggleCategory(slug)}
-                  removeAriaLabel={t.removeTopic.replace('{name}', cat.name)}
+            <div className="flex items-center gap-2">
+              <label htmlFor="news-sort-top" className="sr-only">
+                {t.sortLabel}
+              </label>
+              <div className="min-w-[140px]">
+                <Select
+                  id="news-sort-top"
+                  value={filters.sort}
+                  onChange={(e) => setSortFilter(e.target.value as SortMode)}
+                  options={sortOptions}
+                  aria-label={t.sortLabel}
                 />
-              ) : null;
-            })}
-            {activeTopics.map(slug => (
-               <FilterChip
-                  lang={lang}
-                  key={slug}
-                  label={topicNames.get(slug) ?? slug}
-                  active
-                  onRemove={() => removeTopic(slug)}
-                  removeAriaLabel={t.removeTopic.replace('{name}', topicNames.get(slug) ?? slug)}
-               />
-            ))}
-            {filters.date !== 'all' && (
-              <FilterChip
-                lang={lang}
-                label={
-                  filters.date === 'today' ? t.dateToday :
-                  filters.date === 'week' ? t.dateWeek :
-                  filters.date === 'month' ? t.dateMonth : ''
-                }
-                active
-                onRemove={() => setDateFilter('all')}
-                removeAriaLabel={t.removeTopic.replace('{name}', filters.date)}
-              />
-            )}
-            <ActionButton variant="ghost" onClick={reset}>{t.filterReset}</ActionButton>
+              </div>
+            </div>
           </div>
         )}
+      </div>
 
-        {error ? (
+      {feedContext === 'hub' && (
+        <div className="mb-4">
+          <p className="text-muted m-0 text-sm" aria-live="polite" role="status">
+            {showingText}
+          </p>
+        </div>
+      )}
+
+      {hasActive && (
+        <div data-testid="active-filter-chips" className="mb-6 flex flex-wrap items-center gap-2">
+          {filters.q.trim() && (
+            <FilterChip
+              lang={lang}
+              label={filters.q}
+              active
+              onRemove={() => setSearchQuery('')}
+              removeAriaLabel={t.removeTopic.replace('{name}', filters.q)}
+            />
+          )}
+          {filters.categories.map((c) => {
+            const cat = categories.find((cat) => cat.slug === c);
+            const label = cat?.name ?? c;
+            return (
+              <FilterChip
+                key={c}
+                lang={lang}
+                label={label}
+                active
+                onRemove={() => toggleCategory(c)}
+                removeAriaLabel={t.removeTopic.replace('{name}', label)}
+              />
+            );
+          })}
+          {activeTopics.map((topicSlug) => {
+            const topicName = topicNames.get(topicSlug) || topicSlug;
+            return (
+              <FilterChip
+                key={topicSlug}
+                lang={lang}
+                label={`#${topicName}`}
+                active
+                onRemove={() => removeTopic(topicSlug)}
+                removeAriaLabel={t.removeTopic.replace('{name}', topicName)}
+              />
+            );
+          })}
+          {filters.date !== 'all' && (
+            <FilterChip
+              lang={lang}
+              label={
+                filters.date === 'today'
+                  ? t.dateToday
+                  : filters.date === 'week'
+                    ? t.dateWeek
+                    : t.dateMonth
+              }
+              active
+              onRemove={() => setDateFilter('all')}
+              removeAriaLabel={t.removeTopic.replace('{name}', filters.date)}
+            />
+          )}
+          <ActionButton variant="ghost" size="sm" type="button" onClick={reset} className="!h-auto !py-1 text-xs">
+            {t.filterReset}
+          </ActionButton>
+        </div>
+      )}
+
+      <div className="news-layout">
+        <NewsSidebar
+          lang={lang}
+          filters={filters}
+          facets={facets}
+          categories={categories}
+          trending={trending}
+          onToggleCategory={toggleCategory}
+          onDate={setDateFilter}
+          onSort={setSortFilter}
+          onReset={reset}
+          topicOptions={topicOptions}
+          onToggleTopic={toggleTopic}
+          hasActive={hasActive}
+          drawerOpen={drawerOpen}
+          setDrawerOpen={setDrawerOpen}
+          triggerRef={filtersTriggerRef}
+          resultsCount={filtered.length}
+        />
+
+        <section aria-label={t.title} className="min-w-0">
+          {error ? (
           <ErrorState
             title={core.searchErrorTitle}
             description={core.searchErrorDescription}
@@ -511,6 +565,7 @@ export function NewsFeed({
           <NewsletterForm lang={lang} variant="inline" placement="news-feed-mobile" />
         </div>
       </section>
+    </div>
     </div>
   );
 }

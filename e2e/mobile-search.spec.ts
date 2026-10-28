@@ -81,18 +81,24 @@ test.describe('Mobile search', () => {
     await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
   });
 
-  test('header icon: inert on home until scrolled past the hero, then back (two-way)', async ({
+  test('header icon: inert while hero search is in view, active when scrolled away (two-way)', async ({
     page,
   }) => {
     await page.setViewportSize(PHONE);
     await gotoHome(page);
     const icon = headerIcon(page);
-    await expect.poll(async () => icon.getAttribute('aria-hidden')).toBe('true');
+    const trigger = heroTrigger(page);
 
-    await page.evaluate(() => window.scrollTo(0, 1400));
+    // Phone layout: brand stage sits above the hero search — icon stays active at the top.
     await expect.poll(async () => icon.getAttribute('aria-hidden')).toBe('false');
 
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await trigger.scrollIntoViewIfNeeded();
+    await expect.poll(async () => icon.getAttribute('aria-hidden')).toBe('true');
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect.poll(async () => icon.getAttribute('aria-hidden')).toBe('false');
+
+    await trigger.scrollIntoViewIfNeeded();
     await expect.poll(async () => icon.getAttribute('aria-hidden')).toBe('true');
   });
 

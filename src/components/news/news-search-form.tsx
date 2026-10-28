@@ -41,14 +41,19 @@ export function NewsSearchForm({
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const q = value.trim();
+    // Read the live control value — not React state — so a busy main thread cannot
+    // submit a stale query after the user edits the field (search results page).
+    const field = e.currentTarget.elements.namedItem('q');
+    const q =
+      field instanceof HTMLInputElement ? field.value.trim() : value.trim();
+    setValue(q);
     trackSearch(q, 'search-page', lang);
     router.push(q ? `/${lang}/news/search?q=${encodeURIComponent(q)}` : `/${lang}/news/search`);
   }
 
   return (
     <form
-      className="news-search-form"
+      className="news-search-form w-full !max-w-none"
       role="search"
       data-testid="news-search-form"
       onSubmit={onSubmit}
