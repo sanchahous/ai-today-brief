@@ -206,7 +206,7 @@ export function SiteHeaderChrome({
             href={`/${lang}/subscribe`}
             className="hidden tablet:inline-flex rounded-sm bg-accent text-on-accent px-4 py-2 text-[0.875rem] font-semibold no-underline transition-opacity duration-200 hover:opacity-90"
           >
-            {t.subscribe}
+            {t.header.getTheBrief}
           </Link>
           
           <IconButton
@@ -301,14 +301,6 @@ export function SiteHeaderChrome({
           </nav>
 
           <SearchTrigger lang={lang} source="header" variant="field" className="min-w-[240px] max-w-sm rounded-pill" placeholder={t.header.searchPlaceholder} testId="search-trigger-compact" />
-          
-          <Link
-             href={`/${lang}/subscribe`}
-             className="hidden tablet:inline-flex rounded-sm bg-accent text-on-accent px-4 py-2 text-[0.875rem] font-semibold no-underline transition-opacity duration-200 hover:opacity-90 shrink-0"
-             tabIndex={-1}
-          >
-             {t.subscribe}
-          </Link>
         </div>
       </div>
       
@@ -405,7 +397,7 @@ export function SiteHeaderChrome({
               className="flex items-center gap-2 min-h-[44px] rounded-pill bg-accent text-on-accent px-5 py-3 text-base font-semibold no-underline transition-opacity duration-200 hover:opacity-90"
               onClick={() => setMenuOpen(false)}
            >
-              {t.subscribe}
+              {t.header.getTheBrief}
               <ArrowRight size={18} />
            </Link>
         </div>

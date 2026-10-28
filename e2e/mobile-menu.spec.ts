@@ -54,8 +54,8 @@ test.describe('Mobile menu overlay', () => {
       expect(overlayMetrics.height).toBe(viewport.height);
       expect(overlayMetrics.background).not.toContain('rgba(0, 0, 0, 0)');
 
-      await expect(dialog.getByRole('link', { name: /^Підписатися$/ })).toHaveCount(1);
-      await expect(page.locator('header').getByRole('link', { name: /^Підписатися$/ })).toHaveCount(0);
+      await expect(dialog.getByRole('link', { name: /^Get the brief$/ })).toHaveCount(1);
+      await expect(page.locator('header').getByRole('link', { name: /^Get the brief$/ })).toHaveCount(0);
 
       const tapTargets = dialog.getByRole('link', { name: /^EN$/ }).or(dialog.locator('summary'));
       const targetCount = await tapTargets.count();
@@ -82,12 +82,12 @@ test.describe('Mobile menu overlay', () => {
     });
   }
 
-  test('closes on route change and leaves a single Subscribe action visible while open', async ({ page }) => {
+  test('closes on route change and leaves a single Get the brief action visible while open', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     const { dialog } = await openMobileMenu(page);
 
-    await expect(dialog.getByRole('link', { name: /^Підписатися$/ })).toHaveCount(1);
-    await expect(page.locator('header').getByRole('link', { name: /^Підписатися$/ })).toHaveCount(0);
+    await expect(dialog.getByRole('link', { name: /^Get the brief$/ })).toHaveCount(1);
+    await expect(page.locator('header').getByRole('link', { name: /^Get the brief$/ })).toHaveCount(0);
     await dialog.getByRole('link', { name: /^Новини$/ }).click();
 
     await expect(page).toHaveURL(/\/uk\/news$/);

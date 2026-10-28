@@ -583,6 +583,7 @@ export const STRINGS = {
       dailyEdition: 'Daily edition',
       allCategories: 'All categories',
       searchPlaceholder: 'Search stories, concepts, tools',
+      getTheBrief: 'Get the brief',
     },
   },
   uk: {
@@ -1166,6 +1167,7 @@ export const STRINGS = {
       dailyEdition: 'Щоденний випуск',
       allCategories: 'Усі категорії',
       searchPlaceholder: 'Пошук новин, концептів, утиліт',
+      getTheBrief: 'Get the brief',
     },
   },
 } as const;
