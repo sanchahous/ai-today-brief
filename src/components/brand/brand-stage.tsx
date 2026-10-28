@@ -160,23 +160,6 @@ export function BrandStage({ lang }: { lang: Lang }) {
         <span className="brand-line"><span>{t.captionLine2}</span></span>
         <small>{t.captionMeta}</small>
       </p>
-      <button
-        type="button"
-        className="brand-replay"
-        data-brand-replay
-        aria-label={t.replay}
-      >
-        <svg className="icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
     </div>
   );
 }
