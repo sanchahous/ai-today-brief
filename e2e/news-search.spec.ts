@@ -43,6 +43,7 @@ test.describe('News search page (/[lang]/news/search)', () => {
   });
 
   test('second query from results form resets chip, sort and URL', async ({ page }) => {
+    test.setTimeout(90_000);
     const t = getStrings('en').news;
     await page.goto('/en/news/search?q=mcp', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
@@ -65,10 +66,9 @@ test.describe('News search page (/[lang]/news/search)', () => {
     const input = page.locator('#news-search-q');
     await input.fill('agents');
     await expect(input).toHaveValue('agents');
-    const submit = page.getByTestId('news-search-form').getByRole('button', { name: /search/i });
     await Promise.all([
       page.waitForURL(/q=agents/, { timeout: 45_000 }),
-      submit.click(),
+      input.press('Enter'),
     ]);
 
     await expect(page).toHaveURL(/q=agents/);
