@@ -2,7 +2,7 @@
 
 Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v3.1.0 (minor A1/ATB-77: зарезервовані поверхні newsletter/weekly/coverage/scrim/chart/hero з макетів screens-v3; major AH-7.3: прибрано legacy-аліаси `--bg-soft`, `--surface-2`, `--border`, `--border-soft`): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
 Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/screens-v3/home-desktop-night.webp`; `artifacts/after-hours/screens-v3/home-desktop-day.webp`; `artifacts/after-hours/screens-v3/article-desktop-night.webp`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29; PR #369, #381, #382, #384, #385, #386, #438, #458.
-Last updated: 2026-10-27
+Last updated: 2026-10-29
 
 **Статус:** прийнято й реалізовано в production (v3.1.0). Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md; PR #438; A1 PR #458).
 
@@ -328,6 +328,12 @@ AH-1.5 підключає локальні OFL subset-и через `next/font/l
 | `--scrim` | напівпрозорий оверлей модалок і sheet | `scrim` |
 | `--scrim-banner` | градієнтний scrim під текстом поверх банерів / cover art | `scrimBanner` |
 | `--text-shadow-banner` | тінь тексту поверх фото/банерів | `textShadowBanner` |
+| `--code-ink` | основний текст code-панелі статті (фіксований світлий на `--stage` в обох темах) | н/д (лише `globals.css`, ATB-91) |
+| `--code-ink-muted` | приглушений текст шапки code-панелі й кнопки Copy | н/д (лише `globals.css`, ATB-91) |
+| `--code-line` | база рамки code-панелі (змішується з кольором блоку) | н/д (лише `globals.css`, ATB-91) |
+| `--code-bar-line` | нижня лінія шапки code-панелі | н/д (лише `globals.css`, ATB-91) |
+| `--code-bar-bg` | заливка шапки code-панелі | н/д (лише `globals.css`, ATB-91) |
+| `--code-dot-mix` | світла компонента точки мови в шапці code-панелі | н/д (лише `globals.css`, ATB-91) |
 | `--newsletter-glow` | радіальний блиск на tan-блоці розсилки | `newsletterGlow` |
 | `--accent-gradient` | латунний градієнт номерів weekly cover | `accentGradient` |
 | `--tint-accent` | легка латунна заливка іконок / hover | `tintAccent` |

@@ -21,6 +21,7 @@ import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import type { EnrichedSource } from './enrich';
 import { resolveGeminiModelQueue } from './gemini-models';
 import { ukQualityFlags } from './lang-check';
+import { normalizeMarkdownBreaks } from '@/lib/markdown';
 import { logError, logEvent, serializeErrorDetails } from './log';
 import { validateOpenRouterBriefJson } from './openrouter-brief-json';
 import {
@@ -762,8 +763,19 @@ export function normalizeEscapedNewlines(s: string): string {
   return s.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\t/g, '  ');
 }
 
+/**
+ * Multiline model text → clean storage form: unescape double-escaped `
+`, then
+ * turn stray HTML `<br>` (a recurring LLM quirk that glues a heading to the
+ * following paragraphs) into real newlines. Render-time repair lives in
+ * src/lib/markdown.ts; this keeps NEW articles clean at the source.
+ */
+export function normalizeMultilineText(s: string): string {
+  return normalizeMarkdownBreaks(normalizeEscapedNewlines(s)).trim();
+}
+
 function asMultilineString(value: unknown): string {
-  return normalizeEscapedNewlines(asString(value));
+  return normalizeMultilineText(asString(value));
 }
 
 function asStringArray(value: unknown): string[] {

@@ -11,7 +11,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code
 library 2026-08-23, daily production cover 2026-08-24, image-only QA Likert 2026-08-25
-Last updated: 2026-10-27
+Last updated: 2026-10-29
 
 ---
 
@@ -65,8 +65,16 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 3. **Image** — Cloudflare Workers AI default
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).
-   Fallback ladder: Pollinations → procedural **duotone**
-   (`src/lib/card/duotone.ts`). (source: PR #169, #171, `pipeline/card-image.ts`)
+   Ladder: Gemini (opt-in) → Cloudflare klein → Cloudflare schnell → **null** → branded
+   procedural **duotone** (`src/lib/card/duotone.ts`). The keyless Pollinations tier is
+   **off by default** (`CardImageConfig.allowPollinations`): the anonymous endpoint serves
+   a small "sana" model regardless of `model=flux`, adds a watermark, ignores in-prompt
+   "never a face" negations and is limited to 1 image / 45 s / IP, so every CI fallback
+   between 2026-08-30 and 2026-10-28 produced an off-topic AI portrait (46 items). A
+   failed generation now leaves `card_image_url` null and the next `fillCardImages` run
+   retries it. (source: PR #169, #171, `pipeline/card-image.ts`; live check
+   `generation_cost_events` + `storage.objects` + Pollinations response header
+   `x-model-used: sana`, 2026-10-29)
 4. **Store** — `encodeCardOrigin` cover-resize to 1280×720, flatten alpha onto
    `#071019`, JPEG q82 mozjpeg progressive → `${slug}.jpg` (`image/jpeg`) in the
    public `card-images` bucket → `brief_items.card_image_url`. JPEG, not WebP,

@@ -16,7 +16,12 @@
  *   2. Cloudflare Workers AI FLUX.2 [klein] 9B — default (multipart API); override
  *      via CLOUDFLARE_IMAGE_MODEL (e.g. flux-2-dev).
  *   3. Cloudflare FLUX-1-schnell — JSON spillover if the primary CF model fails.
- *   4. Pollinations FLUX — last-resort public fallback.
+ *   4. (removed 2026-10-29) Pollinations. The anonymous endpoint ignores `model=flux`
+ *      (serves a small "sana" model, header `x-model-used: sana`), stamps a visible
+ *      "pollinations.ai" watermark despite `nologo=true`, has no negative prompt, and
+ *      is limited to 1 image / 45 s / IP -- so every CI fallback ended up as an
+ *      unrelated moody AI portrait of a young woman. Opt-in only via
+ *      {@link CardImageConfig.allowPollinations}.
  * When all fail the item keeps a null URL and the OG card renders its branded
  * duotone fallback. Runs post-publish, idempotent (skips items that already have
  * an image), so re-running the pipeline never regenerates or double-charges.
@@ -208,6 +213,13 @@ export interface CardImageConfig {
    * re-fetching the live OpenRouter catalog) on every item.
    */
   registry?: ProviderRegistry;
+  /**
+   * Re-enable the keyless Pollinations last-resort tier. OFF by default: the anonymous
+   * endpoint ignores the requested model and the in-prompt "never a face" negations
+   * (they act as positive tokens for weak models), producing off-topic AI portraits
+   * with a watermark. A null card (branded duotone fallback) is better than that.
+   */
+  allowPollinations?: boolean;
   /** Optional hook after each successful remote/local image (cost ledger). */
   onImageGenerated?: (
     result: GeneratedImageResult,
@@ -2938,7 +2950,10 @@ export function fallbackScene(text: string): string {
   return DEFAULT_NEWS_CARD_SCENE;
 }
 
-/** Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell → Pollinations. */
+/**
+ * Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell. Pollinations is
+ * opt-in only ({@link CardImageConfig.allowPollinations}) -- see the file header.
+ */
 async function generateImage(
   positive: string,
   negative: string,
@@ -2958,6 +2973,10 @@ async function generateImage(
       const spill = await generateCloudflare(SCHNELL_MODEL, positive, negative, cfg, seed);
       if (spill) return spill;
     }
+  }
+  if (!cfg.allowPollinations) {
+    logEvent('warn', 'publish', 'Card image: all trusted providers failed; Pollinations fallback disabled');
+    return null;
   }
   return generatePollinations(positive, seed);
 }

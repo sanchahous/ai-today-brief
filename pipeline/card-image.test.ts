@@ -187,22 +187,57 @@ describe('generateEditorialIllustration ladder', () => {
     expect(vi.mocked(globalThis.fetch).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('falls back to Pollinations when Cloudflare is unset', async () => {
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+  function pollinationsOnlyFetch() {
+    return vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('pollinations.ai')) {
         return new Response(pngBytes, { status: 200, headers: { 'content-type': 'image/jpeg' } });
       }
       return new Response('fail', { status: 500 });
     }) as typeof fetch;
+  }
+
+  // Regression (2026-10-29): 46 published covers were AI portraits of an unrelated young
+  // woman because the keyless Pollinations tier (served by "sana", watermarked, ignores
+  // "never a face") silently caught every Cloudflare failure. It must never be reached by
+  // default -- no card is better than a wrong-looking one.
+  it('never calls Pollinations by default, even when Cloudflare is unset or failing', async () => {
+    globalThis.fetch = pollinationsOnlyFetch();
+    const unset = await generateEditorialIllustration(
+      { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
+      { geminiApiKey: '' },
+    );
+    expect(unset).toBeNull();
+
+    const failing = await generateEditorialIllustration(
+      { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
+      { geminiApiKey: '', cloudflareAccountId: 'acc', cloudflareApiToken: 'tok' },
+    );
+    expect(failing).toBeNull();
+    const calledUrls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
+    expect(calledUrls.some((url) => url.includes('pollinations'))).toBe(false);
+  });
+
+  it('falls back to Pollinations only when allowPollinations is explicitly enabled', async () => {
+    globalThis.fetch = pollinationsOnlyFetch();
 
     const result = await generateEditorialIllustration(
       { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
-      { geminiApiKey: '' },
+      { geminiApiKey: '', allowPollinations: true },
     );
 
     expect(result?.provider).toBe('pollinations');
     expect(result?.estimatedCostUsd).toBe(0);
+  });
+
+  it('keeps the human-portrait ban in both the positive and negative prompt', () => {
+    const story = 'OpenAI launches GPT-6.1 Terra with lower costs and computer use focus';
+    const positive = buildPrompt('cool cyan', 'a single precision routing gate closes a signal path', story);
+    expect(positive).toMatch(/Never make a human face, portrait, headshot/);
+    // A director scene that asks for a person must be replaced, not forwarded.
+    const portraitScene = buildPrompt('cool cyan', 'close-up of a woman, head and shoulders portrait', story);
+    expect(portraitScene).not.toMatch(/head and shoulders|close-up of a woman/i);
+    expect(negativePrompt(story)).toMatch(/human portrait/);
   });
 
   it('renders the local SVG fallback when every remote provider fails', async () => {

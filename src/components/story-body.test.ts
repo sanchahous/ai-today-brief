@@ -56,7 +56,7 @@ describe.each(['en', 'uk'] as const)('article payload sections (%s)', (lang) => 
   );
 
   it('renders no headings or content for an empty payload', () => {
-    expect(render({}, lang)).toBe('<div></div>');
+    expect(render({}, lang)).toMatch(/^<div[^>]*><\/div>$/);
     expect(
       render(
         {
@@ -68,7 +68,7 @@ describe.each(['en', 'uk'] as const)('article payload sections (%s)', (lang) => 
         },
         lang,
       ),
-    ).toBe('<div></div>');
+    ).toMatch(/^<div[^>]*><\/div>$/);
     expect(Object.values(selectStorySections({})).every((value) => !value)).toBe(true);
   });
 
@@ -115,5 +115,12 @@ describe.each(['en', 'uk'] as const)('article payload sections (%s)', (lang) => 
     expect(html).toContain('&lt;script&gt;');
     expect(html.match(/tabindex="0"/g)).toHaveLength(2);
     expect(html.match(/overflow-x-auto/g)).toHaveLength(2);
+  });
+
+  it('exposes the category colour as --article-accent and keeps TL;DR badges unwrapped', () => {
+    const html = render({ ...payload, categorySlug: 'agents-and-mcp' }, lang);
+    expect(html).toContain('--article-accent:var(--cat-agents)');
+    // Counter badges render as two-digit text in a dedicated nowrap badge.
+    expect(html).toMatch(/<span aria-hidden="true" class="[^"]*">01<\/span>/);
   });
 });

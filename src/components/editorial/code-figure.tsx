@@ -3,6 +3,7 @@
 import type { Lang } from '@/lib/site';
 import { useToast } from '@/components/ui/toast';
 import { getStrings } from '@/lib/i18n';
+import { CodePanel } from './code-panel';
 
 export function CodeFigure({
   lang,
@@ -20,42 +21,40 @@ export function CodeFigure({
 
   const handleCopy = () => {
     if (navigator.clipboard) {
-      void navigator.clipboard.writeText(code).then(() => {
-        toast({ message: t.codeCopied ?? 'Copied ✓', tone: 'success' });
-      }).catch(() => {
-        toast({ message: lang === 'uk' ? 'Помилка копіювання' : 'Failed to copy', tone: 'error' });
-      });
+      void navigator.clipboard
+        .writeText(code)
+        .then(() => {
+          toast({ message: t.codeCopied ?? 'Copied ✓', tone: 'success' });
+        })
+        .catch(() => {
+          toast({ message: lang === 'uk' ? 'Помилка копіювання' : 'Failed to copy', tone: 'error' });
+        });
     } else {
-      toast({ message: lang === 'uk' ? 'Буфер обміну недоступний' : 'Clipboard unavailable', tone: 'info' });
+      toast({
+        message: lang === 'uk' ? 'Буфер обміну недоступний' : 'Clipboard unavailable',
+        tone: 'info',
+      });
     }
   };
 
   return (
     <figure className="my-6">
-      <div className="relative group overflow-hidden rounded-xl border border-line bg-raised">
-        <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-2">
-          <span className="text-xs font-mono text-muted uppercase tracking-wider">
-            {language || 'text'}
-          </span>
+      <CodePanel
+        code={code}
+        language={language}
+        label={caption || 'Code block'}
+        className="!my-0"
+        action={
           <button
             type="button"
             onClick={handleCopy}
-            className="text-xs font-medium text-muted hover:text-text transition-colors flex items-center justify-center min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] -mx-2 -my-2"
+            className="-mx-2 -my-2 flex min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] items-center justify-center font-mono text-2xs tracking-[0.1em] text-[var(--code-ink-muted)] uppercase transition-colors hover:text-[var(--code-ink)]"
           >
             {t.copyCode ?? 'Copy'}
           </button>
-        </div>
-        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={caption || 'Code block'}>
-          <pre className="p-4 text-[13px] leading-relaxed sm:text-[14px]">
-            <code>{code}</code>
-          </pre>
-        </div>
-      </div>
-      {caption && (
-        <figcaption className="mt-2 text-center text-sm text-muted">
-          {caption}
-        </figcaption>
-      )}
+        }
+      />
+      {caption && <figcaption className="text-muted mt-2 text-center text-sm">{caption}</figcaption>}
     </figure>
   );
 }

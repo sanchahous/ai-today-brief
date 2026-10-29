@@ -1,6 +1,9 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { headingId, parseMarkdown, type MdInline } from '@/lib/markdown';
 import type { Lang } from '@/lib/site';
+import { CodePanel } from '@/components/editorial/code-panel';
+import { SectionDivider } from '@/components/editorial/section-divider';
+import styles from '@/components/editorial/article-blocks.module.css';
 
 function Inlines({ inlines }: { inlines: MdInline[] }) {
   return (
@@ -9,12 +12,7 @@ function Inlines({ inlines }: { inlines: MdInline[] }) {
         if (run.kind === 'bold') return <strong key={i}>{run.text}</strong>;
         if (run.kind === 'code')
           return (
-            <code
-              key={i}
-              className="bg-raised border-line rounded border px-1 py-0.5 font-mono text-[0.85em]"
-            >
-              {run.text}
-            </code>
+            <code key={i}>{run.text}</code>
           );
         if (run.kind === 'link')
           return (
@@ -23,7 +21,6 @@ function Inlines({ inlines }: { inlines: MdInline[] }) {
               href={run.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
             >
               {run.text}
             </a>
@@ -41,24 +38,27 @@ function Inlines({ inlines }: { inlines: MdInline[] }) {
 export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang?: Lang }) {
   // Table presentation is opt-in; the existing SEO plain-text projection stays stable.
   const blocks = parseMarkdown(markdown, { tables: true });
+  // Section index ("01", "02" …) counts only the `###` headings, which are the
+  // article's main sections; `####` stays a sub-heading with an accent tick.
+  let sectionCount = 0;
 
   return (
-    <div className="reading-copy">
+    <div className={`reading-copy ${styles.block} ${styles.prose}`}>
       {blocks.map((block, i) => {
         if (block.kind === 'table') {
           return (
             <div
               key={i}
-              className="my-6 max-w-full overflow-x-auto"
+              className={`${styles.tableWrap} overflow-x-auto`}
               tabIndex={0}
               role="region"
               aria-label={lang === 'uk' ? 'Таблиця' : 'Table'}
             >
-              <table className="w-full border-collapse text-sm">
+              <table>
                 <thead>
                   <tr>
                     {block.headers.map((cell, j) => (
-                      <th key={j} scope="col" className="border-line border p-3 text-left">
+                      <th key={j} scope="col">
                         <Inlines inlines={cell} />
                       </th>
                     ))}
@@ -68,7 +68,7 @@ export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang
                   {block.rows.map((row, j) => (
                     <tr key={j}>
                       {row.map((cell, k) => (
-                        <td key={k} className="border-line border p-3">
+                        <td key={k}>
                           <Inlines inlines={cell} />
                         </td>
                       ))}
@@ -82,19 +82,29 @@ export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang
         if (block.kind === 'heading') {
           const text = block.inlines.map((run) => run.text).join('');
           const id = headingId(text);
-          return block.level === 3 ? (
-            <h3 id={id} key={i} className="mt-7 mb-3 text-[1.18rem] leading-snug first:mt-0 scroll-mt-24">
-              <Inlines inlines={block.inlines} />
-            </h3>
-          ) : (
-            <h4 id={id} key={i} className="mt-5 mb-2 text-[1.02rem] leading-snug first:mt-0 scroll-mt-24">
+          if (block.level === 3) {
+            const index = sectionCount++;
+            return (
+              <Fragment key={i}>
+                {index > 0 && <SectionDivider />}
+                <h3 id={id} className={`${styles.h2} ${index > 0 ? styles.h2Gap : ''}`}>
+                  <span aria-hidden className={styles.h2Index}>
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <Inlines inlines={block.inlines} />
+                </h3>
+              </Fragment>
+            );
+          }
+          return (
+            <h4 id={id} key={i} className={styles.h3}>
               <Inlines inlines={block.inlines} />
             </h4>
           );
         }
         if (block.kind === 'list') {
           return (
-            <ul key={i} className="mb-3.5 list-disc space-y-1.5 pl-5">
+            <ul key={i} className={styles.list}>
               {block.items.map((item, j) => (
                 <li key={j}>
                   <Inlines inlines={item} />
@@ -105,21 +115,16 @@ export function MarkdownBody({ markdown, lang = 'en' }: { markdown: string; lang
         }
         if (block.kind === 'codeBlock') {
           return (
-            <div key={i} className="my-4">
-              <pre
-                tabIndex={0}
-                role="region"
-                aria-label={lang === 'uk' ? 'Блок коду' : 'Code block'}
-                className="bg-raised border-line overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] leading-relaxed sm:text-[14px]"
-                data-language={block.language}
-              >
-                <code>{block.code}</code>
-              </pre>
-            </div>
+            <CodePanel
+              key={i}
+              code={block.code}
+              language={block.language}
+              label={lang === 'uk' ? 'Блок коду' : 'Code block'}
+            />
           );
         }
         return (
-          <p key={i} className="mb-3.5 last:mb-0">
+          <p key={i}>
             <Inlines inlines={block.inlines} />
           </p>
         );

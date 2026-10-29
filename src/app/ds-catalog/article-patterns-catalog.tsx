@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { Lang } from '@/lib/site';
 import {
   TrustLabel,
@@ -20,7 +20,10 @@ import {
   EditorialHero,
   SleeveArt,
   VideoFacade,
+  SectionDivider,
+  CodePanel,
 } from '@/components/editorial';
+import { MarkdownBody } from '@/components/markdown-body';
 import { Byline } from '@/components/byline';
 import { ItemShareBar } from '@/components/item-share-bar';
 
@@ -38,6 +41,19 @@ export function ArticlePatternsCatalog() {
   const longText = lang === 'en' 
     ? 'The quick brown fox jumps over the lazy dog. This is a very long paragraph to demonstrate the measure limit in the reading layout. It should wrap nicely at around 60-75 characters to ensure optimal readability. Good typography is essential for a great reading experience, especially on long-form editorial content. Anthropic introduced sub-agents for Claude Code with isolated working context and reactive IPC wakeups, preventing memory pollution in terminal sessions.'
     : 'Швидка коричнева лисиця стрибає через лінивого собаку. Це дуже довгий абзац, щоб продемонструвати обмеження ширини рядка у макеті для читання. Він має гарно переноситися на рівні 60-75 символів для забезпечення оптимальної зручності читання. Хороша типографіка є важливою для чудового досвіду читання, особливо для довгих редакційних матеріалів. Anthropic представила субагентів для Claude Code з ізольованим робочим простором та реактивними сповіщеннями.';
+
+
+  const accentSamples = [
+    { name: 'agents', token: '--cat-agents' },
+    { name: 'tools', token: '--cat-tools' },
+    { name: 'cost', token: '--cat-cost' },
+    { name: 'tutorials', token: '--cat-tutorials' },
+    { name: 'creative', token: '--cat-creative' },
+  ];
+  const sampleMarkdown =
+    lang === 'en'
+      ? '### Why the schema moves into code\n\nOne **typed source of truth** replaces hand-written YAML. Read the [release notes](https://example.org) and call `Model.create!` directly.\n\n- Strict inputs for every endpoint\n- Generated SDKs that never drift\n\n| Tool | Context | Price |\n| --- | --- | --- |\n| Alpha | 200k | $3 |\n| Beta | 1M | $5 |\n\n```ruby\nclass AccountCreate < AbstractMethod\n  string :name\nend\n```\n\n### Rolling it out\n\n#### Start small\n\nPick one endpoint, ship it behind a flag and compare the generated spec.'
+      : '### Чому схема переїжджає в код\n\nОдне **типізоване джерело правди** замінює ручні YAML. Прочитайте [нотатки до релізу](https://example.org) і викликайте `Model.create!` напряму.\n\n- Сувора валідація входів для кожного ендпоінта\n- Згенеровані SDK, що не розходяться зі схемою\n\n| Інструмент | Контекст | Ціна |\n| --- | --- | --- |\n| Альфа | 200k | $3 |\n| Бета | 1M | $5 |\n\n```ruby\nclass AccountCreate < AbstractMethod\n  string :name\nend\n```\n\n### Як запроваджувати\n\n#### Почніть із малого\n\nОберіть один ендпоінт, випустіть його за прапорцем і порівняйте згенеровану специфікацію.';
 
   return (
     <div className="space-y-12 mt-12 pt-12 border-t border-line reading">
@@ -154,6 +170,42 @@ export function ArticlePatternsCatalog() {
               </div>
             }
           />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="font-serif text-lg">Article accent system (per-category --article-accent)</h3>
+        <p className="text-muted text-sm">
+          Every block reads <code>--article-accent</code> from its article wrapper (the category colour) and falls back to
+          the brand accent. Same markup, five categories.
+        </p>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {accentSamples.map((sample) => (
+            <div
+              key={sample.name}
+              className="border-line bg-bg rounded-xl border p-4 sm:p-5"
+              style={{ '--article-accent': `var(${sample.token})` } as CSSProperties}
+            >
+              <p className="text-muted font-mono text-xs uppercase">{sample.name}</p>
+              <Callout lang={lang} variant="why-it-matters" headingLevel={2}>
+                <p className="m-0">{longText.slice(0, 120)}</p>
+              </Callout>
+              <Takeaways
+                lang={lang}
+                items={['Typed inputs replace YAML.', 'Generated SDKs stay in sync.', 'Roll out one endpoint first.']}
+              />
+              <KeyFacts
+                lang={lang}
+                facts={[
+                  { term: 'Spec', definition: 'OpenAPI 3.1' },
+                  { term: 'Language', definition: 'Ruby with Sorbet' },
+                ]}
+              />
+              <MarkdownBody markdown={sampleMarkdown} lang={lang} />
+              <SectionDivider />
+              <CodePanel code={'npm run build'} language="shell" label="Code" />
+            </div>
+          ))}
         </div>
       </div>
 

@@ -1,4 +1,7 @@
 import type { Lang } from '@/lib/site';
+import { ArrowRight } from '@/components/icons';
+import { SectionLabel } from './section-label';
+import styles from './article-blocks.module.css';
 
 export interface ActionItem {
   id: string;
@@ -7,37 +10,41 @@ export interface ActionItem {
   href?: string;
 }
 
-export function ActionList({ lang, title, items }: { lang: Lang; title?: string; items: ActionItem[] }) {
+export function ActionList({
+  lang,
+  title,
+  items,
+  headingLevel = 3,
+}: {
+  lang: Lang;
+  title?: string;
+  items: ActionItem[];
+  headingLevel?: 2 | 3;
+}) {
   const heading = title || (lang === 'uk' ? 'Що зробити сьогодні' : 'Action items today');
-  
+
   return (
-    <div className="my-8">
-      <h3 className="mb-4 font-serif text-xl font-semibold">{heading}</h3>
-      <div className="flex flex-col gap-3">
+    <div className={styles.block}>
+      <SectionLabel level={headingLevel}>{heading}</SectionLabel>
+      <ul className={styles.actions}>
         {items.map((item) => (
-          <div key={item.id} className="group flex items-start gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:border-accent">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-line">
-              {/* Checkbox visual placeholder */}
-            </div>
-            <div className="flex-1 mt-0.5">
-              <div className="font-medium text-text">
-                {item.href ? (
-                  <a href={item.href} className="text-text hover:text-accent underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current transition-colors inline-flex items-center min-h-[var(--touch-target-min)] -mx-2 px-2 -my-2 py-2">
-                    {item.title}
-                  </a>
-                ) : (
-                  item.title
-                )}
-              </div>
-              {item.description && (
-                <div className="mt-1 text-sm text-muted">
-                  {item.description}
-                </div>
+          <li key={item.id} className={styles.action}>
+            <span className={styles.actionIcon} aria-hidden>
+              <ArrowRight size={14} strokeWidth={2} />
+            </span>
+            <div className="min-w-0 flex-1">
+              {item.href ? (
+                <a href={item.href} className="text-text underline decoration-[color:var(--line-strong)] underline-offset-2">
+                  {item.title}
+                </a>
+              ) : (
+                item.title
               )}
+              {item.description && <div className="text-muted mt-1 text-sm">{item.description}</div>}
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

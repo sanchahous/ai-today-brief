@@ -1,5 +1,13 @@
 import { categoryColor } from '@/lib/category-meta';
 import { Tag } from '@/components/ui/tag';
+import { Callout } from '@/components/editorial/callout';
+import { Takeaways } from '@/components/editorial/takeaways';
+import { KeyFacts } from '@/components/editorial/key-facts';
+import { WhenGrid } from '@/components/editorial/when-grid';
+import { ActionList } from '@/components/editorial/action-list';
+import { CodePanel } from '@/components/editorial/code-panel';
+import { SectionLabel } from '@/components/editorial/section-label';
+import articleStyles from '@/components/editorial/article-blocks.module.css';
 import { selectStorySections } from '@/lib/story-sections';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
@@ -8,7 +16,6 @@ import type { BriefItemDetail } from '@/lib/items';
 import type { Lang } from '@/lib/site';
 import { FactsVisualBlock } from '@/components/facts-visual';
 import { MarkdownBody } from '@/components/markdown-body';
-import catStyles from '@/components/category-presentation.module.css';
 
 export type ToolLink = { name: string; href: string | null };
 
@@ -17,17 +24,6 @@ function paragraphs(text: string): string[] {
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean);
-}
-
-function SectionLabel({ children, style }: { children: React.ReactNode; style?: CSSProperties }) {
-  return (
-    <h2
-      className={`text-2xs m-0 mt-7 mb-2.5 font-bold tracking-[0.08em] uppercase ${style ? catStyles.fg : 'text-accent'}`}
-      style={style}
-    >
-      {children}
-    </h2>
-  );
 }
 
 /**
@@ -47,192 +43,98 @@ export function StoryBody({
 }) {
   const t = getStrings(lang);
   const color = categoryColor(detail.categorySlug, detail.categoryColor);
-  const catStyle = { '--cat-color': color } as CSSProperties;
+  // Every article block reads the story's category colour through this var and
+  // falls back to the brand accent when a category has none.
+  const accentStyle = { '--article-accent': color } as CSSProperties;
   const sections = selectStorySections(detail, toolLinks.length);
   const factsVisual = buildFactsVisual(detail.facts ?? []);
 
   return (
-    <div>
+    <div className={articleStyles.block} style={accentStyle}>
       {sections.why && (
-        <section
-          aria-label={t.whyItMatters}
-          className="bg-raised mb-5 rounded-r-lg py-3 pr-4 pl-4"
-          style={{
-            // Solid floor first so the accent stripe never vanishes where color-mix is unsupported.
-            borderLeft: '3px solid var(--line)',
-            borderLeftColor: `color-mix(in srgb, ${color} 55%, var(--line))`,
-          }}
-        >
-          <h2
-            className={`${catStyles.fg} text-2xs m-0 mb-1.5 font-bold tracking-[0.08em] uppercase`}
-            style={catStyle}
-          >
-            {t.whyItMatters}
-          </h2>
-          <p className="m-0 text-[0.92rem] leading-relaxed">{detail.why}</p>
-        </section>
+        <Callout lang={lang} variant="why-it-matters" title={t.whyItMatters} headingLevel={2}>
+          <p className="m-0">{detail.why}</p>
+        </Callout>
       )}
 
       {sections.takeaways && (
-        <section aria-label={t.tldrLabel} className="mb-6">
-          <h2 className="text-accent text-2xs m-0 mb-2.5 font-bold tracking-[0.08em] uppercase">
-            {t.tldrLabel}
-          </h2>
-          <ul className="m-0 list-none p-0">
-            {detail.takeaways?.map((bullet, i) => (
-              <li key={i} className="mb-2 flex gap-2.5">
-                <span className={`${catStyles.fg} font-bold tabular-nums`} style={catStyle}>
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span className="text-[0.92rem] leading-relaxed">{bullet}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <Takeaways lang={lang} title={t.tldrLabel} items={detail.takeaways ?? []} headingLevel={2} />
       )}
 
       {sections.facts && (
-        <section
-          aria-label={t.factsTitle}
-          className="border-line bg-surface mb-6 overflow-hidden rounded-lg border"
-        >
-          <h2
-            className={`${catStyles.fg} text-2xs m-0 border-b px-4 py-2.5 font-bold tracking-[0.08em] uppercase`}
-            style={{ ...catStyle, borderColor: 'var(--line)' }}
-          >
-            {t.factsTitle}
-          </h2>
-          {factsVisual && <FactsVisualBlock visual={factsVisual} color={color} />}
-          <dl className="m-0">
-            {detail.facts?.map((fact, i) => (
-              <div
-                key={i}
-                className={`flex flex-wrap gap-x-4 gap-y-0.5 px-4 py-2.5 ${i % 2 === 1 ? 'bg-raised' : ''}`}
-              >
-                <dt className="text-muted m-0 min-w-[140px] flex-1 text-[0.84rem] break-words">
-                  {fact.label}
-                </dt>
-                <dd className="m-0 min-w-0 flex-[2] text-[0.9rem] font-semibold break-words">
-                  {fact.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        <KeyFacts
+          lang={lang}
+          title={t.factsTitle}
+          headingLevel={2}
+          facts={(detail.facts ?? []).map((fact) => ({ term: fact.label, definition: fact.value }))}
+          // Stat tiles already show the values big; only comparison bars add information.
+          visual={
+            factsVisual?.kind === 'comparison' ? (
+              <FactsVisualBlock visual={factsVisual} color="var(--article-accent)" />
+            ) : undefined
+          }
+        />
       )}
 
       {sections.body &&
         (detail.bodyMd?.trim() ? (
           <MarkdownBody markdown={detail.bodyMd} lang={lang} />
         ) : (
-          paragraphs(detail.deepDive ?? '').map((para, i) => (
-            <p key={i} className="mb-3.5 text-[0.96rem] leading-[1.75] last:mb-0">
-              {para}
-            </p>
-          ))
+          <div className={`reading-copy ${articleStyles.prose}`}>
+            {paragraphs(detail.deepDive ?? '').map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
         ))}
 
       {sections.codeSnippet && detail.codeSnippet && (
         <section aria-label={t.tryItTitle}>
           <SectionLabel>{t.tryItTitle}</SectionLabel>
-          <pre
-            tabIndex={0}
-            role="region"
-            aria-label={t.tryItTitle}
-            className="bg-raised border-line mb-1 overflow-x-auto rounded-lg border p-3.5 font-mono text-[0.84rem] leading-relaxed"
-            data-language={detail.codeSnippet.language}
-          >
-            <code>{detail.codeSnippet.code}</code>
-          </pre>
-          <p className="text-faint text-2xs m-0">{detail.codeSnippet.language}</p>
+          <CodePanel
+            code={detail.codeSnippet.code}
+            language={detail.codeSnippet.language}
+            label={t.tryItTitle}
+            className="!mt-0"
+          />
         </section>
       )}
 
       {(sections.whenToUse || sections.whenNotToUse) && (
-        <div className="mt-7 grid gap-4 sm:grid-cols-2">
-          {sections.whenToUse && (
-            <section
-              aria-label={t.whenToUseTitle}
-              className="border-line bg-surface rounded-lg border p-4"
-            >
-              <h2 className="text-2xs text-success-contrast m-0 mb-2 font-bold tracking-[0.08em] uppercase">
-                ✓ {t.whenToUseTitle}
-              </h2>
-              <ul className="m-0 list-none space-y-1.5 p-0">
-                {detail.whenToUse?.map((point, i) => (
-                  <li key={i} className="text-[0.88rem] leading-relaxed">
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {sections.whenNotToUse && (
-            <section
-              aria-label={t.whenNotToUseTitle}
-              className="border-line bg-surface rounded-lg border p-4"
-            >
-              <h2 className="text-faint text-2xs m-0 mb-2 font-bold tracking-[0.08em] uppercase">
-                ✕ {t.whenNotToUseTitle}
-              </h2>
-              <ul className="m-0 list-none space-y-1.5 p-0">
-                {detail.whenNotToUse?.map((point, i) => (
-                  <li key={i} className="text-[0.88rem] leading-relaxed">
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
+        <WhenGrid
+          lang={lang}
+          headingLevel={2}
+          useTitle={t.whenToUseTitle}
+          avoidTitle={t.whenNotToUseTitle}
+          useCases={sections.whenToUse ? (detail.whenToUse ?? []) : []}
+          avoidCases={sections.whenNotToUse ? (detail.whenNotToUse ?? []) : []}
+        />
       )}
 
       {sections.actionItems && (
-        <>
-          <SectionLabel>{t.actionItemsToday}</SectionLabel>
-          <ul className="m-0 list-none p-0">
-            {detail.actionItems?.map((step, i) => (
-              <li key={i} className="mb-2 flex gap-2.5">
-                <span className="text-accent font-bold" aria-hidden>
-                  →
-                </span>
-                <span className="text-[0.92rem] leading-relaxed">{step}</span>
-              </li>
-            ))}
-          </ul>
-        </>
+        <ActionList
+          lang={lang}
+          title={t.actionItemsToday}
+          headingLevel={2}
+          items={(detail.actionItems ?? []).map((step, i) => ({ id: String(i), title: step }))}
+        />
       )}
 
       {sections.editorTake && (
-        <section
-          aria-label={t.editorTakeTitle}
-          className="bg-raised mt-7 rounded-r-lg py-3.5 pr-4 pl-4"
-          style={{ borderLeft: '3px solid var(--accent)' }}
-        >
-          <h2 className="text-accent text-2xs m-0 mb-1.5 font-bold tracking-[0.08em] uppercase">
-            {t.editorTakeTitle}
-          </h2>
-          <p className="m-0 text-[0.94rem] leading-relaxed">{detail.editorTake}</p>
-        </section>
+        <Callout lang={lang} variant="editor-take" title={t.editorTakeTitle} headingLevel={2}>
+          <p className="m-0">{detail.editorTake}</p>
+        </Callout>
       )}
 
       {sections.communityReactions && (
         <section aria-label={t.communityTitle}>
           <SectionLabel>{t.communityTitle}</SectionLabel>
-          <ul className="m-0 list-none space-y-3 p-0">
+          <ul className={articleStyles.quotes}>
             {detail.communityReactions?.map((reaction, i) => (
               <li key={i}>
-                <blockquote className="border-line m-0 border-l-2 pl-3.5 text-[0.92rem] leading-relaxed italic">
-                  “{reaction.quote}”
-                </blockquote>
-                <p className="text-faint m-0 mt-1 pl-3.5 text-[0.78rem]">
+                <blockquote className={articleStyles.quote}>{reaction.quote}</blockquote>
+                <p className={articleStyles.quoteBy}>
                   —{' '}
-                  <a
-                    href={reaction.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-faint inline-flex min-h-[var(--touch-target-min)] items-center underline underline-offset-2 hover:text-[color:var(--text)]"
-                  >
+                  <a href={reaction.url} target="_blank" rel="noopener noreferrer">
                     {reaction.author || 'anon'} {t.onHackerNews}
                   </a>
                 </p>
@@ -264,20 +166,15 @@ export function StoryBody({
       {sections.citations && (
         <section aria-label={t.sourcesTitle}>
           <SectionLabel>{t.sourcesTitle}</SectionLabel>
-          <ul className="m-0 list-none space-y-1.5 p-0">
+          <ol className={articleStyles.sources}>
             {detail.citations?.map((citation, i) => (
-              <li key={i} className="text-[0.88rem]">
-                <a
-                  href={citation.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-text inline-flex min-h-[var(--touch-target-min)] items-center underline decoration-[color:var(--line)] underline-offset-2 hover:decoration-current"
-                >
+              <li key={i} className={articleStyles.source}>
+                <a href={citation.url} target="_blank" rel="noopener noreferrer">
                   {citation.title || citation.url}
                 </a>
               </li>
             ))}
-          </ul>
+          </ol>
         </section>
       )}
     </div>
