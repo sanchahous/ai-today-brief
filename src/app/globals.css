@@ -492,13 +492,13 @@ html[lang='uk'],
   text-transform: none;
 }
 
-/* Article body copy: primary text token (never --muted), 18px / 1.72 on a ~68ch
-   measure. Muted grey stays reserved for meta lines. */
+/* Article body copy: primary text token (never --muted), 18px / --leading-reading
+   on a ~68ch measure. Muted grey stays reserved for meta lines. */
 .reading-copy {
   max-width: var(--measure);
   color: var(--text);
   font-size: var(--text-lg);
-  line-height: 1.72;
+  line-height: var(--leading-reading);
 }
 
 @media (max-width: 39.99rem) {
