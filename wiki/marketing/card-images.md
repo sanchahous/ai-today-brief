@@ -33,6 +33,15 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    post-merge review of PR #191 (2026-08-07) it also emits a `warn` log with the role and the
    error — the silent fallback gave no signal that the art director had stopped running at all.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
+   **Scene output contract (2026-10-29):** the daily director is asked for a one-key JSON object
+   `{"scene": "..."}` and the Gemini adapter is pinned to a one-field `scene` schema
+   (`withGeminiCallConfig`). Before this fix the Gemini adapter defaulted to the full bilingual
+   brief schema and answered every scene request with a whole `{"title_en":…,"items":[…]}`
+   brief (~4.5k chars, ~30 s, ~3k output tokens) that was truncated to 320 chars and pasted into
+   the FLUX prompt as the "scene". `cleanSceneText` now returns an empty string for any JSON
+   object without a known scene key, so such a reply falls back to the keyword scene instead of
+   reaching the image model. (source: live probe of `generateWithRegistry('daily.card_image_scene')`
+   2026-10-29; `pipeline/card-image.ts`)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate semantic house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
    `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v6`**
@@ -75,6 +84,26 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    retries it. (source: PR #169, #171, `pipeline/card-image.ts`; live check
    `generation_cost_events` + `storage.objects` + Pollinations response header
    `x-model-used: sana`, 2026-10-29)
+
+   **Cloudflare failure modes (live check 2026-10-29):**
+   - **HTTP 429, code 4006** — "you have used up your daily free allocation of 10,000 neurons".
+     This is the Workers AI *free-plan daily quota* (reset 00:00 UTC), not a per-minute rate
+     limit, and klein and schnell share the one pool; klein costs roughly 1.4k neurons per
+     1280×720 image (estimate from $0.015/image), so the free tier covers only ~7 klein covers a
+     day, while schnell is ~10× cheaper (estimate, ~90/day). Once it is spent *every* Cloudflare
+     call fails until midnight UTC, which is why CI runs fell through to the old Pollinations
+     tier. Code now classifies 4006 as a quota: no retry, no pointless schnell spillover, a
+     process-local latch (`cloudflareQuotaExhausted`) skips later Cloudflare calls, and batch
+     loops (`fillCardImages`, `regenerate-card-image.ts`) stop before paying for scene-director
+     calls. The item keeps `card_image_url = null` and the next run retries it. A plain
+     per-minute 429 is retried at most twice (2 s, 5 s, or `Retry-After` capped at 20 s).
+     Real fix for volume: Workers Paid plan, or `CLOUDFLARE_IMAGE_MODEL` set to schnell.
+   - **HTTP 400 on schnell** — the old JSON body sent `seed`; flux-1-schnell's schema is strict
+     (`prompt` ≤ 2048 chars + `steps` 1–8 only) and answered "Additional or unevaluated
+     properties '/seed' at '/' not allowed" (code 5006), so the schnell spillover never worked.
+     `seed` is no longer sent and the prompt is clamped to 2048 chars.
+   (source: direct API calls 2026-10-29; `pipeline/card-image.ts` `generateCloudflare`,
+   `cloudflareJsonBody`)
 4. **Store** — `encodeCardOrigin` cover-resize to 1280×720, flatten alpha onto
    `#071019`, JPEG q82 mozjpeg progressive → `${slug}.jpg` (`image/jpeg`) in the
    public `card-images` bucket → `brief_items.card_image_url`. JPEG, not WebP,
@@ -134,6 +163,8 @@ CLOUDFLARE_ACCOUNT_ID=…
 CLOUDFLARE_API_TOKEN=…   # Workers AI
 # optional override (default flux-2-klein-9b):
 # CLOUDFLARE_IMAGE_MODEL=@cf/black-forest-labs/flux-2-klein-9b
+# free-plan alternative (~10x cheaper in neurons, lower quality):
+# CLOUDFLARE_IMAGE_MODEL=@cf/black-forest-labs/flux-1-schnell
 # CLOUDFLARE_IMAGE_USD_FIRST_MP=0.015
 # CLOUDFLARE_IMAGE_USD_NEXT_MP=0.002
 ```

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import type { PipelineDb } from './db';
 import { loadProviderRegistry } from './providers/registry';
@@ -31,8 +31,16 @@ import {
   CARD_ORIGIN_CONTENT_TYPE,
   CARD_ORIGIN_JPEG_QUALITY,
   CARD_ORIGIN_REENCODE_MAX,
+  CF_RETRY_DELAYS_MS,
+  cardImageProvidersExhausted,
   DEFAULT_CF_IMAGE_MODEL,
+  SCHNELL_MAX_PROMPT_CHARS,
   cardOriginStoragePath,
+  clampPromptLength,
+  cloudflareJsonBody,
+  cloudflareQuotaExhausted,
+  describeCloudflareFailure,
+  resetCloudflareQuotaState,
   encodeCardOrigin,
   pngCardOriginPath,
   reencodeStoredCardOrigins,
@@ -179,6 +187,7 @@ describe('generateEditorialIllustration ladder', () => {
         geminiApiKey: '',
         cloudflareAccountId: 'acc',
         cloudflareApiToken: 'tok',
+        cloudflareRetrySleep: async () => {},
       },
     );
 
@@ -274,6 +283,216 @@ describe('generateEditorialIllustration ladder', () => {
       { geminiApiKey: '', cloudflareAccountId: 'acc', cloudflareApiToken: 'tok' },
     );
     expect(result).toBeNull();
+  });
+});
+
+describe('Cloudflare Workers AI quota + payload handling', () => {
+  const originalFetch = globalThis.fetch;
+  const imgBytes = Buffer.alloc(2048, 9);
+  const quota429 = () =>
+    new Response(
+      JSON.stringify({
+        errors: [
+          {
+            code: 4006,
+            message:
+              'AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to the Workers Paid plan',
+          },
+        ],
+        success: false,
+      }),
+      { status: 429, headers: { 'content-type': 'application/json' } },
+    );
+  const ok = () =>
+    new Response(JSON.stringify({ result: { image: imgBytes.toString('base64') } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  const cfg = (sleep: (ms: number) => Promise<void> = async () => {}) => ({
+    geminiApiKey: '',
+    cloudflareAccountId: 'acc',
+    cloudflareApiToken: 'tok',
+    cloudflareRetrySleep: sleep,
+  });
+  const input = { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'quota-1' };
+
+  beforeEach(() => resetCloudflareQuotaState());
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    resetCloudflareQuotaState();
+    vi.restoreAllMocks();
+  });
+
+  it('treats the daily-neuron 429 (code 4006) as a quota: no retry, no schnell spillover, null result', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = vi.fn(async () => quota429()) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result).toBeNull();
+    expect(sleep).not.toHaveBeenCalled();
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
+    const urls = vi.mocked(globalThis.fetch).mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes('flux-1-schnell'))).toBe(false);
+    expect(cloudflareQuotaExhausted()).toBe(true);
+  });
+
+  it('short-circuits later Cloudflare calls in the same process once the daily quota is latched', async () => {
+    globalThis.fetch = vi.fn(async () => quota429()) as typeof fetch;
+    await generateEditorialIllustration(input, cfg());
+    const callsAfterFirst = vi.mocked(globalThis.fetch).mock.calls.length;
+
+    const second = await generateEditorialIllustration({ ...input, seedKey: 'quota-2' }, cfg());
+
+    expect(second).toBeNull();
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(callsAfterFirst);
+  });
+
+  it('reports providers exhausted for batch callers only while the latch is set and no other tier is on', async () => {
+    expect(cardImageProvidersExhausted(cfg())).toBe(false);
+    globalThis.fetch = vi.fn(async () => quota429()) as typeof fetch;
+    await generateEditorialIllustration(input, cfg());
+    expect(cardImageProvidersExhausted(cfg())).toBe(true);
+    expect(cardImageProvidersExhausted({ ...cfg(), allowPollinations: true })).toBe(false);
+    expect(cardImageProvidersExhausted({ ...cfg(), geminiImageModel: 'gemini-3-pro-image' })).toBe(false);
+  });
+
+  it('retries a plain per-minute 429 honouring Retry-After, then succeeds', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    let calls = 0;
+    globalThis.fetch = vi.fn(async () => {
+      calls++;
+      return calls === 1
+        ? new Response('slow down', { status: 429, headers: { 'retry-after': '3' } })
+        : ok();
+    }) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result?.model).toBe(DEFAULT_CF_IMAGE_MODEL);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(sleep).toHaveBeenCalledWith(3000);
+    expect(calls).toBe(2);
+    expect(cloudflareQuotaExhausted()).toBe(false);
+  });
+
+  it('caps Retry-After, bounds the retry count, then spills over to schnell', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL) =>
+      String(url).includes('flux-1-schnell')
+        ? ok()
+        : new Response('slow down', { status: 429, headers: { 'retry-after': '600' } }),
+    ) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    expect(sleep).toHaveBeenCalledTimes(CF_RETRY_DELAYS_MS.length);
+    for (const [ms] of sleep.mock.calls) expect(ms).toBeLessThanOrEqual(20_000);
+    const kleinCalls = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter((c) => String(c[0]).includes('flux-2-klein-9b'));
+    expect(kleinCalls).toHaveLength(CF_RETRY_DELAYS_MS.length + 1);
+  });
+
+  it('does not retry non-429 failures (e.g. 500) and spills straight to schnell', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL) =>
+      String(url).includes('flux-1-schnell') ? ok() : new Response('boom', { status: 500 }),
+    ) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it('sends schnell only prompt+steps (no seed) and never more than 2048 prompt chars', async () => {
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL) =>
+      String(url).includes('flux-1-schnell') ? ok() : new Response('boom', { status: 500 }),
+    ) as typeof fetch;
+
+    await generateEditorialIllustration(input, cfg());
+
+    const schnell = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.find((c) => String(c[0]).includes('flux-1-schnell'));
+    const body = JSON.parse(String(schnell?.[1]?.body)) as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(['prompt', 'steps']);
+    expect(body.steps).toBe(8);
+    expect((body.prompt as string).length).toBeLessThanOrEqual(SCHNELL_MAX_PROMPT_CHARS);
+  });
+
+  it('cloudflareJsonBody keeps the full parameter set for non-schnell JSON models', () => {
+    const body = cloudflareJsonBody('@cf/leonardo/lucid-origin', 'p', 'n', 42);
+    expect(body).toMatchObject({ prompt: 'p', negative_prompt: 'n', seed: 42, steps: 20 });
+  });
+
+  it('clampPromptLength trims at a sentence boundary and leaves short prompts untouched', () => {
+    expect(clampPromptLength('short prompt.', 2048)).toBe('short prompt.');
+    const long = `${'One sentence here. '.repeat(200)}tail`;
+    const clamped = clampPromptLength(long, 2048);
+    expect(clamped.length).toBeLessThanOrEqual(2048);
+    expect(clamped.endsWith('.')).toBe(true);
+  });
+
+  it('describeCloudflareFailure classifies quota vs rate-limit and parses Retry-After', async () => {
+    const quota = await describeCloudflareFailure(quota429());
+    expect(quota).toMatchObject({ status: 429, code: 4006, dailyQuota: true });
+    const rate = await describeCloudflareFailure(
+      new Response('Too many requests', { status: 429, headers: { 'retry-after': '7' } }),
+    );
+    expect(rate).toMatchObject({ status: 429, dailyQuota: false, retryAfterMs: 7000 });
+  });
+});
+
+describe('daily scene director output contract', () => {
+  it('asks for a one-key JSON object so structured-output providers cannot return a whole brief', () => {
+    const instruction = buildNewsCardSceneInstruction('Headline', 'Summary');
+    expect(instruction).toContain('JSON object with exactly one key, "scene"');
+  });
+
+  it('cleanSceneText drops JSON objects without a recognised key instead of forwarding them', () => {
+    const brief = '{"title_en":"Autonomous Research Swarms","title_uk":"Рої","intro_en":"x","items":[{"ref":1}]}';
+    expect(cleanSceneText(brief)).toBe('');
+    expect(cleanSceneText('{"title_en":"truncated brief that never closes')).toBe('');
+    expect(cleanSceneText('{"scene":"a valve closes over a clean signal path"}')).toBe(
+      'a valve closes over a clean signal path',
+    );
+  });
+
+  it('sceneBrief falls back to a keyword scene when the director replies with a whole brief JSON', async () => {
+    process.env.CARD_IMAGE_TEST_CLI_TOKEN = 'token';
+    const registry = {
+      chainForRole: () => [
+        {
+          entry: { kind: 'cli' as const, id: 'stub-cli' },
+          cli: {
+            id: 'stub-cli',
+            binary: 'stub',
+            authEnvVar: 'CARD_IMAGE_TEST_CLI_TOKEN',
+            buildArgs: () => [],
+            parseEnvelope: () => ({
+              text: '{"title_en":"Autonomous Research Swarms","intro_en":"long brief ..."}',
+              model: 'stub-model',
+              costUsd: 0,
+            }),
+            spawnFn: async () => ({ stdout: 'ok', stderr: '', exitCode: 0, spawnError: null }),
+          },
+        },
+      ],
+    };
+    try {
+      const { scene, source } = await sceneBrief('Security breach', 'Attackers exploit a flaw', {
+        geminiApiKey: 'unused',
+        registry,
+      });
+      expect(source).toBe('fallback');
+      expect(scene).not.toContain('{');
+      expect(scene).not.toContain('title_en');
+    } finally {
+      delete process.env.CARD_IMAGE_TEST_CLI_TOKEN;
+    }
   });
 });
 

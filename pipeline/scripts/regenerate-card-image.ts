@@ -17,7 +17,7 @@
  * provider ladder (see card-image.ts), so a failed generation keeps the previous cover.
  */
 import { loadPipelineConfig } from '../config';
-import { regenerateCardImageForSlug } from '../card-image';
+import { cardImageProvidersExhausted, regenerateCardImageForSlug } from '../card-image';
 import { createServiceClient } from '../db';
 import { logError, logEvent } from '../log';
 import { parseSlugs } from './regenerate-card-image-args';
@@ -61,7 +61,17 @@ async function main(): Promise<void> {
     db,
   };
   let failed = 0;
-  for (const slug of slugs) {
+  for (const [index, slug] of slugs.entries()) {
+    if (cardImageProvidersExhausted(cfg)) {
+      // Cloudflare's daily neuron pool is spent: stop instead of burning scene-director calls.
+      const remaining = slugs.slice(index);
+      failed += remaining.length;
+      logEvent('error', 'publish', 'Card image regeneration stopped: image provider quota exhausted', {
+        remaining: remaining.length,
+        next_slug: slug,
+      });
+      break;
+    }
     const result = await regenerateCardImageForSlug(db, slug, cfg);
     if (!result.ok) {
       failed++;

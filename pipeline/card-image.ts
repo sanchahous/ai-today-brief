@@ -28,6 +28,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { SchemaType } from '@google/generative-ai';
 import sharp from 'sharp';
 import type { PipelineDb } from './db';
 import { assembleFluxCardPrompt } from './image-prompt-library/assemble';
@@ -37,6 +38,7 @@ import {
   headNoun as promptHeadNoun,
   stripPlanningPhrases,
 } from './image-prompt-library/text';
+import { withGeminiCallConfig } from './llm-json';
 import { logEvent, serializeErrorDetails } from './log';
 import {
   generateWithRegistry,
@@ -45,8 +47,15 @@ import {
   type ProviderRole,
 } from './providers/registry';
 import { selectSceneGrammar } from './scene-grammar';
+import type { GeminiResponseSchema } from './summarize';
 
 const BUCKET = 'card-images';
+/** Structured-output schema for the daily scene-director call: one key, `scene`. */
+const SCENE_RESPONSE_SCHEMA: GeminiResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: { scene: { type: SchemaType.STRING } },
+  required: ['scene'],
+};
 /**
  * Default Cloudflare Workers AI image model. FLUX.2 [klein] 9B — faster/cheaper
  * than Leonardo Lucid Origin, better quality than FLUX-1-schnell for editorial
@@ -220,6 +229,8 @@ export interface CardImageConfig {
    * with a watermark. A null card (branded duotone fallback) is better than that.
    */
   allowPollinations?: boolean;
+  /** Sleep used between Cloudflare per-minute 429 retries (injectable for tests). */
+  cloudflareRetrySleep?: (ms: number) => Promise<void>;
   /** Optional hook after each successful remote/local image (cost ledger). */
   onImageGenerated?: (
     result: GeneratedImageResult,
@@ -388,7 +399,16 @@ export async function fillCardImages(
 
   let generated = 0;
   let failed = 0;
-  for (const it of pending.slice(0, MAX_PER_RUN)) {
+  const batch = pending.slice(0, MAX_PER_RUN);
+  for (const [index, it] of batch.entries()) {
+    if (cardImageProvidersExhausted(itemCfg)) {
+      // Leave card_image_url null so the next run retries these items.
+      failed += batch.length - index;
+      logEvent('warn', 'publish', 'Card image generation stopped: image provider quota exhausted', {
+        remaining: batch.length - index,
+      });
+      break;
+    }
     try {
       const title = (it.title_en || it.title_uk || '').trim();
       const summary = (it.summary_en || it.summary_uk || '').trim();
@@ -886,8 +906,12 @@ export function cleanSceneText(text: string): string {
         }
       }
     } catch {
-      // keep the original cleaned string
+      // fall through to the guard below
     }
+    // A scene phrase never starts with `{`. A JSON object with none of the known keys (a
+    // whole brief, `{"title_en":...}`, a truncated reply) must not be forwarded to the image
+    // model as if it were a scene -- return empty so callers use the keyword fallback.
+    if (cleaned.startsWith('{')) return '';
   }
   // Drop leftover quote wrappers the model sometimes adds around the phrase.
   cleaned = cleaned.replace(/^["'`]+|["'`]+$/g, '').trim();
@@ -924,10 +948,25 @@ async function runArtDirectorLadder(
   cfg: CardImageConfig,
 ): Promise<{ text: string; source: string } | null> {
   try {
-    const registry = await resolveSceneRegistry(cfg);
+    // Without a per-call schema the Gemini adapter defaults to the full bilingual-brief
+    // schema and answers a scene request with an entire `{"title_en":...,"items":[...]}`
+    // brief (~4.5k chars, ~30 s, ~3k output tokens) -- which then leaked into the FLUX prompt
+    // as a truncated JSON "scene". Pin the scene schema; OpenRouter gets the same
+    // `{"scene": ...}` contract from the instruction (its chat body forces json_object).
+    const registry = withGeminiCallConfig(
+      role,
+      { schema: SCENE_RESPONSE_SCHEMA, maxModelAttempts: 2 },
+      await resolveSceneRegistry(cfg),
+    );
     const result = await generateWithRegistry(role, instruction, registry);
     const text = cleanSceneText(result.text);
     if (text.length >= 6) return { text, source: result.provider };
+    logEvent('warn', 'publish', 'Art director returned no usable scene -- using keyword scene', {
+      role,
+      provider: result.provider,
+      model: result.model,
+      raw: result.text.slice(0, 160),
+    });
   } catch (error) {
     // Every provider in the chain unconfigured/failed -- caller falls back
     // to a keyword scene, so this is non-fatal, but still worth a log line:
@@ -963,8 +1002,9 @@ export function buildNewsCardSceneInstruction(title: string, summary: string): s
     `charts, split panels, collages, information-card piles, and card-soup. Ban glowing brains, generic ` +
     `orbs, circuit-board wallpaper, anonymous server aisles, and lone laptops. No text, letters, numbers, ` +
     `logos, labels, watermarks, or gibberish. ` +
-    `Return only ONE vivid 18-32 word scene phrase with concrete nouns; not a sentence, plan, caption, or ` +
-    `list. Mention lighting or camera only after the causal core.\n\nHeadline: "${title}"\nSummary: "${summary}"`
+    `Reply with a JSON object with exactly one key, "scene", whose value is ONE vivid 18-32 word scene ` +
+    `phrase with concrete nouns; not a sentence, plan, caption, or list. Mention lighting or camera only ` +
+    `after the causal core. Do not add any other key.\n\nHeadline: "${title}"\nSummary: "${summary}"`
   );
 }
 
@@ -2953,6 +2993,12 @@ export function fallbackScene(text: string): string {
 /**
  * Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell. Pollinations is
  * opt-in only ({@link CardImageConfig.allowPollinations}) -- see the file header.
+ *
+ * Both Cloudflare models draw from ONE shared pool of Workers AI "neurons". The free plan
+ * allows 10,000 per day (reset 00:00 UTC) and klein burns roughly 1.4k per image, so a
+ * handful of images exhaust it; once that happens schnell is rejected too (HTTP 429, code
+ * 4006). In that case the schnell spillover is pointless, so it is skipped and every later
+ * Cloudflare call in this process short-circuits until the pool resets.
  */
 async function generateImage(
   positive: string,
@@ -2969,7 +3015,7 @@ async function generateImage(
     const cfModel = cfg.cloudflareImageModel?.trim() || DEFAULT_CF_IMAGE_MODEL;
     const primary = await generateCloudflare(cfModel, positive, negative, cfg, seed);
     if (primary) return primary;
-    if (cfModel !== SCHNELL_MODEL) {
+    if (cfModel !== SCHNELL_MODEL && !cloudflareQuotaExhausted()) {
       const spill = await generateCloudflare(SCHNELL_MODEL, positive, negative, cfg, seed);
       if (spill) return spill;
     }
@@ -3035,9 +3081,104 @@ async function generateGemini(
 }
 
 /**
+ * Cloudflare Workers AI error code for "daily free allocation of 10,000 neurons used up".
+ * Observed 2026-10-29 as HTTP 429 with body
+ * `{"errors":[{"code":4006,"message":"AiError: ... you have used up your daily free
+ * allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan ..."}]}`.
+ * It is a daily quota (not a per-minute rate limit), so retrying is pointless until 00:00 UTC.
+ */
+export const CF_DAILY_QUOTA_CODE = 4006;
+/** Bounded backoff for a genuine per-minute 429 (no Retry-After header): 2 s, then 5 s. */
+export const CF_RETRY_DELAYS_MS = [2_000, 5_000] as const;
+/** Never sleep longer than this on a Retry-After header inside a pipeline run. */
+const CF_RETRY_MAX_WAIT_MS = 20_000;
+/** flux-1-schnell rejects prompts longer than this (Workers AI model schema, `prompt.maxLength`). */
+export const SCHNELL_MAX_PROMPT_CHARS = 2048;
+
+let cloudflareQuotaUntilMs = 0;
+
+/** True while a Cloudflare daily-neuron 429 is known to still apply (until the next 00:00 UTC). */
+export function cloudflareQuotaExhausted(now = Date.now()): boolean {
+  return now < cloudflareQuotaUntilMs;
+}
+
+/**
+ * True when no image provider in this config can still succeed this process: the Cloudflare
+ * daily pool is spent and neither Gemini images nor Pollinations are enabled. Batch callers
+ * use it to stop before paying for scene-director calls that cannot produce a cover.
+ */
+export function cardImageProvidersExhausted(cfg: CardImageConfig): boolean {
+  return !cfg.geminiImageModel && !cfg.allowPollinations && cloudflareQuotaExhausted();
+}
+
+/** Test hook / manual reset for the process-local daily-quota latch. */
+export function resetCloudflareQuotaState(): void {
+  cloudflareQuotaUntilMs = 0;
+}
+
+function nextUtcMidnightMs(now: number): number {
+  const d = new Date(now);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+}
+
+export type CloudflareFailure = {
+  status: number;
+  code: number | null;
+  message: string;
+  retryAfterMs: number | null;
+  dailyQuota: boolean;
+};
+
+/** Reads status, Cloudflare error code/message and Retry-After off a non-2xx response. */
+export async function describeCloudflareFailure(res: Response): Promise<CloudflareFailure> {
+  let code: number | null = null;
+  let message = '';
+  try {
+    const text = await res.text();
+    try {
+      const parsed = JSON.parse(text) as { errors?: { code?: number; message?: string }[] };
+      const first = parsed.errors?.[0];
+      if (first) {
+        code = typeof first.code === 'number' ? first.code : null;
+        message = typeof first.message === 'string' ? first.message : '';
+      } else {
+        message = text;
+      }
+    } catch {
+      message = text;
+    }
+  } catch {
+    // unreadable body -- the status alone still classifies it
+  }
+  const header = res.headers.get('retry-after');
+  const seconds = header === null ? Number.NaN : Number(header);
+  const retryAfterMs = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
+  const dailyQuota = code === CF_DAILY_QUOTA_CODE || /daily free allocation|neurons/i.test(message);
+  return { status: res.status, code, message: message.slice(0, 300), retryAfterMs, dailyQuota };
+}
+
+type CloudflareAttempt =
+  | { ok: true; bytes: Buffer }
+  | { ok: false; failure: CloudflareFailure | null };
+
+/** Trim to `max` chars at a sentence/word boundary (schnell hard-rejects longer prompts). */
+export function clampPromptLength(prompt: string, max: number): string {
+  if (prompt.length <= max) return prompt;
+  const head = prompt.slice(0, max);
+  const sentence = Math.max(head.lastIndexOf('. '), head.lastIndexOf('; '));
+  if (sentence > max * 0.7) return head.slice(0, sentence + 1);
+  const space = head.lastIndexOf(' ');
+  return (space > 0 ? head.slice(0, space) : head).trimEnd();
+}
+
+/**
  * Cloudflare Workers AI. FLUX.2 models use multipart/form-data; flux-1-schnell
  * and legacy Leonardo JSON models use application/json. Tolerates both response
  * shapes: JSON `{result:{image:base64}}` and raw binary.
+ *
+ * A 429 that is a *daily neuron quota* is never retried and latches
+ * {@link cloudflareQuotaExhausted}; a plain per-minute 429 is retried at most
+ * {@link CF_RETRY_DELAYS_MS}.length times, honouring Retry-After (capped).
  */
 async function generateCloudflare(
   model: string,
@@ -3046,13 +3187,47 @@ async function generateCloudflare(
   cfg: CardImageConfig,
   seed: number,
 ): Promise<GeneratedImageResult | null> {
-  const bytes = isFlux2MultipartModel(model)
-    ? await runCloudflareMultipart(model, positive, cfg)
-    : await runCloudflareJson(model, positive, negative, cfg, seed);
-  if (!bytes) return null;
+  if (cloudflareQuotaExhausted()) {
+    logEvent('warn', 'publish', 'Cloudflare image gen skipped: daily neuron quota already exhausted', {
+      model,
+    });
+    return null;
+  }
+  const sleep =
+    cfg.cloudflareRetrySleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const run = () =>
+    isFlux2MultipartModel(model)
+      ? runCloudflareMultipart(model, positive, cfg)
+      : runCloudflareJson(model, positive, negative, cfg, seed);
+
+  let attempt = await run();
+  for (let retry = 0; !attempt.ok && retry < CF_RETRY_DELAYS_MS.length; retry++) {
+    const failure = attempt.failure;
+    if (!failure || failure.status !== 429 || failure.dailyQuota) break;
+    const wait = Math.min(failure.retryAfterMs ?? CF_RETRY_DELAYS_MS[retry], CF_RETRY_MAX_WAIT_MS);
+    logEvent('warn', 'publish', 'Cloudflare image gen rate-limited (429); retrying', {
+      model,
+      retry: retry + 1,
+      wait_ms: wait,
+    });
+    await sleep(wait);
+    attempt = await run();
+  }
+  if (!attempt.ok) {
+    if (attempt.failure?.dailyQuota) {
+      cloudflareQuotaUntilMs = nextUtcMidnightMs(Date.now());
+      logEvent(
+        'error',
+        'publish',
+        'Cloudflare Workers AI daily free quota (10,000 neurons) is exhausted; skipping Cloudflare until 00:00 UTC. Upgrade to the Workers Paid plan to keep generating covers.',
+        { model, code: attempt.failure.code },
+      );
+    }
+    return null;
+  }
   const isSchnell = model === SCHNELL_MODEL || model.endsWith('/flux-1-schnell');
   return {
-    bytes,
+    bytes: attempt.bytes,
     provider: 'cloudflare',
     model,
     estimatedCostUsd: isSchnell
@@ -3068,7 +3243,7 @@ async function runCloudflareMultipart(
   model: string,
   positive: string,
   cfg: CardImageConfig,
-): Promise<Buffer | null> {
+): Promise<CloudflareAttempt> {
   try {
     const form = new FormData();
     form.append('prompt', positive);
@@ -3099,20 +3274,26 @@ async function runCloudflareMultipart(
       model,
       ...serializeErrorDetails(error),
     });
-    return null;
+    return { ok: false, failure: null };
   }
 }
 
-async function runCloudflareJson(
+/**
+ * Request body for the JSON-API Workers AI models. flux-1-schnell's schema is strict
+ * (`additionalProperties: false`): only `prompt` (max 2048 chars) and `steps` (1-8) are
+ * accepted. Sending `seed` -- as this code did until 2026-10-29 -- is rejected with
+ * HTTP 400 "Additional or unevaluated properties '/seed' at '/' not allowed" (code 5006),
+ * so the schnell spillover could never work. Legacy Leonardo-style models take the full set.
+ */
+export function cloudflareJsonBody(
   model: string,
   positive: string,
   negative: string,
-  cfg: CardImageConfig,
   seed: number,
-): Promise<Buffer | null> {
+): Record<string, unknown> {
   const isSchnell = model === SCHNELL_MODEL || model.endsWith('/flux-1-schnell');
-  const body = isSchnell
-    ? { prompt: positive, steps: 8, seed }
+  return isSchnell
+    ? { prompt: clampPromptLength(positive, SCHNELL_MAX_PROMPT_CHARS), steps: 8 }
     : {
         prompt: positive,
         negative_prompt: negative,
@@ -3122,6 +3303,16 @@ async function runCloudflareJson(
         guidance: 4.5,
         seed,
       };
+}
+
+async function runCloudflareJson(
+  model: string,
+  positive: string,
+  negative: string,
+  cfg: CardImageConfig,
+  seed: number,
+): Promise<CloudflareAttempt> {
+  const body = cloudflareJsonBody(model, positive, negative, seed);
   try {
     const res = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${cfg.cloudflareAccountId}/ai/run/${model}`,
@@ -3141,23 +3332,33 @@ async function runCloudflareJson(
       model,
       ...serializeErrorDetails(error),
     });
-    return null;
+    return { ok: false, failure: null };
   }
 }
 
-async function readCloudflareImageResponse(res: Response, model: string): Promise<Buffer | null> {
+async function readCloudflareImageResponse(
+  res: Response,
+  model: string,
+): Promise<CloudflareAttempt> {
   if (!res.ok) {
-    logEvent('warn', 'publish', 'Cloudflare image gen failed', { status: res.status, model });
-    return null;
+    const failure = await describeCloudflareFailure(res);
+    logEvent('warn', 'publish', 'Cloudflare image gen failed', {
+      status: failure.status,
+      model,
+      code: failure.code,
+      error: failure.message,
+      daily_quota: failure.dailyQuota,
+    });
+    return { ok: false, failure };
   }
   const ct = res.headers.get('content-type') ?? '';
   if (ct.includes('application/json')) {
     const data = (await res.json()) as { result?: { image?: string } };
     const b64 = data.result?.image;
-    return b64 ? Buffer.from(b64, 'base64') : null;
+    return b64 ? { ok: true, bytes: Buffer.from(b64, 'base64') } : { ok: false, failure: null };
   }
   const buf = Buffer.from(await res.arrayBuffer());
-  return buf.length > 1024 ? buf : null;
+  return buf.length > 1024 ? { ok: true, bytes: buf } : { ok: false, failure: null };
 }
 
 /** Fallback: Pollinations FLUX (no key, public — native 16:9). */
