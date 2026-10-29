@@ -22,7 +22,7 @@ DONE (PR відкрито; 27 обкладинок чекають на скид�
 - Sidebar «Ранковий бриф» (`newsletter-band`): container queries, картка не ламається у вузькій колонці `/news`.
 - `ItemShareBar` + `icons.tsx`: вирівнювання блоку й іконки X/LinkedIn.
 - `normalizeMarkdownBreaks` у `src/lib/markdown.ts` і `pipeline/summarize.ts`: літеральний `<br>` в LLM-markdown більше не робить гігантський `<h3>`.
-- `pipeline/card-image.ts`: Pollinations image fallback вимкнено за замовчуванням (портретні обкладинки); `regenerate-card-image.ts` отримав `--slugs`, `--slugs-file`, `--apply` (`regenerate-card-image-args.ts`); [card-images](../marketing/card-images.md) оновлено.
+- `pipeline/card-image.ts`: щабель Pollinations повністю видалено (функція, `allowPollinations`, значення провайдера; у проді 0 рядків `card_image_url` з pollinations) — драбина закінчується на null → duotone (портретні обкладинки); `regenerate-card-image.ts` отримав `--slugs`, `--slugs-file`, `--apply` (`regenerate-card-image-args.ts`); [card-images](../marketing/card-images.md) оновлено.
 - Тіло статті: `src/components/editorial/*` (callout, takeaways, key-facts, when-grid, action-list, data-table, code-figure, нові code-panel, section-divider, section-label), `story-body`, `markdown-body`, `.reading-copy`, ds-catalog.
 
 ## Known, pre-existing

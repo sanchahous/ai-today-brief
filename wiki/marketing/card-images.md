@@ -75,12 +75,15 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).
    Ladder: Gemini (opt-in) → Cloudflare klein → Cloudflare schnell → **null** → branded
-   procedural **duotone** (`src/lib/card/duotone.ts`). The keyless Pollinations tier is
-   **off by default** (`CardImageConfig.allowPollinations`): the anonymous endpoint serves
-   a small "sana" model regardless of `model=flux`, adds a watermark, ignores in-prompt
-   "never a face" negations and is limited to 1 image / 45 s / IP, so every CI fallback
-   between 2026-08-30 and 2026-10-28 produced an off-topic AI portrait (46 items). A
-   failed generation now leaves `card_image_url` null and the next `fillCardImages` run
+   procedural **duotone** (`src/lib/card/duotone.ts`). The keyless Pollinations tier was
+   **removed entirely on 2026-10-29** (provider function, `allowPollinations` option and
+   `'pollinations'` provider value deleted; prod had 0 `brief_items.card_image_url` rows
+   pointing at pollinations, so no image-host allowlist was involved): the anonymous
+   endpoint served a small "sana" model regardless of `model=flux`, added a watermark,
+   ignored in-prompt "never a face" negations and was limited to 1 image / 45 s / IP, so
+   every CI fallback between 2026-08-30 and 2026-10-28 produced an off-topic AI portrait
+   (46 items). A replacement higher-quality last-resort tier is being researched
+   (not decided). A failed generation now leaves `card_image_url` null and the next `fillCardImages` run
    retries it. (source: PR #169, #171, `pipeline/card-image.ts`; live check
    `generation_cost_events` + `storage.objects` + Pollinations response header
    `x-model-used: sana`, 2026-10-29)
@@ -91,8 +94,8 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
      limit, and klein and schnell share the one pool; klein costs roughly 1.4k neurons per
      1280×720 image (estimate from $0.015/image), so the free tier covers only ~7 klein covers a
      day, while schnell is ~10× cheaper (estimate, ~90/day). Once it is spent *every* Cloudflare
-     call fails until midnight UTC, which is why CI runs fell through to the old Pollinations
-     tier. Code now classifies 4006 as a quota: no retry, no pointless schnell spillover, a
+     call fails until midnight UTC, which is why CI runs used to fall through to the
+     (now removed) Pollinations tier. Code now classifies 4006 as a quota: no retry, no pointless schnell spillover, a
      process-local latch (`cloudflareQuotaExhausted`) skips later Cloudflare calls, and batch
      loops (`fillCardImages`, `regenerate-card-image.ts`) stop before paying for scene-director
      calls. The item keeps `card_image_url = null` and the next run retries it. A plain

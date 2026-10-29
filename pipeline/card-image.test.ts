@@ -196,27 +196,17 @@ describe('generateEditorialIllustration ladder', () => {
     expect(vi.mocked(globalThis.fetch).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  function pollinationsOnlyFetch() {
-    return vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('pollinations.ai')) {
-        return new Response(pngBytes, { status: 200, headers: { 'content-type': 'image/jpeg' } });
-      }
-      return new Response('fail', { status: 500 });
-    }) as typeof fetch;
-  }
-
   // Regression (2026-10-29): 46 published covers were AI portraits of an unrelated young
-  // woman because the keyless Pollinations tier (served by "sana", watermarked, ignores
-  // "never a face") silently caught every Cloudflare failure. It must never be reached by
-  // default -- no card is better than a wrong-looking one.
-  it('never calls Pollinations by default, even when Cloudflare is unset or failing', async () => {
-    globalThis.fetch = pollinationsOnlyFetch();
+  // woman because a keyless last-resort tier silently caught every Cloudflare failure. The
+  // ladder now ends at null -- no card is better than a wrong-looking one.
+  it('returns null (branded fallback) when Cloudflare is unset or every model fails', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('fail', { status: 500 })) as typeof fetch;
     const unset = await generateEditorialIllustration(
       { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
       { geminiApiKey: '' },
     );
     expect(unset).toBeNull();
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled();
 
     const failing = await generateEditorialIllustration(
       { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
@@ -224,19 +214,7 @@ describe('generateEditorialIllustration ladder', () => {
     );
     expect(failing).toBeNull();
     const calledUrls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
-    expect(calledUrls.some((url) => url.includes('pollinations'))).toBe(false);
-  });
-
-  it('falls back to Pollinations only when allowPollinations is explicitly enabled', async () => {
-    globalThis.fetch = pollinationsOnlyFetch();
-
-    const result = await generateEditorialIllustration(
-      { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
-      { geminiApiKey: '', allowPollinations: true },
-    );
-
-    expect(result?.provider).toBe('pollinations');
-    expect(result?.estimatedCostUsd).toBe(0);
+    expect(calledUrls.every((url) => url.includes('api.cloudflare.com'))).toBe(true);
   });
 
   it('keeps the human-portrait ban in both the positive and negative prompt', () => {
@@ -348,12 +326,11 @@ describe('Cloudflare Workers AI quota + payload handling', () => {
     expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(callsAfterFirst);
   });
 
-  it('reports providers exhausted for batch callers only while the latch is set and no other tier is on', async () => {
+  it('reports providers exhausted for batch callers only while the latch is set and Gemini is off', async () => {
     expect(cardImageProvidersExhausted(cfg())).toBe(false);
     globalThis.fetch = vi.fn(async () => quota429()) as typeof fetch;
     await generateEditorialIllustration(input, cfg());
     expect(cardImageProvidersExhausted(cfg())).toBe(true);
-    expect(cardImageProvidersExhausted({ ...cfg(), allowPollinations: true })).toBe(false);
     expect(cardImageProvidersExhausted({ ...cfg(), geminiImageModel: 'gemini-3-pro-image' })).toBe(false);
   });
 
@@ -775,7 +752,7 @@ describe('encodeCardOrigin', () => {
     expect(jpeg.length).toBeLessThan(png.length);
   });
 
-  it('covers off-size rasters (Pollinations 1216×640) onto the 16:9 origin', async () => {
+  it('covers off-size rasters (1216×640) onto the 16:9 origin', async () => {
     const offSize = await sharp({
       create: {
         width: 1216,

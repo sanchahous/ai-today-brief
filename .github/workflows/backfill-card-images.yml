@@ -3,7 +3,7 @@ name: Backfill card images
 # Manual, one-off generation of brief_items.card_image_url for published items
 # that predate the card-image wiring (PR #129). Idempotent — skips items that
 # already have a card (or are rejected), so re-running is safe and free
-# (Cloudflare FLUX → Pollinations fallback). No-ops if the Cloudflare creds are
+# (Cloudflare FLUX → duotone fallback). No-ops if the Cloudflare creds are
 # unset. Default is a dry run that only reports how many briefs need filling.
 
 on:

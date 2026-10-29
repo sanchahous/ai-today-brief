@@ -13,8 +13,7 @@
  * Batch mode never touches Storage or `brief_items` without `--apply`: the dry run only
  * loads each row and reports whether it would be regenerated. Rejected / missing slugs
  * are skipped. Lines starting with `#` and anything after `|` in a slugs-file line are
- * ignored, so `slug|approved` annotations are fine. Pollinations is not part of the
- * provider ladder (see card-image.ts), so a failed generation keeps the previous cover.
+ * ignored, so `slug|approved` annotations are fine. A failed generation keeps the previous cover.
  */
 import { loadPipelineConfig } from '../config';
 import { cardImageProvidersExhausted, regenerateCardImageForSlug } from '../card-image';

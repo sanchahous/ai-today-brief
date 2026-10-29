@@ -1,6 +1,6 @@
 /**
  * Backfill brand card images for already-published brief items that lack one.
- * Reuses the pipeline step (Cloudflare FLUX → Pollinations → duotone fallback),
+ * Reuses the pipeline step (Cloudflare FLUX → duotone fallback),
  * so it is free and idempotent — items that already have `card_image_url` are
  * skipped. New items get their image automatically at publish; this fills the
  * historical archive once.

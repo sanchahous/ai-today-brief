@@ -16,12 +16,6 @@
  *   2. Cloudflare Workers AI FLUX.2 [klein] 9B — default (multipart API); override
  *      via CLOUDFLARE_IMAGE_MODEL (e.g. flux-2-dev).
  *   3. Cloudflare FLUX-1-schnell — JSON spillover if the primary CF model fails.
- *   4. (removed 2026-10-29) Pollinations. The anonymous endpoint ignores `model=flux`
- *      (serves a small "sana" model, header `x-model-used: sana`), stamps a visible
- *      "pollinations.ai" watermark despite `nologo=true`, has no negative prompt, and
- *      is limited to 1 image / 45 s / IP -- so every CI fallback ended up as an
- *      unrelated moody AI portrait of a young woman. Opt-in only via
- *      {@link CardImageConfig.allowPollinations}.
  * When all fail the item keeps a null URL and the OG card renders its branded
  * duotone fallback. Runs post-publish, idempotent (skips items that already have
  * an image), so re-running the pipeline never regenerates or double-charges.
@@ -222,13 +216,6 @@ export interface CardImageConfig {
    * re-fetching the live OpenRouter catalog) on every item.
    */
   registry?: ProviderRegistry;
-  /**
-   * Re-enable the keyless Pollinations last-resort tier. OFF by default: the anonymous
-   * endpoint ignores the requested model and the in-prompt "never a face" negations
-   * (they act as positive tokens for weak models), producing off-topic AI portraits
-   * with a watermark. A null card (branded duotone fallback) is better than that.
-   */
-  allowPollinations?: boolean;
   /** Sleep used between Cloudflare per-minute 429 retries (injectable for tests). */
   cloudflareRetrySleep?: (ms: number) => Promise<void>;
   /** Optional hook after each successful remote/local image (cost ledger). */
@@ -257,7 +244,7 @@ export interface SceneBriefResult {
 
 export interface GeneratedImageResult {
   bytes: Buffer;
-  provider: 'gemini' | 'cloudflare' | 'pollinations' | 'local';
+  provider: 'gemini' | 'cloudflare' | 'local';
   model: string;
   estimatedCostUsd: number;
   costSource: ImageCostSource;
@@ -2991,8 +2978,8 @@ export function fallbackScene(text: string): string {
 }
 
 /**
- * Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell. Pollinations is
- * opt-in only ({@link CardImageConfig.allowPollinations}) -- see the file header.
+ * Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell → null (the caller
+ * keeps a null URL and the OG card renders its branded duotone fallback).
  *
  * Both Cloudflare models draw from ONE shared pool of Workers AI "neurons". The free plan
  * allows 10,000 per day (reset 00:00 UTC) and klein burns roughly 1.4k per image, so a
@@ -3020,11 +3007,8 @@ async function generateImage(
       if (spill) return spill;
     }
   }
-  if (!cfg.allowPollinations) {
-    logEvent('warn', 'publish', 'Card image: all trusted providers failed; Pollinations fallback disabled');
-    return null;
-  }
-  return generatePollinations(positive, seed);
+  logEvent('warn', 'publish', 'Card image: all providers failed; keeping the branded fallback');
+  return null;
 }
 
 /** Top tier: Gemini "Nano Banana" image models via the generateContent REST API. */
@@ -3104,11 +3088,11 @@ export function cloudflareQuotaExhausted(now = Date.now()): boolean {
 
 /**
  * True when no image provider in this config can still succeed this process: the Cloudflare
- * daily pool is spent and neither Gemini images nor Pollinations are enabled. Batch callers
+ * daily pool is spent and Gemini images are not enabled. Batch callers
  * use it to stop before paying for scene-director calls that cannot produce a cover.
  */
 export function cardImageProvidersExhausted(cfg: CardImageConfig): boolean {
-  return !cfg.geminiImageModel && !cfg.allowPollinations && cloudflareQuotaExhausted();
+  return !cfg.geminiImageModel && cloudflareQuotaExhausted();
 }
 
 /** Test hook / manual reset for the process-local daily-quota latch. */
@@ -3359,33 +3343,6 @@ async function readCloudflareImageResponse(
   }
   const buf = Buffer.from(await res.arrayBuffer());
   return buf.length > 1024 ? { ok: true, bytes: buf } : { ok: false, failure: null };
-}
-
-/** Fallback: Pollinations FLUX (no key, public — native 16:9). */
-async function generatePollinations(
-  prompt: string,
-  seed: number,
-): Promise<GeneratedImageResult | null> {
-  try {
-    const url =
-      `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-      `?width=1216&height=640&model=flux&nologo=true&seed=${seed}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length <= 1024) return null;
-    return {
-      bytes: buf,
-      provider: 'pollinations',
-      model: 'flux',
-      estimatedCostUsd: 0,
-      costSource: 'estimated',
-      width: 1216,
-      height: 640,
-    };
-  } catch {
-    return null;
-  }
 }
 
 async function uploadCardImage(
