@@ -59,7 +59,15 @@ describe('planChecks — small changes run little', () => {
   it('one component → static checks on that file + design ratchet + affected e2e', () => {
     const p = plan(['src/components/brand/brand-stage.tsx']);
     assert.equal(p.full, false);
-    assert.deepEqual(p.checks, ['e2e-map', 'design-raw', 'typecheck', 'lint', 'unit', 'build', 'e2e']);
+    assert.deepEqual(p.checks, [
+      'e2e-map',
+      'design-raw',
+      'typecheck',
+      'lint',
+      'unit',
+      'build',
+      'e2e',
+    ]);
     assert.deepEqual(p.lintFiles, ['src/components/brand/brand-stage.tsx']);
     assert.deepEqual(commandFor('lint', p), [
       'npx',
@@ -221,7 +229,10 @@ describe('CI gates stay in sync with this module', () => {
   });
 
   it('the sonar gate is the same set minus pipeline/', () => {
-    assert.equal(WORKFLOW_GATES['sonarqube.yml'], WORKFLOW_GATES['e2e.yml'].replace('pipeline/|', ''));
+    assert.equal(
+      WORKFLOW_GATES['sonarqube.yml'],
+      WORKFLOW_GATES['e2e.yml'].replace('pipeline/|', ''),
+    );
   });
 
   it('the deps and migration gates select what they claim', () => {

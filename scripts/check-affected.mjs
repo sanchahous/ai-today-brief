@@ -43,7 +43,8 @@ const force = flag('--force') || process.env.CHECK_AFFECTED_FORCE === '1';
 // --- changed files -----------------------------------------------------------------------
 function resolveFiles() {
   const list = option('--files');
-  if (list !== null) return { files: list.split(/[\s,]+/).filter(Boolean), source: '--files', gitOk: true };
+  if (list !== null)
+    return { files: list.split(/[\s,]+/).filter(Boolean), source: '--files', gitOk: true };
   const from = option('--files-from');
   if (from !== null) {
     return { files: parseGitNameOnly(readFileSync(from, 'utf8')), source: from, gitOk: true };
@@ -113,7 +114,10 @@ function writeStamp(fingerprint, e2eRan) {
   const p = stampPath();
   if (!fingerprint || !p) return;
   try {
-    writeFileSync(p, JSON.stringify({ fingerprint, e2e: e2eRan, full: plan.full, at: new Date().toISOString() }));
+    writeFileSync(
+      p,
+      JSON.stringify({ fingerprint, e2e: e2eRan, full: plan.full, at: new Date().toISOString() }),
+    );
   } catch {
     // Best-effort: a missing stamp only costs a re-run.
   }
@@ -141,8 +145,11 @@ function printPlan() {
     console.log('\n→ nothing to run.');
     return;
   }
-  console.log(`\n→ ${plan.checks.length} check(s)${ci ? ' (CI: build/coverage/e2e/design/migrations run in their own workflows)' : ''}:`);
-  for (const id of plan.checks) console.log(`    ${id.padEnd(13)} ${commandFor(id, plan).join(' ')}`);
+  console.log(
+    `\n→ ${plan.checks.length} check(s)${ci ? ' (CI: build/coverage/e2e/design/migrations run in their own workflows)' : ''}:`,
+  );
+  for (const id of plan.checks)
+    console.log(`    ${id.padEnd(13)} ${commandFor(id, plan).join(' ')}`);
   console.log('');
 }
 
@@ -165,8 +172,10 @@ function main() {
       const { mode, out } = e2eMode();
       console.log(`e2e:affected would run: ${mode}`);
       for (const l of out.split('\n').filter((x) => /^\s+\S.*→/.test(x))) console.log(l);
-      if (mode === 'none' && plan.checks.includes('build')) console.log('→ so build:ci runs standalone.');
-      else if (mode !== 'none') console.log('→ e2e:affected builds first, so the standalone build:ci is skipped.');
+      if (mode === 'none' && plan.checks.includes('build'))
+        console.log('→ so build:ci runs standalone.');
+      else if (mode !== 'none')
+        console.log('→ e2e:affected builds first, so the standalone build:ci is skipped.');
     }
     return;
   }
@@ -175,7 +184,9 @@ function main() {
 
   const fingerprint = useStamp ? treeFingerprint() : null;
   if (useStamp && !force && stampMatches(fingerprint)) {
-    console.log('check:affected — this exact tree already passed these checks; nothing to re-run (--force to repeat).');
+    console.log(
+      'check:affected — this exact tree already passed these checks; nothing to re-run (--force to repeat).',
+    );
     return;
   }
 
@@ -183,7 +194,9 @@ function main() {
   if (ids.includes('e2e')) {
     const { mode } = e2eMode();
     if (mode === 'none') {
-      console.log('check:affected — e2e:affected selects no specs for these files; skipping Playwright.\n');
+      console.log(
+        'check:affected — e2e:affected selects no specs for these files; skipping Playwright.\n',
+      );
       ids = ids.filter((id) => id !== 'e2e');
     } else {
       // e2e:affected builds (or reuses a running server) before Playwright — no second build.
@@ -194,7 +207,8 @@ function main() {
   const started = Date.now();
   for (const id of ids) {
     console.log(`\n━━ check:affected · ${id} — ${CHECKS[id].label}`);
-    const env = id === 'e2e' ? { ...process.env, E2E_AFFECTED_FILES: plan.files.join(' ') } : process.env;
+    const env =
+      id === 'e2e' ? { ...process.env, E2E_AFFECTED_FILES: plan.files.join(' ') } : process.env;
     const status = run(commandFor(id, plan), env);
     if (status !== 0) {
       console.error(`\ncheck:affected — ${id} FAILED (exit ${status}). Fix it and re-run.`);

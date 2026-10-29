@@ -56,7 +56,14 @@ export const CHECKS = {
  * build + coverage + design ratchet → sonarqube.yml, Playwright → e2e.yml,
  * prod drift → migrations-drift.yml. `unit` is a subset of sonar's full coverage run.
  */
-export const CI_OWNED_ELSEWHERE = new Set(['build', 'coverage', 'unit', 'design-raw', 'migrations', 'e2e']);
+export const CI_OWNED_ELSEWHERE = new Set([
+  'build',
+  'coverage',
+  'unit',
+  'design-raw',
+  'migrations',
+  'e2e',
+]);
 
 const CODE_RE = /\.[cm]?[jt]sx?$/;
 const TS_RE = /\.[cm]?tsx?$/;
@@ -70,13 +77,19 @@ export const BROAD_RULES = [
   { match: /^package(-lock)?\.json$/, why: 'dependencies' },
   { match: /^\.(npmrc|nvmrc|node-version)$/, why: 'toolchain' },
   { match: /^tsconfig(\..+)?\.json$|^next-env\.d\.ts$/, why: 'TypeScript config' },
-  { match: /^(next|eslint|vitest|playwright|postcss|tailwind)\.config\.[cm]?[jt]s$/, why: 'toolchain config' },
+  {
+    match: /^(next|eslint|vitest|playwright|postcss|tailwind)\.config\.[cm]?[jt]s$/,
+    why: 'toolchain config',
+  },
   { match: /^src\/app\/(\[lang\]\/)?layout\.tsx$/, why: 'root layout wraps every page' },
   { match: /^src\/app\/globals\.css$/, why: 'global styles + tokens' },
   { match: /^src\/lib\/i18n\.ts$/, why: 'i18n is imported by every route' },
   { match: /^src\/proxy\.ts$/, why: 'proxy runs on every request' },
   { match: /^src\/(test|types)\//, why: 'shared test setup / global types' },
-  { match: /^scripts\/(check-scope|check-affected|ssg-build-scope)\.mjs$/, why: 'the check selector itself' },
+  {
+    match: /^scripts\/(check-scope|check-affected|ssg-build-scope)\.mjs$/,
+    why: 'the check selector itself',
+  },
 ];
 
 /**
@@ -88,37 +101,71 @@ export const RULES = [
   { match: /^wiki\//, checks: ['wiki'], why: 'wiki page / tooling' },
   // Wiki pages cite raw/, artifacts/, experiments/ and library/ as sources — a move or
   // delete breaks a link that wiki:lint --strict checks. Cheap (≈3 s).
-  { match: /^(raw|artifacts|experiments|library)\//, checks: ['wiki'], why: 'cited by wiki sources' },
-  { match: /\.md$/, checks: ['wiki'], why: 'markdown' },
-  { match: /^\.(cursor|agents|claude)\//, checks: [], why: 'agent rules / skills — no runtime effect' },
   {
-    match: /^(\.gitignore|\.gitattributes|\.editorconfig|LICENSE|\.prettierrc|\.prettierignore|\.mcp\.json|skills-lock\.json|sonar-project\.properties)$/,
+    match: /^(raw|artifacts|experiments|library)\//,
+    checks: ['wiki'],
+    why: 'cited by wiki sources',
+  },
+  { match: /\.md$/, checks: ['wiki'], why: 'markdown' },
+  {
+    match: /^\.(cursor|agents|claude)\//,
+    checks: [],
+    why: 'agent rules / skills — no runtime effect',
+  },
+  {
+    match:
+      /^(\.gitignore|\.gitattributes|\.editorconfig|LICENSE|\.prettierrc|\.prettierignore|\.mcp\.json|skills-lock\.json|sonar-project\.properties)$/,
     checks: [],
     why: 'repo metadata',
   },
-  { match: /^(vercel\.json|\.vercelignore)$/, checks: [], why: 'deploy config — validated by the Vercel preview deploy' },
+  {
+    match: /^(vercel\.json|\.vercelignore)$/,
+    checks: [],
+    why: 'deploy config — validated by the Vercel preview deploy',
+  },
   { match: /^\.env\.example$/, checks: [], why: 'env template (wiki facts are derived below)' },
   { match: /^\.githooks\//, checks: [], why: 'git hook' },
   // The CI gates in workflows are pinned to this module by scripts/check-scope.test.mjs.
-  { match: /^\.github\//, checks: ['script-tests'], why: 'CI config (gate regexes are unit-tested)' },
+  {
+    match: /^\.github\//,
+    checks: ['script-tests'],
+    why: 'CI config (gate regexes are unit-tested)',
+  },
 
   // --- database -------------------------------------------------------------------------
   { match: /^supabase\/migrations\//, checks: ['migrations'], why: 'migration' },
-  { match: /^supabase\/(tests\/|README\.md$)/, checks: [], why: 'SQL tests run by hand against a branch DB' },
+  {
+    match: /^supabase\/(tests\/|README\.md$)/,
+    checks: [],
+    why: 'SQL tests run by hand against a branch DB',
+  },
 
   // --- scripts --------------------------------------------------------------------------
   {
     match: /^scripts\//,
-    checks: (p) => ['script-tests', ...(TS_RE.test(p) ? ['typecheck'] : []), ...(CODE_RE.test(p) ? ['lint'] : [])],
+    checks: (p) => [
+      'script-tests',
+      ...(TS_RE.test(p) ? ['typecheck'] : []),
+      ...(CODE_RE.test(p) ? ['lint'] : []),
+    ],
     why: 'repo script',
   },
-  { match: /^scripts\/e2e-(affected|server-url)\.ts$/, checks: ['e2e-map', 'e2e'], why: 'e2e selector / server URL' },
   {
-    match: /^scripts\/(report-raw-design-values\.ts|raw-design-values\.baseline\.json|check-design-tokens\.ts)$/,
+    match: /^scripts\/e2e-(affected|server-url)\.ts$/,
+    checks: ['e2e-map', 'e2e'],
+    why: 'e2e selector / server URL',
+  },
+  {
+    match:
+      /^scripts\/(report-raw-design-values\.ts|raw-design-values\.baseline\.json|check-design-tokens\.ts)$/,
     checks: ['design-raw'],
     why: 'design ratchet',
   },
-  { match: /^scripts\/(check-prod-migrations\.ts)$/, checks: ['migrations'], why: 'migration drift check' },
+  {
+    match: /^scripts\/(check-prod-migrations\.ts)$/,
+    checks: ['migrations'],
+    why: 'migration drift check',
+  },
   {
     match: /^scripts\/(run-minimal-prerender-build|vercel-should-build)\.mjs$/,
     checks: ['build'],
@@ -153,9 +200,17 @@ export const RULES = [
     },
     why: 'site source',
   },
-  { match: /^src\/(app|components)\//, checks: (p) => (TEST_RE.test(p) ? [] : ['design-raw', 'e2e-map']), why: 'UI tree' },
+  {
+    match: /^src\/(app|components)\//,
+    checks: (p) => (TEST_RE.test(p) ? [] : ['design-raw', 'e2e-map']),
+    why: 'UI tree',
+  },
   { match: /^src\/lib\/design-system\//, checks: ['design-raw'], why: 'design tokens' },
-  { match: /^src\/lib\/supabase-migration-drift\.ts$/, checks: ['migrations'], why: 'migration drift logic' },
+  {
+    match: /^src\/lib\/supabase-migration-drift\.ts$/,
+    checks: ['migrations'],
+    why: 'migration drift logic',
+  },
   { match: /^public\//, checks: ['build', 'e2e'], why: 'static asset' },
 ];
 
@@ -272,7 +327,8 @@ export function planChecks(changed, opts = {}) {
 
     for (const c of checks) wanted.add(c);
     if (checks.has('lint') && exists(path)) lintFiles.push(path);
-    if ((checks.has('unit') || checks.has('coverage')) && CODE_RE.test(path) && exists(path)) unitFiles.push(path);
+    if ((checks.has('unit') || checks.has('coverage')) && CODE_RE.test(path) && exists(path))
+      unitFiles.push(path);
     lines.push(`${path} → ${checks.size ? [...checks].join(', ') : 'nothing (no runtime effect)'}`);
   }
 
@@ -319,7 +375,9 @@ export function commandFor(id, plan) {
     case 'typecheck':
       return ['npm', 'run', 'typecheck'];
     case 'lint':
-      return plan.full ? ['npm', 'run', 'lint'] : ['npx', 'eslint', '--no-warn-ignored', ...plan.lintFiles];
+      return plan.full
+        ? ['npm', 'run', 'lint']
+        : ['npx', 'eslint', '--no-warn-ignored', ...plan.lintFiles];
     case 'unit':
       return ['npx', 'vitest', 'related', '--run', '--passWithNoTests', ...plan.unitFiles];
     case 'coverage':
@@ -362,12 +420,13 @@ export function loadDerivedInputs(root = '.') {
 export const WORKFLOW_GATES = {
   // Site-affecting = NOT docs/ops. Mirrors SKIP_SSG_PATH_RE (scripts/ssg-build-scope.mjs).
   'e2e.yml':
-    "^(wiki/|raw/|artifacts/|experiments/|library/|scripts/|supabase/migrations/|\\.github/|pipeline/|\\.cursor/|\\.agents/|\\.claude/|\\.gitignore$|\\.gitattributes$|\\.editorconfig$|LICENSE$)|\\.md$",
+    '^(wiki/|raw/|artifacts/|experiments/|library/|scripts/|supabase/migrations/|\\.github/|pipeline/|\\.cursor/|\\.agents/|\\.claude/|\\.gitignore$|\\.gitattributes$|\\.editorconfig$|LICENSE$)|\\.md$',
   // Same skip set minus pipeline/ — Sonar scans pipeline code.
   'sonarqube.yml':
-    "^(wiki/|raw/|artifacts/|experiments/|library/|scripts/|supabase/migrations/|\\.github/|\\.cursor/|\\.agents/|\\.claude/|\\.gitignore$|\\.gitattributes$|\\.editorconfig$|LICENSE$)|\\.md$",
+    '^(wiki/|raw/|artifacts/|experiments/|library/|scripts/|supabase/migrations/|\\.github/|\\.cursor/|\\.agents/|\\.claude/|\\.gitignore$|\\.gitattributes$|\\.editorconfig$|LICENSE$)|\\.md$',
   // Install from lockfile only when the dependency manifest (or this gate) changed.
-  'deps-integrity.yml': '^(package\\.json|package-lock\\.json|\\.npmrc|\\.nvmrc|\\.github/workflows/deps-integrity\\.yml)$',
+  'deps-integrity.yml':
+    '^(package\\.json|package-lock\\.json|\\.npmrc|\\.nvmrc|\\.github/workflows/deps-integrity\\.yml)$',
   // Prod drift on a PR only when it adds a migration or changes the checker.
   'migrations-drift.yml':
     '^(supabase/migrations/|scripts/check-prod-migrations\\.ts$|src/lib/supabase-migration-drift\\.ts$|\\.github/workflows/migrations-drift\\.yml$)',
