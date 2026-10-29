@@ -324,11 +324,7 @@ export const STRINGS = {
       leadCta: 'Read the story',
       brandStage: {
         ariaLabel:
-          'The Resolve: many brass signals are edited into the A of AI Today Brief, and a celadon point resolves it',
-        kicker: 'THE RESOLVE',
-        phaseSignals: '01 / Signals',
-        phaseEdit: '02 / Edit',
-        phaseResolve: '03 / Resolve',
+          'AI Today Brief mark: many brass signals are edited into the letter A, and a single point of light completes it',
         captionLine1: 'Many signals.',
         captionLine2: 'One perspective.',
         captionMeta: 'AI TODAY BRIEF / AFTER HOURS',
@@ -922,11 +918,7 @@ export const STRINGS = {
       leadCta: 'Читати матеріал',
       brandStage: {
         ariaLabel:
-          'The Resolve: латунні сигнали складаються в A — знак AI Today Brief, а celadon-крапка завершує його',
-        kicker: 'THE RESOLVE',
-        phaseSignals: '01 / Сигнали',
-        phaseEdit: '02 / Редагування',
-        phaseResolve: '03 / Розв’язка',
+          'Знак AI Today Brief: багато латунних сигналів складаються в літеру A, яку завершує світла крапка',
         captionLine1: 'Багато сигналів.',
         captionLine2: 'Один погляд.',
         captionMeta: 'AI TODAY BRIEF / AFTER HOURS',

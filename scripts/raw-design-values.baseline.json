@@ -22,12 +22,6 @@
     {
       "path": "src/app/globals.css",
       "kind": "color",
-      "value": "#b5d8cc",
-      "count": 2
-    },
-    {
-      "path": "src/app/globals.css",
-      "kind": "color",
       "value": "#b9b7ac",
       "count": 1
     },
@@ -35,7 +29,7 @@
       "path": "src/app/globals.css",
       "kind": "color",
       "value": "#d4b483",
-      "count": 2
+      "count": 1
     },
     {
       "path": "src/app/globals.css",
@@ -59,12 +53,6 @@
       "path": "src/app/globals.css",
       "kind": "color",
       "value": "rgb(142 42 63 / 0.28)",
-      "count": 1
-    },
-    {
-      "path": "src/app/globals.css",
-      "kind": "color",
-      "value": "rgb(181 216 204 / 0.2)",
       "count": 1
     },
     {
