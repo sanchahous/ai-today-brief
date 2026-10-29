@@ -151,7 +151,6 @@ export function BrandStage({ lang }: { lang: Lang }) {
       <p className="brand-caption">
         <span className="brand-line"><span>{t.captionLine1}</span></span>
         <span className="brand-line"><span>{t.captionLine2}</span></span>
-        <small>{t.captionMeta}</small>
       </p>
     </div>
   );

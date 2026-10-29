@@ -718,9 +718,9 @@ html[data-tension] {
 }
 .brand-stage > svg {
   position: absolute;
-  inset: 8px 0 96px;
+  inset: 8px 0 72px;
   width: 100%;
-  height: calc(100% - 104px);
+  height: calc(100% - 80px);
   overflow: visible;
 }
 [data-tension-motion="off"] .brand-replay {
@@ -773,14 +773,6 @@ html[lang="uk"] .brand-line {
 }
 .brand-line > span {
   display: block;
-}
-.brand-caption small {
-  display: block;
-  margin-top: 10px;
-  color: #b9b7ac;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.14em;
 }
 .brand-replay {
   position: absolute;
@@ -890,8 +882,8 @@ html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .brand-l
     min-height: 400px;
   }
   .brand-stage > svg {
-    inset: 4px 0 104px;
-    height: calc(100% - 108px);
+    inset: 4px 0 80px;
+    height: calc(100% - 84px);
   }
 }
 

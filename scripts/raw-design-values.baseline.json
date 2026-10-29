@@ -22,12 +22,6 @@
     {
       "path": "src/app/globals.css",
       "kind": "color",
-      "value": "#b9b7ac",
-      "count": 1
-    },
-    {
-      "path": "src/app/globals.css",
-      "kind": "color",
       "value": "#d4b483",
       "count": 1
     },
