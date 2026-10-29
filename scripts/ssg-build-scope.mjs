@@ -1,8 +1,8 @@
 /**
  * Paths that do not change the Next.js site HTML/JS.
- * Keep the grep in `.github/workflows/e2e.yml` (`Decide whether the site changed`)
- * in sync with this regex. Sonar uses the same skip set except it still scans
- * `pipeline/` (see `.github/workflows/sonarqube.yml`).
+ * The grep in `.github/workflows/e2e.yml` (`Decide whether the site changed`) must
+ * equal this regex; Sonar uses the same skip set minus `pipeline/`. Both are pinned by
+ * `scripts/check-scope.test.mjs` (WORKFLOW_GATES).
  *
  * Used by Vercel's ignoreCommand and local `build:ci`: skip when the site HTML
  * did not change (no prod PostgREST SSG).
@@ -76,9 +76,46 @@ function gitNameOnlyOrNull(command) {
   }
 }
 
-/** Branch + working tree vs origin/main (or main). gitOk false → caller must build. */
+/** Integration branches a feature branch can be cut from, in tie-break order. */
+export const DIFF_BASE_CANDIDATES = ['origin/main', 'origin/next', 'main', 'next'];
+
+/**
+ * The candidate whose merge-base is closest to HEAD (fewest commits in between). Task
+ * branches are cut from `next`, which runs ahead of `main` until the daily release; diffing
+ * them against `main` would count every unreleased `next` commit as "changed here".
+ * Ties keep the candidates' order, so a branch level with both still diffs against main.
+ * @param {{ ref: string, distance: number | null }[]} candidates
+ */
+export function pickClosestBase(candidates) {
+  let best = null;
+  for (const c of candidates) {
+    if (c.distance === null || !Number.isFinite(c.distance)) continue;
+    if (best === null || c.distance < best.distance) best = c;
+  }
+  return best?.ref ?? null;
+}
+
+function commitsSinceMergeBase(ref) {
+  try {
+    const out = execSync(`git rev-list --count ${ref}...HEAD --right-only`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return Number(out.trim());
+  } catch {
+    return null;
+  }
+}
+
+/** Ref to diff the working branch against, or null when no candidate exists. */
+export function resolveDiffBase() {
+  const refs = DIFF_BASE_CANDIDATES.filter(gitRefExists);
+  return pickClosestBase(refs.map((ref) => ({ ref, distance: commitsSinceMergeBase(ref) })));
+}
+
+/** Branch + working tree vs the closest of origin/main / origin/next. gitOk false → caller must build. */
 export function listLocalChangedFiles() {
-  const base = gitRefExists('origin/main') ? 'origin/main' : gitRefExists('main') ? 'main' : null;
+  const base = resolveDiffBase();
   if (!base) return { files: [], gitOk: false };
   const committed = gitNameOnlyOrNull(`git diff --name-only ${base}...HEAD`);
   const uncommitted = gitNameOnlyOrNull('git diff --name-only HEAD');
@@ -86,5 +123,5 @@ export function listLocalChangedFiles() {
   if (committed === null || uncommitted === null || untracked === null) {
     return { files: [], gitOk: false };
   }
-  return { files: uniquePaths([...committed, ...uncommitted, ...untracked]), gitOk: true };
+  return { files: uniquePaths([...committed, ...uncommitted, ...untracked]), gitOk: true, base };
 }

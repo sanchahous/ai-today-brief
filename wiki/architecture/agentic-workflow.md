@@ -102,7 +102,8 @@ pipeline (source: `.cursor/rules/00-core.mdc`) — людина твердить
 немає в wiki, або лічильник міграцій / статуси ✅📋 у `index.md` розʼїхались із диском.
 
 `npm run wiki:check` = `wiki:sync` + unit-тести sync + `wiki:lint --strict`. Входить у
-`npm run pr:check`.
+`npm run pr:check`, а `check:affected` запускає його, коли змінено `wiki/` або шлях, за яким
+стежить контракт ([affected-checks](../ops/affected-checks.md)).
 
 Семантична частина (суперечності між сторінками, концепти без власної сторінки) — агент за
 запитом «run lint». **Автовиправлення заборонене.**

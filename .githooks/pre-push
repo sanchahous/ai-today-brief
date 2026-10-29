@@ -1,14 +1,18 @@
 #!/usr/bin/env sh
-# Pre-push gate: run only the e2e specs affected by this branch's changes, chromium only.
-# The full chromium + firefox + webkit matrix runs in CI on the PR — this is the fast local canary.
+# Pre-push gate: `npm run check:affected` — only the checks this branch's changed paths need
+# (map: scripts/check-scope.mjs). A wiki-only push runs wiki:check; a component change runs
+# typecheck, eslint on that file, related unit tests, the design ratchet and the affected
+# e2e specs on chromium; a dependency/config/unknown path runs the full suite.
+# If the same tree already passed (you ran check:affected before pushing), it returns at once.
 #
 # Activated via `core.hooksPath=.githooks` (set by the `prepare` npm script on install).
-# Escape hatch for a change you're confident needs no e2e (e.g. a docs-only hotfix):
-#   SKIP_E2E=1 git push
-if [ "${SKIP_E2E:-0}" = "1" ]; then
-  echo "pre-push: SKIP_E2E=1 — skipping affected e2e."
+# Escape hatches:
+#   SKIP_E2E=1 git push      — everything except Playwright
+#   SKIP_CHECKS=1 git push   — nothing (CI still runs the same map on the PR)
+if [ "${SKIP_CHECKS:-0}" = "1" ]; then
+  echo "pre-push: SKIP_CHECKS=1 — skipping check:affected."
   exit 0
 fi
 
-echo "pre-push: running affected e2e (chromium). Set SKIP_E2E=1 to skip."
-npm run e2e:affected
+echo "pre-push: running check:affected. SKIP_E2E=1 skips Playwright, SKIP_CHECKS=1 skips all."
+npm run check:affected

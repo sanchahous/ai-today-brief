@@ -3,12 +3,18 @@ name: Prod migration drift
 # Catches the 2026-08-28 class of bug: a migration is on main (and in the
 # repo) but was never applied to prod, so RPCs 404 at Ship time.
 on:
-  # PRs into `next` and into `main`. The job still diffs origin/main vs prod
-  # (a migration is "on main but not applied"). Push stays `main` only.
+  # PRs into `next` and into `main`. The job diffs origin/main vs prod (a migration is
+  # "on main but not applied") — a property of main, not of the PR — so on a PR it runs
+  # only when the PR adds a migration or touches the checker (gate below). Every other PR
+  # used to inherit a red check for drift it did not cause. Push stays `main` only.
   pull_request:
     branches: [main, next]
   push:
     branches: [main]
+  # Daily backstop: drift is fixed out-of-band (applying the migration), so keep
+  # re-checking main even on days with no push.
+  schedule:
+    - cron: '17 5 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -25,20 +31,49 @@ jobs:
       SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
       SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
     steps:
+      # No `paths:` filter (a skipped workflow never reports); the gate lives here.
+      # Pinned to scripts/check-scope.mjs WORKFLOW_GATES by its unit test.
+      - name: Decide whether this PR touches migrations
+        id: scope
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Not a pull request — checking."
+            exit 0
+          fi
+          FILES=$(gh api --paginate             "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files"             --jq '.[].filename')
+          if printf '%s
+' "$FILES" | grep -qE '^(supabase/migrations/|scripts/check-prod-migrations\.ts$|src/lib/supabase-migration-drift\.ts$|\.github/workflows/migrations-drift\.yml$)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "-> migrations touched, comparing with prod."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "-> no migration change, skipping (push to main + the daily schedule keep watching prod)."
+          fi
+
       - uses: actions/checkout@v7
+        if: steps.scope.outputs.run == 'true'
         with:
           fetch-depth: 0
 
       - uses: actions/setup-node@v7
+        if: steps.scope.outputs.run == 'true'
         with:
           node-version: 22
           cache: npm
 
       - name: Install
+        if: steps.scope.outputs.run == 'true'
         run: npm ci --ignore-scripts
 
       - name: Fetch origin/main
+        if: steps.scope.outputs.run == 'true'
         run: git fetch origin main --depth=1
 
       - name: Compare migrations
+        if: steps.scope.outputs.run == 'true'
         run: npm run migrations:check

@@ -1,14 +1,16 @@
 name: Deps integrity
 
-# A fast, ALWAYS-runs clean install from the committed lockfile.
+# A clean install from the committed lockfile — the required check "Clean install (npm ci)".
 #
-# e2e.yml also runs `npm ci`, but it is path-ignored (docs / .github / pipeline /
-# migrations) and heavy, so it cannot serve as a universal required gate. This job
-# validates that package.json + package-lock.json install from scratch with no
-# ERESOLVE / peer-dependency conflict on EVERY change — the exact failure that took
-# down Vercel and the Daily Pipeline on 2026-07-20 (typescript 7 vs the
-# typescript-eslint peer `<6.1.0`). Cheap (~40s) and suitable to mark as a
-# required status check on `main` so a broken lockfile can never merge.
+# Validates that package.json + package-lock.json install from scratch with no
+# ERESOLVE / peer-dependency conflict — the exact failure that took down Vercel and the
+# Daily Pipeline on 2026-07-20 (typescript 7 vs the typescript-eslint peer `<6.1.0`).
+#
+# The workflow ALWAYS runs and always reports (no `paths:` filter — a skipped required
+# check would sit on "Expected" forever). On a PR the install itself runs only when the
+# dependency manifest changed; any other PR cannot change what `npm ci` resolves, and the
+# branch it targets was already installed by its own PR. Push to main always installs.
+# The gate regex is pinned to scripts/check-scope.mjs WORKFLOW_GATES by its unit test.
 
 on:
   pull_request:
@@ -25,12 +27,37 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Decide whether dependencies changed
+        id: scope
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Not a pull request — installing."
+            exit 0
+          fi
+          FILES=$(gh api --paginate             "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files"             --jq '.[].filename')
+          if printf '%s
+' "$FILES" | grep -qE '^(package\.json|package-lock\.json|\.npmrc|\.nvmrc|\.github/workflows/deps-integrity\.yml)$'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "-> dependency manifest changed, running a clean install."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "-> no dependency change, skipping the install (this check still reports green)."
+          fi
+
       - uses: actions/checkout@v7
+        if: steps.scope.outputs.run == 'true'
 
       - uses: actions/setup-node@v7
+        if: steps.scope.outputs.run == 'true'
         with:
           node-version: 22
           cache: npm
 
       - name: Clean install from lockfile
+        if: steps.scope.outputs.run == 'true'
         run: npm ci

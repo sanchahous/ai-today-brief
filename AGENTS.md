@@ -19,7 +19,8 @@ The full contract is in [`CLAUDE.md`](CLAUDE.md) — read it once per session. S
 - **Four zones:** `raw/` immutable inputs · `wiki/` curated knowledge · `artifacts/` deliverables ·
   code in `src/` `pipeline/` `supabase/` `e2e/` `scripts/`.
 - **Never** modify `raw/`. **Never** push to `main`. **Never** put business facts in `CLAUDE.md`.
-- Before any push: `npm run pr:check` (includes `wiki:check` — project↔wiki sync). A task's
+- Before any push: `npm run check:affected` — only the checks the changed paths need (map:
+  `scripts/check-scope.mjs`; broad/unknown paths run the full suite = `npm run pr:check`). A task's
   status, log line and "next task" go only in `wiki/tasks/<id>.md`. Do not edit `wiki/now.md`,
   the `Sources:` line or handoff cell in `wiki/index.md`, the open-PR list in
   `wiki/product/after-hours-epic-handoff.md`, epic §5.3, or the top of `wiki/log.md` for that
