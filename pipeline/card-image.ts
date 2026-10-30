@@ -15,14 +15,16 @@
  *      otherwise).
  *   2. Cloudflare Workers AI FLUX.2 [klein] 9B — default (multipart API); override
  *      via CLOUDFLARE_IMAGE_MODEL (e.g. flux-2-dev).
- *   3. Cloudflare FLUX-1-schnell — JSON spillover if the primary CF model fails.
- *   4. Pollinations FLUX — last-resort public fallback.
+ *   3. OpenRouter black-forest-labs/flux-3-image-klein (~$0.009/image, paid) — only
+ *      with an OpenRouter key, hard-capped per UTC day (OPENROUTER_IMAGE_DAILY_CAP).
+ *   4. Cloudflare FLUX-1-schnell — last free tier when everything above failed.
  * When all fail the item keeps a null URL and the OG card renders its branded
  * duotone fallback. Runs post-publish, idempotent (skips items that already have
  * an image), so re-running the pipeline never regenerates or double-charges.
  */
 
 import { createHash } from 'node:crypto';
+import { SchemaType } from '@google/generative-ai';
 import sharp from 'sharp';
 import type { PipelineDb } from './db';
 import { assembleFluxCardPrompt } from './image-prompt-library/assemble';
@@ -32,6 +34,7 @@ import {
   headNoun as promptHeadNoun,
   stripPlanningPhrases,
 } from './image-prompt-library/text';
+import { withGeminiCallConfig } from './llm-json';
 import { logEvent, serializeErrorDetails } from './log';
 import {
   generateWithRegistry,
@@ -40,8 +43,15 @@ import {
   type ProviderRole,
 } from './providers/registry';
 import { selectSceneGrammar } from './scene-grammar';
+import type { GeminiResponseSchema } from './summarize';
 
 const BUCKET = 'card-images';
+/** Structured-output schema for the daily scene-director call: one key, `scene`. */
+const SCENE_RESPONSE_SCHEMA: GeminiResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: { scene: { type: SchemaType.STRING } },
+  required: ['scene'],
+};
 /**
  * Default Cloudflare Workers AI image model. FLUX.2 [klein] 9B — faster/cheaper
  * than Leonardo Lucid Origin, better quality than FLUX-1-schnell for editorial
@@ -51,6 +61,8 @@ const BUCKET = 'card-images';
 export const DEFAULT_CF_IMAGE_MODEL = '@cf/black-forest-labs/flux-2-klein-9b';
 /** Cheap JSON spillover when the primary (multipart) CF model fails. */
 export const SCHNELL_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+/** Paid OpenRouter image tier (~$0.009/image, 2026-10-30). Override with OPENROUTER_IMAGE_MODEL. */
+export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'black-forest-labs/flux-3-image-klein';
 const FALLBACK_ACCENT = '#5bc9f0';
 /** 16:9 render size; crops cleanly to the 1200×630 OG card and the 92px feed thumb. */
 export const IMG_W = 1280;
@@ -70,10 +82,163 @@ export function cardOriginStoragePath(slug: string): string {
   return `${slug}.jpg`;
 }
 
-/** Resize/cover to 16:9, flatten transparency, encode as a compact JPEG origin. */
-export async function encodeCardOrigin(bytes: Buffer): Promise<Buffer> {
-  return sharp(bytes)
+/**
+ * Letterbox detection. Some providers (OpenRouter flux-3-image-klein, 2026-10-30:
+ * 3 of 27) return a 16:9 canvas with uniform black or slate-grey bars top and
+ * bottom (one sample even had the scene bleeding faintly into the bar). A line
+ * (row or column) counts as bar when most of its pixels sit within a tolerance
+ * of the edge line's median luminance, so grey bars are caught as well as black
+ * ones and JPEG noise or a small bleed does not break the run. Smooth vignettes
+ * and gradients are told apart from real bars by requiring a HARD edge where the
+ * bar ends (large pixel-wise step between adjacent lines).
+ */
+/** A pixel is "bar colour" when within this many luminance levels of the edge median. */
+export const LETTERBOX_PIXEL_TOLERANCE = 12;
+/** Share of a line's pixels that must be bar colour for the line to be bar. */
+export const LETTERBOX_MIN_LINE_FRACTION = 0.7;
+/** Mean abs pixel-wise step between adjacent lines that marks the bar's hard edge. */
+export const LETTERBOX_MIN_EDGE_STEP = 10;
+/** Each detected bar must be at least this share of the axis, else it is noise. */
+export const LETTERBOX_MIN_BAR_FRACTION = 0.02;
+/** Bars summing to more than this share of an axis are treated as content (dark sky). */
+export const LETTERBOX_MAX_TRIM_FRACTION = 0.35;
+/** Extra pixels removed past the bar to drop the JPEG seam. */
+export const LETTERBOX_SEAM_MARGIN_PX = 2;
+/** Warn when the cover-crop after trimming would discard more than this share. */
+export const LETTERBOX_MAX_COVER_CROP_FRACTION = 0.25;
+
+export interface LetterboxTrim {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  /** Source dimensions the trim was measured on (after EXIF rotation). */
+  width: number;
+  height: number;
+}
+
+/** Strided view of one row or column of a greyscale raster. */
+interface Line {
+  start: number;
+  step: number;
+  count: number;
+}
+
+function lineMedian(data: Uint8Array, l: Line): number {
+  const hist = new Uint32Array(256);
+  for (let i = 0, p = l.start; i < l.count; i++, p += l.step) hist[data[p]]++;
+  let acc = 0;
+  for (let v = 0; v < 256; v++) {
+    acc += hist[v];
+    if (acc * 2 >= l.count) return v;
+  }
+  return 0;
+}
+
+function lineBarFraction(data: Uint8Array, l: Line, colour: number): number {
+  let hits = 0;
+  for (let i = 0, p = l.start; i < l.count; i++, p += l.step) {
+    if (Math.abs(data[p] - colour) <= LETTERBOX_PIXEL_TOLERANCE) hits++;
+  }
+  return hits / l.count;
+}
+
+function lineStep(data: Uint8Array, a: Line, b: Line): number {
+  let sum = 0;
+  for (let i = 0, p = a.start, q = b.start; i < a.count; i++, p += a.step, q += b.step) {
+    sum += Math.abs(data[p] - data[q]);
+  }
+  return sum / a.count;
+}
+
+/**
+ * Bar thickness in px (0 = no bar) measured from one side of one axis.
+ * `lineAt(i)` is the i-th line counted inward from that side.
+ */
+function measureBar(data: Uint8Array, length: number, lineAt: (i: number) => Line): number {
+  const colour = lineMedian(data, lineAt(0));
+  let bar = 0;
+  while (
+    bar < length &&
+    lineBarFraction(data, lineAt(bar), colour) >= LETTERBOX_MIN_LINE_FRACTION
+  ) {
+    bar++;
+  }
+  if (bar === 0 || bar >= length) return 0;
+  if (bar < Math.ceil(length * LETTERBOX_MIN_BAR_FRACTION)) return 0;
+  // Hard edge: some adjacent pair around the boundary must differ sharply.
+  let edge = 0;
+  for (let i = Math.max(0, bar - 2); i <= Math.min(bar + 1, length - 2); i++) {
+    edge = Math.max(edge, lineStep(data, lineAt(i), lineAt(i + 1)));
+  }
+  return edge >= LETTERBOX_MIN_EDGE_STEP ? bar : 0;
+}
+
+/** Measure uniform letterbox/pillarbox bars. All zeros when the image has none. */
+export async function detectLetterbox(bytes: Buffer): Promise<LetterboxTrim> {
+  const { data, info } = await sharp(bytes)
     .rotate()
+    .flatten({ background: CARD_ORIGIN_FLAT_BG })
+    .greyscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+  const grey =
+    channels === 1
+      ? data
+      : Uint8Array.from({ length: width * height }, (_, i) => data[i * channels]);
+
+  const axis = (length: number, lineAt: (index: number) => Line): [number, number] => {
+    const a = measureBar(grey, length, (i) => lineAt(i));
+    const b = measureBar(grey, length, (i) => lineAt(length - 1 - i));
+    const ta = a > 0 ? a + LETTERBOX_SEAM_MARGIN_PX : 0;
+    const tb = b > 0 ? b + LETTERBOX_SEAM_MARGIN_PX : 0;
+    if (ta + tb > length * LETTERBOX_MAX_TRIM_FRACTION) return [0, 0];
+    return [ta, tb];
+  };
+  const [top, bottom] = axis(height, (y) => ({ start: y * width, step: 1, count: width }));
+  const [left, right] = axis(width, (x) => ({ start: x, step: width, count: height }));
+  return { top, bottom, left, right, width, height };
+}
+
+/** Share of the frame a 16:9 cover-crop would discard (0..1). */
+export function coverCropLossFraction(width: number, height: number): number {
+  const target = IMG_W / IMG_H;
+  const aspect = width / height;
+  return aspect > target ? 1 - target / aspect : 1 - aspect / target;
+}
+
+/**
+ * Resize/cover to 16:9, flatten transparency, encode as a compact JPEG origin.
+ * Uniform letterbox bars from the provider are trimmed first so they never reach
+ * the stored cover. `slug` is only used for log context.
+ */
+export async function encodeCardOrigin(
+  bytes: Buffer,
+  opts: { slug?: string } = {},
+): Promise<Buffer> {
+  const trim = await detectLetterbox(bytes);
+  let pipeline = sharp(bytes).rotate();
+  if (trim.top + trim.bottom + trim.left + trim.right > 0) {
+    const region = {
+      left: trim.left,
+      top: trim.top,
+      width: trim.width - trim.left - trim.right,
+      height: trim.height - trim.top - trim.bottom,
+    };
+    pipeline = pipeline.extract(region);
+    logEvent('info', 'publish', 'Card image letterbox trimmed', { slug: opts.slug, ...trim });
+    const loss = coverCropLossFraction(region.width, region.height);
+    if (loss > LETTERBOX_MAX_COVER_CROP_FRACTION) {
+      logEvent('warn', 'publish', 'Card image far from 16:9 after letterbox trim', {
+        slug: opts.slug,
+        remainingWidth: region.width,
+        remainingHeight: region.height,
+        coverCropLoss: Number(loss.toFixed(3)),
+      });
+    }
+  }
+  return pipeline
     .resize(IMG_W, IMG_H, { fit: 'cover', position: 'centre' })
     .flatten({ background: CARD_ORIGIN_FLAT_BG })
     .jpeg({
@@ -193,8 +358,21 @@ export interface CardImageConfig {
   geminiImageModel?: string;
   /** Cloudflare image model id (default {@link DEFAULT_CF_IMAGE_MODEL}). */
   cloudflareImageModel?: string;
-  /** OpenRouter key — scene-step fallback when the Gemini free tier is rate-limited. */
+  /**
+   * OpenRouter key — scene-step fallback when the Gemini free tier is rate-limited, and
+   * the (paid, capped) OpenRouter image tier. No key ⇒ the image tier is skipped silently.
+   */
   openRouterApiKey?: string;
+  /** OpenRouter image model id (default {@link DEFAULT_OPENROUTER_IMAGE_MODEL}). */
+  openRouterImageModel?: string;
+  /**
+   * Max OpenRouter images per UTC day (default {@link DEFAULT_OPENROUTER_IMAGE_DAILY_CAP}; 0
+   * disables the tier). Counted from `generation_cost_events` when `db` is set, otherwise
+   * per process. NaN/negative falls back to the default.
+   */
+  openRouterImageDailyCap?: number;
+  /** Sleep used before the single OpenRouter 429 retry (injectable for tests). */
+  openRouterRetrySleep?: (ms: number) => Promise<void>;
   /**
    * Supabase client -- enables DB-driven role-chain overrides for the scene-brief
    * step (owner-added providers via /admin/providers, see
@@ -208,6 +386,8 @@ export interface CardImageConfig {
    * re-fetching the live OpenRouter catalog) on every item.
    */
   registry?: ProviderRegistry;
+  /** Sleep used between Cloudflare per-minute 429 retries (injectable for tests). */
+  cloudflareRetrySleep?: (ms: number) => Promise<void>;
   /** Optional hook after each successful remote/local image (cost ledger). */
   onImageGenerated?: (
     result: GeneratedImageResult,
@@ -234,7 +414,7 @@ export interface SceneBriefResult {
 
 export interface GeneratedImageResult {
   bytes: Buffer;
-  provider: 'gemini' | 'cloudflare' | 'pollinations' | 'local';
+  provider: 'gemini' | 'cloudflare' | 'openrouter' | 'local';
   model: string;
   estimatedCostUsd: number;
   costSource: ImageCostSource;
@@ -376,7 +556,16 @@ export async function fillCardImages(
 
   let generated = 0;
   let failed = 0;
-  for (const it of pending.slice(0, MAX_PER_RUN)) {
+  const batch = pending.slice(0, MAX_PER_RUN);
+  for (const [index, it] of batch.entries()) {
+    if (cardImageProvidersExhausted(itemCfg)) {
+      // Leave card_image_url null so the next run retries these items.
+      failed += batch.length - index;
+      logEvent('warn', 'publish', 'Card image generation stopped: image provider quota exhausted', {
+        remaining: batch.length - index,
+      });
+      break;
+    }
     try {
       const title = (it.title_en || it.title_uk || '').trim();
       const summary = (it.summary_en || it.summary_uk || '').trim();
@@ -418,6 +607,32 @@ export async function fillCardImages(
     }
   }
   return { generated, skipped: all.length - pending.length, failed };
+}
+
+/**
+ * Writes one `generation_cost_events` row (scope 'daily', kind 'image') for a generated card
+ * image. Shared by every card-image caller: the paid OpenRouter tier counts today's rows from
+ * this table to enforce its daily cap, so a caller that skips this hides spend from the cap.
+ * Best-effort: a ledger failure is logged, never thrown.
+ */
+export async function recordCardImageCostEvent(
+  db: PipelineDb,
+  image: GeneratedImageResult,
+  metadata: Record<string, unknown> = {},
+): Promise<void> {
+  if (image.provider === 'local') return;
+  const { error } = await db.from('generation_cost_events').insert({
+    scope: 'daily',
+    kind: 'image',
+    provider: image.provider,
+    model: image.model,
+    cost_usd: image.estimatedCostUsd,
+    cost_source: image.costSource,
+    metadata: { width: image.width, height: image.height, ...metadata },
+  });
+  if (error) {
+    logEvent('warn', 'publish', 'Card image cost ledger write failed', { error: error.message });
+  }
 }
 
 export type RegenerateCardImageResult =
@@ -874,8 +1089,12 @@ export function cleanSceneText(text: string): string {
         }
       }
     } catch {
-      // keep the original cleaned string
+      // fall through to the guard below
     }
+    // A scene phrase never starts with `{`. A JSON object with none of the known keys (a
+    // whole brief, `{"title_en":...}`, a truncated reply) must not be forwarded to the image
+    // model as if it were a scene -- return empty so callers use the keyword fallback.
+    if (cleaned.startsWith('{')) return '';
   }
   // Drop leftover quote wrappers the model sometimes adds around the phrase.
   cleaned = cleaned.replace(/^["'`]+|["'`]+$/g, '').trim();
@@ -912,10 +1131,25 @@ async function runArtDirectorLadder(
   cfg: CardImageConfig,
 ): Promise<{ text: string; source: string } | null> {
   try {
-    const registry = await resolveSceneRegistry(cfg);
+    // Without a per-call schema the Gemini adapter defaults to the full bilingual-brief
+    // schema and answers a scene request with an entire `{"title_en":...,"items":[...]}`
+    // brief (~4.5k chars, ~30 s, ~3k output tokens) -- which then leaked into the FLUX prompt
+    // as a truncated JSON "scene". Pin the scene schema; OpenRouter gets the same
+    // `{"scene": ...}` contract from the instruction (its chat body forces json_object).
+    const registry = withGeminiCallConfig(
+      role,
+      { schema: SCENE_RESPONSE_SCHEMA, maxModelAttempts: 2 },
+      await resolveSceneRegistry(cfg),
+    );
     const result = await generateWithRegistry(role, instruction, registry);
     const text = cleanSceneText(result.text);
     if (text.length >= 6) return { text, source: result.provider };
+    logEvent('warn', 'publish', 'Art director returned no usable scene -- using keyword scene', {
+      role,
+      provider: result.provider,
+      model: result.model,
+      raw: result.text.slice(0, 160),
+    });
   } catch (error) {
     // Every provider in the chain unconfigured/failed -- caller falls back
     // to a keyword scene, so this is non-fatal, but still worth a log line:
@@ -951,8 +1185,9 @@ export function buildNewsCardSceneInstruction(title: string, summary: string): s
     `charts, split panels, collages, information-card piles, and card-soup. Ban glowing brains, generic ` +
     `orbs, circuit-board wallpaper, anonymous server aisles, and lone laptops. No text, letters, numbers, ` +
     `logos, labels, watermarks, or gibberish. ` +
-    `Return only ONE vivid 18-32 word scene phrase with concrete nouns; not a sentence, plan, caption, or ` +
-    `list. Mention lighting or camera only after the causal core.\n\nHeadline: "${title}"\nSummary: "${summary}"`
+    `Reply with a JSON object with exactly one key, "scene", whose value is ONE vivid 18-32 word scene ` +
+    `phrase with concrete nouns; not a sentence, plan, caption, or list. Mention lighting or camera only ` +
+    `after the causal core. Do not add any other key.\n\nHeadline: "${title}"\nSummary: "${summary}"`
   );
 }
 
@@ -2938,7 +3173,18 @@ export function fallbackScene(text: string): string {
   return DEFAULT_NEWS_CARD_SCENE;
 }
 
-/** Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell → Pollinations. */
+/**
+ * Quality ladder: Gemini image (opt-in) → Cloudflare FLUX.2 klein → OpenRouter
+ * flux-3-image-klein (paid, daily-capped) → Cloudflare flux-1-schnell → null (the caller
+ * keeps a null URL and the OG card renders its branded duotone fallback).
+ *
+ * Both Cloudflare models draw from ONE shared pool of Workers AI "neurons". The free plan
+ * allows 10,000 per day (reset 00:00 UTC) and klein burns roughly 1.4k per image, so a
+ * handful of images exhaust it; once that happens schnell is rejected too (HTTP 429, code
+ * 4006). In that case the schnell spillover is pointless, so it is skipped and every later
+ * Cloudflare call in this process short-circuits until the pool resets. Schnell sits
+ * *after* OpenRouter so it is the last free tier when the paid one is capped or failing.
+ */
 async function generateImage(
   positive: string,
   negative: string,
@@ -2950,16 +3196,19 @@ async function generateImage(
     if (g) return g;
   }
   const hasCf = !!(cfg.cloudflareAccountId && cfg.cloudflareApiToken);
+  const cfModel = cfg.cloudflareImageModel?.trim() || DEFAULT_CF_IMAGE_MODEL;
   if (hasCf) {
-    const cfModel = cfg.cloudflareImageModel?.trim() || DEFAULT_CF_IMAGE_MODEL;
     const primary = await generateCloudflare(cfModel, positive, negative, cfg, seed);
     if (primary) return primary;
-    if (cfModel !== SCHNELL_MODEL) {
-      const spill = await generateCloudflare(SCHNELL_MODEL, positive, negative, cfg, seed);
-      if (spill) return spill;
-    }
   }
-  return generatePollinations(positive, seed);
+  const paid = await generateOpenRouter(positive, cfg);
+  if (paid) return paid;
+  if (hasCf && cfModel !== SCHNELL_MODEL && !cloudflareQuotaExhausted()) {
+    const spill = await generateCloudflare(SCHNELL_MODEL, positive, negative, cfg, seed);
+    if (spill) return spill;
+  }
+  logEvent('warn', 'publish', 'Card image: all providers failed; keeping the branded fallback');
+  return null;
 }
 
 /** Top tier: Gemini "Nano Banana" image models via the generateContent REST API. */
@@ -3016,9 +3265,105 @@ async function generateGemini(
 }
 
 /**
+ * Cloudflare Workers AI error code for "daily free allocation of 10,000 neurons used up".
+ * Observed 2026-10-29 as HTTP 429 with body
+ * `{"errors":[{"code":4006,"message":"AiError: ... you have used up your daily free
+ * allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan ..."}]}`.
+ * It is a daily quota (not a per-minute rate limit), so retrying is pointless until 00:00 UTC.
+ */
+export const CF_DAILY_QUOTA_CODE = 4006;
+/** Bounded backoff for a genuine per-minute 429 (no Retry-After header): 2 s, then 5 s. */
+export const CF_RETRY_DELAYS_MS = [2_000, 5_000] as const;
+/** Never sleep longer than this on a Retry-After header inside a pipeline run. */
+const CF_RETRY_MAX_WAIT_MS = 20_000;
+/** flux-1-schnell rejects prompts longer than this (Workers AI model schema, `prompt.maxLength`). */
+export const SCHNELL_MAX_PROMPT_CHARS = 2048;
+
+let cloudflareQuotaUntilMs = 0;
+
+/** True while a Cloudflare daily-neuron 429 is known to still apply (until the next 00:00 UTC). */
+export function cloudflareQuotaExhausted(now = Date.now()): boolean {
+  return now < cloudflareQuotaUntilMs;
+}
+
+/**
+ * True when no image provider in this config can still succeed this process: the Cloudflare
+ * daily pool is spent, Gemini images are not enabled and the OpenRouter tier is off, latched
+ * or at its (process-local view of the) cap. Batch callers
+ * use it to stop before paying for scene-director calls that cannot produce a cover.
+ */
+export function cardImageProvidersExhausted(cfg: CardImageConfig): boolean {
+  return !cfg.geminiImageModel && cloudflareQuotaExhausted() && !openRouterImageTierUsable(cfg);
+}
+
+/** Test hook / manual reset for the process-local daily-quota latch. */
+export function resetCloudflareQuotaState(): void {
+  cloudflareQuotaUntilMs = 0;
+}
+
+function nextUtcMidnightMs(now: number): number {
+  const d = new Date(now);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+}
+
+export type CloudflareFailure = {
+  status: number;
+  code: number | null;
+  message: string;
+  retryAfterMs: number | null;
+  dailyQuota: boolean;
+};
+
+/** Reads status, Cloudflare error code/message and Retry-After off a non-2xx response. */
+export async function describeCloudflareFailure(res: Response): Promise<CloudflareFailure> {
+  let code: number | null = null;
+  let message = '';
+  try {
+    const text = await res.text();
+    try {
+      const parsed = JSON.parse(text) as { errors?: { code?: number; message?: string }[] };
+      const first = parsed.errors?.[0];
+      if (first) {
+        code = typeof first.code === 'number' ? first.code : null;
+        message = typeof first.message === 'string' ? first.message : '';
+      } else {
+        message = text;
+      }
+    } catch {
+      message = text;
+    }
+  } catch {
+    // unreadable body -- the status alone still classifies it
+  }
+  const header = res.headers.get('retry-after');
+  const seconds = header === null ? Number.NaN : Number(header);
+  const retryAfterMs = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
+  const dailyQuota = code === CF_DAILY_QUOTA_CODE || /daily free allocation|neurons/i.test(message);
+  return { status: res.status, code, message: message.slice(0, 300), retryAfterMs, dailyQuota };
+}
+
+type CloudflareAttempt =
+  | { ok: true; bytes: Buffer }
+  | { ok: false; failure: CloudflareFailure | null };
+
+/** Trim to `max` chars at a sentence/word boundary (schnell hard-rejects longer prompts). */
+export function clampPromptLength(prompt: string, max: number): string {
+  if (prompt.length <= max) return prompt;
+  const head = prompt.slice(0, max);
+  const sentence = Math.max(head.lastIndexOf('. '), head.lastIndexOf('; '));
+  if (sentence > max * 0.7) return head.slice(0, sentence + 1);
+  const space = head.lastIndexOf(' ');
+  return (space > 0 ? head.slice(0, space) : head).trimEnd();
+}
+
+/**
  * Cloudflare Workers AI. FLUX.2 models use multipart/form-data; flux-1-schnell
  * and legacy Leonardo JSON models use application/json. Tolerates both response
  * shapes: JSON `{result:{image:base64}}` and raw binary.
+ *
+ * A 429 that is a *daily neuron quota* is never retried and latches
+ * {@link cloudflareQuotaExhausted}; a plain per-minute 429 is retried at most
+ * {@link CF_RETRY_DELAYS_MS}.length times, honouring Retry-After (capped).
  */
 async function generateCloudflare(
   model: string,
@@ -3027,13 +3372,47 @@ async function generateCloudflare(
   cfg: CardImageConfig,
   seed: number,
 ): Promise<GeneratedImageResult | null> {
-  const bytes = isFlux2MultipartModel(model)
-    ? await runCloudflareMultipart(model, positive, cfg)
-    : await runCloudflareJson(model, positive, negative, cfg, seed);
-  if (!bytes) return null;
+  if (cloudflareQuotaExhausted()) {
+    logEvent('warn', 'publish', 'Cloudflare image gen skipped: daily neuron quota already exhausted', {
+      model,
+    });
+    return null;
+  }
+  const sleep =
+    cfg.cloudflareRetrySleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const run = () =>
+    isFlux2MultipartModel(model)
+      ? runCloudflareMultipart(model, positive, cfg)
+      : runCloudflareJson(model, positive, negative, cfg, seed);
+
+  let attempt = await run();
+  for (let retry = 0; !attempt.ok && retry < CF_RETRY_DELAYS_MS.length; retry++) {
+    const failure = attempt.failure;
+    if (!failure || failure.status !== 429 || failure.dailyQuota) break;
+    const wait = Math.min(failure.retryAfterMs ?? CF_RETRY_DELAYS_MS[retry], CF_RETRY_MAX_WAIT_MS);
+    logEvent('warn', 'publish', 'Cloudflare image gen rate-limited (429); retrying', {
+      model,
+      retry: retry + 1,
+      wait_ms: wait,
+    });
+    await sleep(wait);
+    attempt = await run();
+  }
+  if (!attempt.ok) {
+    if (attempt.failure?.dailyQuota) {
+      cloudflareQuotaUntilMs = nextUtcMidnightMs(Date.now());
+      logEvent(
+        'error',
+        'publish',
+        'Cloudflare Workers AI daily free quota (10,000 neurons) is exhausted; skipping Cloudflare until 00:00 UTC. Upgrade to the Workers Paid plan to keep generating covers.',
+        { model, code: attempt.failure.code },
+      );
+    }
+    return null;
+  }
   const isSchnell = model === SCHNELL_MODEL || model.endsWith('/flux-1-schnell');
   return {
-    bytes,
+    bytes: attempt.bytes,
     provider: 'cloudflare',
     model,
     estimatedCostUsd: isSchnell
@@ -3049,7 +3428,7 @@ async function runCloudflareMultipart(
   model: string,
   positive: string,
   cfg: CardImageConfig,
-): Promise<Buffer | null> {
+): Promise<CloudflareAttempt> {
   try {
     const form = new FormData();
     form.append('prompt', positive);
@@ -3080,20 +3459,26 @@ async function runCloudflareMultipart(
       model,
       ...serializeErrorDetails(error),
     });
-    return null;
+    return { ok: false, failure: null };
   }
 }
 
-async function runCloudflareJson(
+/**
+ * Request body for the JSON-API Workers AI models. flux-1-schnell's schema is strict
+ * (`additionalProperties: false`): only `prompt` (max 2048 chars) and `steps` (1-8) are
+ * accepted. Sending `seed` -- as this code did until 2026-10-29 -- is rejected with
+ * HTTP 400 "Additional or unevaluated properties '/seed' at '/' not allowed" (code 5006),
+ * so the schnell spillover could never work. Legacy Leonardo-style models take the full set.
+ */
+export function cloudflareJsonBody(
   model: string,
   positive: string,
   negative: string,
-  cfg: CardImageConfig,
   seed: number,
-): Promise<Buffer | null> {
+): Record<string, unknown> {
   const isSchnell = model === SCHNELL_MODEL || model.endsWith('/flux-1-schnell');
-  const body = isSchnell
-    ? { prompt: positive, steps: 8, seed }
+  return isSchnell
+    ? { prompt: clampPromptLength(positive, SCHNELL_MAX_PROMPT_CHARS), steps: 8 }
     : {
         prompt: positive,
         negative_prompt: negative,
@@ -3103,6 +3488,16 @@ async function runCloudflareJson(
         guidance: 4.5,
         seed,
       };
+}
+
+async function runCloudflareJson(
+  model: string,
+  positive: string,
+  negative: string,
+  cfg: CardImageConfig,
+  seed: number,
+): Promise<CloudflareAttempt> {
+  const body = cloudflareJsonBody(model, positive, negative, seed);
   try {
     const res = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${cfg.cloudflareAccountId}/ai/run/${model}`,
@@ -3122,50 +3517,288 @@ async function runCloudflareJson(
       model,
       ...serializeErrorDetails(error),
     });
-    return null;
+    return { ok: false, failure: null };
   }
 }
 
-async function readCloudflareImageResponse(res: Response, model: string): Promise<Buffer | null> {
+async function readCloudflareImageResponse(
+  res: Response,
+  model: string,
+): Promise<CloudflareAttempt> {
   if (!res.ok) {
-    logEvent('warn', 'publish', 'Cloudflare image gen failed', { status: res.status, model });
-    return null;
+    const failure = await describeCloudflareFailure(res);
+    logEvent('warn', 'publish', 'Cloudflare image gen failed', {
+      status: failure.status,
+      model,
+      code: failure.code,
+      error: failure.message,
+      daily_quota: failure.dailyQuota,
+    });
+    return { ok: false, failure };
   }
   const ct = res.headers.get('content-type') ?? '';
   if (ct.includes('application/json')) {
     const data = (await res.json()) as { result?: { image?: string } };
     const b64 = data.result?.image;
-    return b64 ? Buffer.from(b64, 'base64') : null;
+    return b64 ? { ok: true, bytes: Buffer.from(b64, 'base64') } : { ok: false, failure: null };
   }
   const buf = Buffer.from(await res.arrayBuffer());
-  return buf.length > 1024 ? buf : null;
+  return buf.length > 1024 ? { ok: true, bytes: buf } : { ok: false, failure: null };
 }
 
-/** Fallback: Pollinations FLUX (no key, public — native 16:9). */
-async function generatePollinations(
-  prompt: string,
-  seed: number,
-): Promise<GeneratedImageResult | null> {
+/**
+ * OpenRouter image tier -- `POST /api/v1/images`, black-forest-labs/flux-3-image-klein.
+ *
+ * This is the only PAID image tier, so every guardrail is deliberate (a past OpenRouter
+ * spend leak cost ~14x the ledger, see wiki/ops):
+ *   - the request pins the provider (`only` + `allow_fallbacks:false`) and sets
+ *     `max_price.image`, so a re-route can never bill more than {@link OPENROUTER_MAX_PRICE_USD};
+ *   - a per-UTC-day cap ({@link DEFAULT_OPENROUTER_IMAGE_DAILY_CAP}) is counted from
+ *     `generation_cost_events` (provider='openrouter', kind='image') when a db is available,
+ *     max'd with an in-process reservation counter so a failed ledger write cannot hide spend;
+ *   - 402 (no credits) / 401 / 403 latch the tier off for the rest of the process;
+ *   - 429 retries once (Retry-After honoured, capped at 20 s); other errors fail the tier;
+ *   - a response whose `usage.cost` exceeds {@link OPENROUTER_MAX_ACCEPTED_COST_USD} is
+ *     discarded and latches the tier off.
+ * The API has no negative-prompt field, so a short ban list is appended to the prompt text.
+ */
+export const DEFAULT_OPENROUTER_IMAGE_DAILY_CAP = 20;
+/** Per-image ceiling sent as `provider.max_price.image` (model list price is ~0.009). */
+export const OPENROUTER_MAX_PRICE_USD = 0.015;
+/** A reported `usage.cost` above this is treated as a pricing anomaly: reject + latch off. */
+export const OPENROUTER_MAX_ACCEPTED_COST_USD = 0.02;
+/** Ledger estimate used only when the response omits `usage.cost`. */
+const OPENROUTER_FALLBACK_COST_USD = 0.009;
+const OPENROUTER_PROVIDER_SLUG = 'black-forest-labs';
+const OPENROUTER_TIMEOUT_MS = 60_000;
+const OPENROUTER_RETRY_DEFAULT_WAIT_MS = 3_000;
+const OPENROUTER_RETRY_MAX_WAIT_MS = 20_000;
+export const OPENROUTER_NEGATIVE_SUFFIX =
+  'No people, no faces, no portraits, no hands, no text, no letters, no logos.';
+
+let openRouterLatchedReason: string | null = null;
+let openRouterReserved = { day: '', count: 0 };
+
+/** Test hook / manual reset for the process-local OpenRouter latch + call counter. */
+export function resetOpenRouterImageState(): void {
+  openRouterLatchedReason = null;
+  openRouterReserved = { day: '', count: 0 };
+}
+
+/** Non-null while a 402/401/403 or a pricing anomaly has switched the tier off in this process. */
+export function openRouterImageLatchReason(): string | null {
+  return openRouterLatchedReason;
+}
+
+function utcDay(now: number): string {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+function reservedToday(now = Date.now()): number {
+  return openRouterReserved.day === utcDay(now) ? openRouterReserved.count : 0;
+}
+
+function bumpReserved(delta: 1 | -1, now = Date.now()): void {
+  const day = utcDay(now);
+  if (openRouterReserved.day !== day) openRouterReserved = { day, count: 0 };
+  openRouterReserved.count = Math.max(0, openRouterReserved.count + delta);
+}
+
+/** Resolves the per-day cap; anything that is not a non-negative number means the default. */
+export function resolveOpenRouterImageDailyCap(cap: number | undefined): number {
+  return typeof cap === 'number' && Number.isFinite(cap) && cap >= 0
+    ? Math.floor(cap)
+    : DEFAULT_OPENROUTER_IMAGE_DAILY_CAP;
+}
+
+/** Cheap synchronous view (key present, not latched, process counter under cap). */
+function openRouterImageTierUsable(cfg: CardImageConfig): boolean {
+  return (
+    !!cfg.openRouterApiKey?.trim() &&
+    openRouterLatchedReason === null &&
+    reservedToday() < resolveOpenRouterImageDailyCap(cfg.openRouterImageDailyCap)
+  );
+}
+
+/** Request body for `POST /api/v1/images` (exported so tests can pin the cost guardrails). */
+export function openRouterImageBody(model: string, positive: string): Record<string, unknown> {
+  return {
+    model,
+    prompt: `${positive} ${OPENROUTER_NEGATIVE_SUFFIX}`,
+    n: 1,
+    aspect_ratio: '16:9',
+    resolution: '1K',
+    provider: {
+      only: [OPENROUTER_PROVIDER_SLUG],
+      allow_fallbacks: false,
+      require_parameters: true,
+      max_price: { image: OPENROUTER_MAX_PRICE_USD },
+    },
+  };
+}
+
+/**
+ * Images OpenRouter already billed today (UTC). `null` when there is no db or the query
+ * failed -- the caller then relies on the process counter alone.
+ */
+async function countOpenRouterImagesToday(db: PipelineDb | undefined): Promise<number | null> {
+  if (!db) return null;
+  const now = new Date();
+  const since = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  ).toISOString();
   try {
-    const url =
-      `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-      `?width=1216&height=640&model=flux&nologo=true&seed=${seed}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length <= 1024) return null;
-    return {
-      bytes: buf,
-      provider: 'pollinations',
-      model: 'flux',
-      estimatedCostUsd: 0,
-      costSource: 'estimated',
-      width: 1216,
-      height: 640,
-    };
-  } catch {
+    const { count, error } = await db
+      .from('generation_cost_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('kind', 'image')
+      .eq('provider', 'openrouter')
+      .gte('created_at', since);
+    if (error) {
+      logEvent('warn', 'publish', 'OpenRouter image daily-cap count failed; using process counter', {
+        error: error.message,
+      });
+      return null;
+    }
+    return count ?? 0;
+  } catch (error) {
+    logEvent('warn', 'publish', 'OpenRouter image daily-cap count threw; using process counter', {
+      ...serializeErrorDetails(error),
+    });
     return null;
   }
+}
+
+type OpenRouterAttempt =
+  | { ok: true; bytes: Buffer; costUsd: number | null }
+  | { ok: false; status: number | null; retryAfterMs: number | null; anomaly?: boolean };
+
+function parseRetryAfterMs(res: Response): number | null {
+  const header = res.headers.get('retry-after');
+  const seconds = header === null ? Number.NaN : Number(header);
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
+}
+
+async function runOpenRouterImage(
+  model: string,
+  positive: string,
+  apiKey: string,
+): Promise<OpenRouterAttempt> {
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/images', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify(openRouterImageBody(model, positive)),
+      signal: AbortSignal.timeout(OPENROUTER_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      let detail = '';
+      try {
+        detail = (await res.text()).slice(0, 300);
+      } catch {
+        // the status alone classifies it
+      }
+      logEvent('warn', 'publish', 'OpenRouter image gen failed', {
+        status: res.status,
+        model,
+        error: detail,
+      });
+      return { ok: false, status: res.status, retryAfterMs: parseRetryAfterMs(res) };
+    }
+    const data = (await res.json()) as {
+      data?: { b64_json?: string; url?: string }[];
+      usage?: { cost?: unknown };
+    };
+    const rawCost = data.usage?.cost;
+    const costUsd =
+      typeof rawCost === 'number' && Number.isFinite(rawCost) && rawCost >= 0 ? rawCost : null;
+    if (costUsd !== null && costUsd > OPENROUTER_MAX_ACCEPTED_COST_USD) {
+      logEvent('error', 'publish', 'OpenRouter image cost above ceiling; discarding and latching tier off', {
+        model,
+        cost_usd: costUsd,
+        ceiling_usd: OPENROUTER_MAX_ACCEPTED_COST_USD,
+      });
+      return { ok: false, status: res.status, retryAfterMs: null, anomaly: true };
+    }
+    const first = data.data?.[0];
+    let bytes: Buffer | null = null;
+    if (first?.b64_json) {
+      bytes = Buffer.from(first.b64_json, 'base64');
+    } else if (first?.url?.startsWith('https://')) {
+      const img = await fetch(first.url, { signal: AbortSignal.timeout(30_000) });
+      if (img.ok) bytes = Buffer.from(await img.arrayBuffer());
+    }
+    if (!bytes || bytes.length <= 1024) {
+      logEvent('warn', 'publish', 'OpenRouter image gen returned no usable image', { model });
+      return { ok: false, status: res.status, retryAfterMs: null };
+    }
+    return { ok: true, bytes, costUsd };
+  } catch (error) {
+    logEvent('warn', 'publish', 'OpenRouter image gen threw', { model, ...serializeErrorDetails(error) });
+    return { ok: false, status: null, retryAfterMs: null };
+  }
+}
+
+async function generateOpenRouter(
+  positive: string,
+  cfg: CardImageConfig,
+): Promise<GeneratedImageResult | null> {
+  const apiKey = cfg.openRouterApiKey?.trim();
+  if (!apiKey) return null; // tier not configured: skip silently
+  if (openRouterLatchedReason !== null) return null;
+  const model = cfg.openRouterImageModel?.trim() || DEFAULT_OPENROUTER_IMAGE_MODEL;
+  const cap = resolveOpenRouterImageDailyCap(cfg.openRouterImageDailyCap);
+  const used = Math.max((await countOpenRouterImagesToday(cfg.db)) ?? 0, reservedToday());
+  if (used >= cap) {
+    logEvent('warn', 'publish', 'OpenRouter image gen skipped: daily cap reached', { model, used, cap });
+    return null;
+  }
+
+  bumpReserved(1); // reserve before the await so parallel callers cannot overshoot the cap
+  const sleep =
+    cfg.openRouterRetrySleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  let attempt = await runOpenRouterImage(model, positive, apiKey);
+  if (!attempt.ok && attempt.status === 429) {
+    const wait = Math.min(
+      attempt.retryAfterMs ?? OPENROUTER_RETRY_DEFAULT_WAIT_MS,
+      OPENROUTER_RETRY_MAX_WAIT_MS,
+    );
+    logEvent('warn', 'publish', 'OpenRouter image gen rate-limited (429); retrying once', {
+      model,
+      wait_ms: wait,
+    });
+    await sleep(wait);
+    attempt = await runOpenRouterImage(model, positive, apiKey);
+  }
+  if (!attempt.ok) {
+    if (attempt.anomaly) {
+      // Billed but discarded: it stays counted against today's cap, and the tier stops.
+      openRouterLatchedReason = 'cost_above_ceiling';
+      return null;
+    }
+    bumpReserved(-1); // failed calls are not billed
+    if (attempt.status === 402 || attempt.status === 401 || attempt.status === 403) {
+      openRouterLatchedReason = `http_${attempt.status}`;
+      logEvent(
+        'error',
+        'publish',
+        attempt.status === 402
+          ? 'OpenRouter has no credits (HTTP 402); skipping the OpenRouter image tier for this process. Top up credits to resume.'
+          : `OpenRouter rejected the key (HTTP ${attempt.status}); skipping the OpenRouter image tier for this process.`,
+        { model },
+      );
+    }
+    return null;
+  }
+  return {
+    bytes: attempt.bytes,
+    provider: 'openrouter',
+    model,
+    estimatedCostUsd: attempt.costUsd ?? OPENROUTER_FALLBACK_COST_USD,
+    costSource: attempt.costUsd === null ? 'estimated' : 'reported',
+    width: IMG_W,
+    height: IMG_H,
+  };
 }
 
 async function uploadCardImage(
@@ -3175,7 +3808,7 @@ async function uploadCardImage(
 ): Promise<string | null> {
   let origin: Buffer;
   try {
-    origin = await encodeCardOrigin(bytes);
+    origin = await encodeCardOrigin(bytes, { slug });
   } catch (error) {
     logEvent('warn', 'publish', 'Card image encode failed', {
       slug,

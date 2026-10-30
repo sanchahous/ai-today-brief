@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { extractToc, headingId, markdownToPlainText, parseInlines, parseMarkdown } from './markdown';
+import {
+  extractToc,
+  headingId,
+  markdownToPlainText,
+  normalizeMarkdownBreaks,
+  parseInlines,
+  parseMarkdown,
+} from './markdown';
 
 describe('parseInlines', () => {
   it('tokenizes bold, code and links between plain text', () => {
@@ -123,3 +130,78 @@ describe('headingId & extractToc', () => {
   });
 });
 
+
+describe('normalizeMarkdownBreaks', () => {
+  const BROKEN =
+    '### Локальне налаштування LLM без конфігурації<br>Hob спрощує запуск моделей.<br><br>' +
+    '### Робота з документами без хмарних витоків<br>Створений як локальний застосунок.<br><br>' +
+    '### Кросплатформна підтримка<br>Hob підтримує macOS і Windows.';
+
+  it('turns <br><br> into a paragraph break and <br> into a newline', () => {
+    expect(normalizeMarkdownBreaks('a<br>b<br/>c<BR />d<br><br>e')).toBe('a\nb\nc\nd\n\ne');
+  });
+
+  it('moves a mid-line heading marker onto its own paragraph', () => {
+    expect(normalizeMarkdownBreaks('Done. ### Next step<br>Body.')).toBe(
+      'Done.\n\n### Next step\nBody.',
+    );
+  });
+
+  it('splits the production example into separate headings and paragraphs', () => {
+    expect(parseMarkdown(BROKEN).map((b) => b.kind)).toEqual([
+      'heading',
+      'paragraph',
+      'heading',
+      'paragraph',
+      'heading',
+      'paragraph',
+    ]);
+    const toc = extractToc(BROKEN);
+    expect(toc.map((t) => t.title)).toEqual([
+      'Локальне налаштування LLM без конфігурації',
+      'Робота з документами без хмарних витоків',
+      'Кросплатформна підтримка',
+    ]);
+    // ids come from the cleaned heading text, never from a swallowed paragraph
+    expect(toc.map((t) => t.id)).toEqual([
+      'локальне-налаштування-llm-без-конфігурації',
+      'робота-з-документами-без-хмарних-витоків',
+      'кросплатформна-підтримка',
+    ]);
+  });
+
+  it('leaves fenced code and inline code untouched', () => {
+    const md = [
+      'Intro<br>line',
+      '',
+      '```html',
+      '<p>a<br>b</p>',
+      '### not a heading',
+      '```',
+      '',
+      'Use `<br>` and `x ### y` here.',
+    ].join('\n');
+    const out = normalizeMarkdownBreaks(md);
+    expect(out).toContain('<p>a<br>b</p>');
+    expect(out).toContain('Intro\nline');
+    expect(out).toContain('`<br>`');
+    expect(out).toContain('`x ### y`');
+    const code = parseMarkdown(md).find((b) => b.kind === 'codeBlock');
+    expect(code).toMatchObject({ code: '<p>a<br>b</p>\n### not a heading' });
+  });
+
+  it('keeps <br> inside table rows as a space so the row stays intact', () => {
+    const md = '| A | B |\n| --- | --- |\n| one<br>two | three |';
+    const blocks = parseMarkdown(md, { tables: true });
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({ kind: 'table' });
+  });
+
+  it('returns clean markdown unchanged and is idempotent', () => {
+    const clean = '### Title\n\nParagraph with `code` and **bold**.\n\n- a\n- b';
+    expect(normalizeMarkdownBreaks(clean)).toBe(clean);
+    expect(normalizeMarkdownBreaks(normalizeMarkdownBreaks(BROKEN))).toBe(
+      normalizeMarkdownBreaks(BROKEN),
+    );
+  });
+});

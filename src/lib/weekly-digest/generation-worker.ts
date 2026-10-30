@@ -3263,6 +3263,8 @@ function weeklyCardImageConfig() {
     cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim(),
     cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
     cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
+    openRouterImageModel: process.env.OPENROUTER_IMAGE_MODEL?.trim(),
+    openRouterImageDailyCap: Number.parseInt(process.env.OPENROUTER_IMAGE_DAILY_CAP ?? '', 10),
     db: getSupabaseAdmin(),
   };
 }
@@ -3874,6 +3876,8 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
             cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim(),
             cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
             cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
+            openRouterImageModel: process.env.OPENROUTER_IMAGE_MODEL?.trim(),
+            openRouterImageDailyCap: Number.parseInt(process.env.OPENROUTER_IMAGE_DAILY_CAP ?? '', 10),
             db: getSupabaseAdmin(),
             onImageGenerated: async (result, variant) => {
               if (result.provider === 'local') return;

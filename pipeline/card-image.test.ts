@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import type { PipelineDb } from './db';
 import { loadProviderRegistry } from './providers/registry';
@@ -31,9 +31,29 @@ import {
   CARD_ORIGIN_CONTENT_TYPE,
   CARD_ORIGIN_JPEG_QUALITY,
   CARD_ORIGIN_REENCODE_MAX,
+  CF_RETRY_DELAYS_MS,
+  cardImageProvidersExhausted,
   DEFAULT_CF_IMAGE_MODEL,
+  SCHNELL_MAX_PROMPT_CHARS,
   cardOriginStoragePath,
+  clampPromptLength,
+  cloudflareJsonBody,
+  cloudflareQuotaExhausted,
+  DEFAULT_OPENROUTER_IMAGE_MODEL,
+  OPENROUTER_MAX_ACCEPTED_COST_USD,
+  OPENROUTER_MAX_PRICE_USD,
+  OPENROUTER_NEGATIVE_SUFFIX,
+  openRouterImageBody,
+  openRouterImageLatchReason,
+  recordCardImageCostEvent,
+  resetOpenRouterImageState,
+  resolveOpenRouterImageDailyCap,
+  type GeneratedImageResult,
+  describeCloudflareFailure,
+  resetCloudflareQuotaState,
   encodeCardOrigin,
+  detectLetterbox,
+  coverCropLossFraction,
   pngCardOriginPath,
   reencodeStoredCardOrigins,
   selectCardOriginReencodeTargets,
@@ -179,6 +199,7 @@ describe('generateEditorialIllustration ladder', () => {
         geminiApiKey: '',
         cloudflareAccountId: 'acc',
         cloudflareApiToken: 'tok',
+        cloudflareRetrySleep: async () => {},
       },
     );
 
@@ -187,22 +208,35 @@ describe('generateEditorialIllustration ladder', () => {
     expect(vi.mocked(globalThis.fetch).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('falls back to Pollinations when Cloudflare is unset', async () => {
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('pollinations.ai')) {
-        return new Response(pngBytes, { status: 200, headers: { 'content-type': 'image/jpeg' } });
-      }
-      return new Response('fail', { status: 500 });
-    }) as typeof fetch;
-
-    const result = await generateEditorialIllustration(
+  // Regression (2026-10-29): 46 published covers were AI portraits of an unrelated young
+  // woman because a keyless last-resort tier silently caught every Cloudflare failure. The
+  // ladder now ends at null -- no card is better than a wrong-looking one.
+  it('returns null (branded fallback) when Cloudflare is unset or every model fails', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('fail', { status: 500 })) as typeof fetch;
+    const unset = await generateEditorialIllustration(
       { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
       { geminiApiKey: '' },
     );
+    expect(unset).toBeNull();
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled();
 
-    expect(result?.provider).toBe('pollinations');
-    expect(result?.estimatedCostUsd).toBe(0);
+    const failing = await generateEditorialIllustration(
+      { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
+      { geminiApiKey: '', cloudflareAccountId: 'acc', cloudflareApiToken: 'tok' },
+    );
+    expect(failing).toBeNull();
+    const calledUrls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
+    expect(calledUrls.every((url) => url.includes('api.cloudflare.com'))).toBe(true);
+  });
+
+  it('keeps the human-portrait ban in both the positive and negative prompt', () => {
+    const story = 'OpenAI launches GPT-6.1 Terra with lower costs and computer use focus';
+    const positive = buildPrompt('cool cyan', 'a single precision routing gate closes a signal path', story);
+    expect(positive).toMatch(/Never make a human face, portrait, headshot/);
+    // A director scene that asks for a person must be replaced, not forwarded.
+    const portraitScene = buildPrompt('cool cyan', 'close-up of a woman, head and shoulders portrait', story);
+    expect(portraitScene).not.toMatch(/head and shoulders|close-up of a woman/i);
+    expect(negativePrompt(story)).toMatch(/human portrait/);
   });
 
   it('renders the local SVG fallback when every remote provider fails', async () => {
@@ -239,6 +273,215 @@ describe('generateEditorialIllustration ladder', () => {
       { geminiApiKey: '', cloudflareAccountId: 'acc', cloudflareApiToken: 'tok' },
     );
     expect(result).toBeNull();
+  });
+});
+
+describe('Cloudflare Workers AI quota + payload handling', () => {
+  const originalFetch = globalThis.fetch;
+  const imgBytes = Buffer.alloc(2048, 9);
+  const quota429 = () =>
+    new Response(
+      JSON.stringify({
+        errors: [
+          {
+            code: 4006,
+            message:
+              'AiError: you have used up your daily free allocation of 10,000 neurons, please upgrade to the Workers Paid plan',
+          },
+        ],
+        success: false,
+      }),
+      { status: 429, headers: { 'content-type': 'application/json' } },
+    );
+  const ok = () =>
+    new Response(JSON.stringify({ result: { image: imgBytes.toString('base64') } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  const cfg = (sleep: (ms: number) => Promise<void> = async () => {}) => ({
+    geminiApiKey: '',
+    cloudflareAccountId: 'acc',
+    cloudflareApiToken: 'tok',
+    cloudflareRetrySleep: sleep,
+  });
+  const input = { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'quota-1' };
+
+  beforeEach(() => resetCloudflareQuotaState());
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    resetCloudflareQuotaState();
+    vi.restoreAllMocks();
+  });
+
+  it('treats the daily-neuron 429 (code 4006) as a quota: no retry, no schnell spillover, null result', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = vi.fn(async () => quota429()) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result).toBeNull();
+    expect(sleep).not.toHaveBeenCalled();
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
+    const urls = vi.mocked(globalThis.fetch).mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes('flux-1-schnell'))).toBe(false);
+    expect(cloudflareQuotaExhausted()).toBe(true);
+  });
+
+  it('short-circuits later Cloudflare calls in the same process once the daily quota is latched', async () => {
+    globalThis.fetch = vi.fn(async () => quota429()) as typeof fetch;
+    await generateEditorialIllustration(input, cfg());
+    const callsAfterFirst = vi.mocked(globalThis.fetch).mock.calls.length;
+
+    const second = await generateEditorialIllustration({ ...input, seedKey: 'quota-2' }, cfg());
+
+    expect(second).toBeNull();
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(callsAfterFirst);
+  });
+
+  it('reports providers exhausted for batch callers only while the latch is set and Gemini is off', async () => {
+    expect(cardImageProvidersExhausted(cfg())).toBe(false);
+    globalThis.fetch = vi.fn(async () => quota429()) as typeof fetch;
+    await generateEditorialIllustration(input, cfg());
+    expect(cardImageProvidersExhausted(cfg())).toBe(true);
+    expect(cardImageProvidersExhausted({ ...cfg(), geminiImageModel: 'gemini-3-pro-image' })).toBe(false);
+  });
+
+  it('retries a plain per-minute 429 honouring Retry-After, then succeeds', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    let calls = 0;
+    globalThis.fetch = vi.fn(async () => {
+      calls++;
+      return calls === 1
+        ? new Response('slow down', { status: 429, headers: { 'retry-after': '3' } })
+        : ok();
+    }) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result?.model).toBe(DEFAULT_CF_IMAGE_MODEL);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(sleep).toHaveBeenCalledWith(3000);
+    expect(calls).toBe(2);
+    expect(cloudflareQuotaExhausted()).toBe(false);
+  });
+
+  it('caps Retry-After, bounds the retry count, then spills over to schnell', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL) =>
+      String(url).includes('flux-1-schnell')
+        ? ok()
+        : new Response('slow down', { status: 429, headers: { 'retry-after': '600' } }),
+    ) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    expect(sleep).toHaveBeenCalledTimes(CF_RETRY_DELAYS_MS.length);
+    for (const [ms] of sleep.mock.calls) expect(ms).toBeLessThanOrEqual(20_000);
+    const kleinCalls = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter((c) => String(c[0]).includes('flux-2-klein-9b'));
+    expect(kleinCalls).toHaveLength(CF_RETRY_DELAYS_MS.length + 1);
+  });
+
+  it('does not retry non-429 failures (e.g. 500) and spills straight to schnell', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL) =>
+      String(url).includes('flux-1-schnell') ? ok() : new Response('boom', { status: 500 }),
+    ) as typeof fetch;
+
+    const result = await generateEditorialIllustration(input, cfg(sleep));
+
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it('sends schnell only prompt+steps (no seed) and never more than 2048 prompt chars', async () => {
+    globalThis.fetch = vi.fn(async (url: RequestInfo | URL) =>
+      String(url).includes('flux-1-schnell') ? ok() : new Response('boom', { status: 500 }),
+    ) as typeof fetch;
+
+    await generateEditorialIllustration(input, cfg());
+
+    const schnell = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.find((c) => String(c[0]).includes('flux-1-schnell'));
+    const body = JSON.parse(String(schnell?.[1]?.body)) as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(['prompt', 'steps']);
+    expect(body.steps).toBe(8);
+    expect((body.prompt as string).length).toBeLessThanOrEqual(SCHNELL_MAX_PROMPT_CHARS);
+  });
+
+  it('cloudflareJsonBody keeps the full parameter set for non-schnell JSON models', () => {
+    const body = cloudflareJsonBody('@cf/leonardo/lucid-origin', 'p', 'n', 42);
+    expect(body).toMatchObject({ prompt: 'p', negative_prompt: 'n', seed: 42, steps: 20 });
+  });
+
+  it('clampPromptLength trims at a sentence boundary and leaves short prompts untouched', () => {
+    expect(clampPromptLength('short prompt.', 2048)).toBe('short prompt.');
+    const long = `${'One sentence here. '.repeat(200)}tail`;
+    const clamped = clampPromptLength(long, 2048);
+    expect(clamped.length).toBeLessThanOrEqual(2048);
+    expect(clamped.endsWith('.')).toBe(true);
+  });
+
+  it('describeCloudflareFailure classifies quota vs rate-limit and parses Retry-After', async () => {
+    const quota = await describeCloudflareFailure(quota429());
+    expect(quota).toMatchObject({ status: 429, code: 4006, dailyQuota: true });
+    const rate = await describeCloudflareFailure(
+      new Response('Too many requests', { status: 429, headers: { 'retry-after': '7' } }),
+    );
+    expect(rate).toMatchObject({ status: 429, dailyQuota: false, retryAfterMs: 7000 });
+  });
+});
+
+describe('daily scene director output contract', () => {
+  it('asks for a one-key JSON object so structured-output providers cannot return a whole brief', () => {
+    const instruction = buildNewsCardSceneInstruction('Headline', 'Summary');
+    expect(instruction).toContain('JSON object with exactly one key, "scene"');
+  });
+
+  it('cleanSceneText drops JSON objects without a recognised key instead of forwarding them', () => {
+    const brief = '{"title_en":"Autonomous Research Swarms","title_uk":"Рої","intro_en":"x","items":[{"ref":1}]}';
+    expect(cleanSceneText(brief)).toBe('');
+    expect(cleanSceneText('{"title_en":"truncated brief that never closes')).toBe('');
+    expect(cleanSceneText('{"scene":"a valve closes over a clean signal path"}')).toBe(
+      'a valve closes over a clean signal path',
+    );
+  });
+
+  it('sceneBrief falls back to a keyword scene when the director replies with a whole brief JSON', async () => {
+    process.env.CARD_IMAGE_TEST_CLI_TOKEN = 'token';
+    const registry = {
+      chainForRole: () => [
+        {
+          entry: { kind: 'cli' as const, id: 'stub-cli' },
+          cli: {
+            id: 'stub-cli',
+            binary: 'stub',
+            authEnvVar: 'CARD_IMAGE_TEST_CLI_TOKEN',
+            buildArgs: () => [],
+            parseEnvelope: () => ({
+              text: '{"title_en":"Autonomous Research Swarms","intro_en":"long brief ..."}',
+              model: 'stub-model',
+              costUsd: 0,
+            }),
+            spawnFn: async () => ({ stdout: 'ok', stderr: '', exitCode: 0, spawnError: null }),
+          },
+        },
+      ],
+    };
+    try {
+      const { scene, source } = await sceneBrief('Security breach', 'Attackers exploit a flaw', {
+        geminiApiKey: 'unused',
+        registry,
+      });
+      expect(source).toBe('fallback');
+      expect(scene).not.toContain('{');
+      expect(scene).not.toContain('title_en');
+    } finally {
+      delete process.env.CARD_IMAGE_TEST_CLI_TOKEN;
+    }
   });
 });
 
@@ -521,7 +764,7 @@ describe('encodeCardOrigin', () => {
     expect(jpeg.length).toBeLessThan(png.length);
   });
 
-  it('covers off-size rasters (Pollinations 1216×640) onto the 16:9 origin', async () => {
+  it('covers off-size rasters (1216×640) onto the 16:9 origin', async () => {
     const offSize = await sharp({
       create: {
         width: 1216,
@@ -542,6 +785,140 @@ describe('encodeCardOrigin', () => {
 
   it('rejects bytes that are not an image', async () => {
     await expect(encodeCardOrigin(Buffer.from('not-an-image'))).rejects.toThrow();
+  });
+});
+
+describe('letterbox trim', () => {
+  const W = 1360;
+  const H = 768;
+
+  type BarSpec = { top?: number; bottom?: number; left?: number; right?: number };
+
+  /** Deterministic 0..1 noise so tests never flake. */
+  function rng(seed: number): () => number {
+    let s = seed;
+    return () => {
+      s = (s * 1664525 + 1013904223) % 4294967296;
+      return s / 4294967296;
+    };
+  }
+
+  /**
+   * Textured "photograph" canvas with solid bars of `barLevel` (+/- `barNoise`) painted on
+   * the edges, then JPEG-encoded like a provider response.
+   */
+  async function canvas(
+    bars: BarSpec,
+    opts: {
+      barLevel?: number;
+      barNoise?: number;
+      topOverride?: (x: number, y: number, r: () => number) => number;
+    } = {},
+  ): Promise<Buffer> {
+    const { barLevel = 0, barNoise = 0, topOverride } = opts;
+    const { top = 0, bottom = 0, left = 0, right = 0 } = bars;
+    const r = rng(7);
+    const raw = Buffer.alloc(W * H * 3);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const inBar = y < top || y >= H - bottom || x < left || x >= W - right;
+        let v: number;
+        if (inBar) {
+          v = barLevel + (r() - 0.5) * 2 * barNoise;
+        } else if (topOverride) {
+          v = topOverride(x, y, r);
+        } else {
+          v = 120 + Math.sin(x / 9) * 60 + Math.cos(y / 7) * 45 + (r() - 0.5) * 50;
+        }
+        const g = Math.max(0, Math.min(255, Math.round(v)));
+        const i = (y * W + x) * 3;
+        raw[i] = g;
+        raw[i + 1] = g;
+        raw[i + 2] = g;
+      }
+    }
+    return sharp(raw, { raw: { width: W, height: H, channels: 3 } })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+  }
+
+  const sum = (t: { top: number; bottom: number; left: number; right: number }) =>
+    t.top + t.bottom + t.left + t.right;
+
+  it('detects black letterbox bars with a small seam margin', async () => {
+    const t = await detectLetterbox(await canvas({ top: 100, bottom: 100 }));
+    expect(t.top).toBeGreaterThanOrEqual(100);
+    expect(t.top).toBeLessThanOrEqual(100 + 6);
+    expect(t.bottom).toBeGreaterThanOrEqual(100);
+    expect(t.bottom).toBeLessThanOrEqual(100 + 6);
+    expect(t.left + t.right).toBe(0);
+  });
+
+  it('detects noisy slate-grey bars (std above the old <4 black-only cut)', async () => {
+    const t = await detectLetterbox(
+      await canvas({ top: 110, bottom: 110 }, { barLevel: 58, barNoise: 8 }),
+    );
+    expect(t.top).toBeGreaterThanOrEqual(110);
+    expect(t.top).toBeLessThanOrEqual(110 + 6);
+    expect(t.bottom).toBeGreaterThanOrEqual(110);
+    expect(t.bottom).toBeLessThanOrEqual(110 + 6);
+  });
+
+  it('detects left/right pillarbox symmetrically', async () => {
+    const t = await detectLetterbox(await canvas({ left: 120, right: 120 }));
+    expect(t.left).toBeGreaterThanOrEqual(120);
+    expect(t.right).toBeGreaterThanOrEqual(120);
+    expect(t.top + t.bottom).toBe(0);
+  });
+
+  it('leaves an image without bars untouched', async () => {
+    expect(sum(await detectLetterbox(await canvas({})))).toBe(0);
+  });
+
+  it('does not trim a dark but textured top area', async () => {
+    const dark = await canvas(
+      {},
+      {
+        topOverride: (x, y, r) =>
+          y < 240 ? 14 + r() * 50 + Math.sin(x / 11) * 14 : 120 + Math.sin(x / 9) * 60 + r() * 40,
+      },
+    );
+    expect(sum(await detectLetterbox(dark))).toBe(0);
+  });
+
+  it('does not trim a smooth dark vignette without a hard edge', async () => {
+    const vignette = await canvas(
+      {},
+      { topOverride: (x, y) => Math.min(150, 4 + y * 0.35) + Math.sin(x / 40) * 2 },
+    );
+    expect(sum(await detectLetterbox(vignette))).toBe(0);
+  });
+
+  it('does not trim a tiny 1% bar', async () => {
+    expect(sum(await detectLetterbox(await canvas({ top: 7, bottom: 7 })))).toBe(0);
+  });
+
+  it('treats bars summing past 35% of the height as content', async () => {
+    expect(sum(await detectLetterbox(await canvas({ top: 150, bottom: 150 })))).toBe(0);
+  });
+
+  it('encodeCardOrigin removes the bars and still yields a 1280x720 JPEG', async () => {
+    const jpeg = await encodeCardOrigin(
+      await canvas({ top: 110, bottom: 110 }, { barLevel: 58, barNoise: 6 }),
+      { slug: 'letterbox-test' },
+    );
+    await expect(sharp(jpeg).metadata()).resolves.toMatchObject({
+      format: 'jpeg',
+      width: IMG_W,
+      height: IMG_H,
+    });
+    expect(sum(await detectLetterbox(jpeg))).toBe(0);
+  });
+
+  it('coverCropLossFraction is 0 at 16:9 and grows as the frame departs from it', () => {
+    expect(coverCropLossFraction(1280, 720)).toBeCloseTo(0, 5);
+    expect(coverCropLossFraction(1360, 548)).toBeGreaterThan(0.25);
+    expect(coverCropLossFraction(1000, 720)).toBeLessThan(0.25);
   });
 });
 
@@ -2231,5 +2608,365 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     );
     expect(concepts[0]?.setting).toBe('silent metal workshop before dawn');
     expect(concepts[1]?.subject).toBe('a loom rewinding one snapped thread to the last intact knot');
+  });
+});
+
+describe('OpenRouter flux-3-image-klein tier', () => {
+  const originalFetch = globalThis.fetch;
+  const imgBytes = Buffer.alloc(4096, 5);
+  const OR_URL = 'openrouter.ai/api/v1/images';
+  const input = { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'or-1' };
+
+  const orOk = (cost: number | null = 0.009) =>
+    new Response(
+      JSON.stringify({
+        data: [{ b64_json: imgBytes.toString('base64'), media_type: 'image/jpeg' }],
+        usage: cost === null ? {} : { cost },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  const cfOk = () =>
+    new Response(JSON.stringify({ result: { image: imgBytes.toString('base64') } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  const cfg = (extra: Record<string, unknown> = {}) => ({
+    geminiApiKey: '',
+    cloudflareAccountId: 'acc',
+    cloudflareApiToken: 'tok',
+    cloudflareRetrySleep: async () => {},
+    openRouterApiKey: 'sk-or-test',
+    openRouterRetrySleep: async () => {},
+    ...extra,
+  });
+  /** Routes by URL; anything unrouted (scene-director chat, catalog, ...) fails fast. */
+  function route(handlers: {
+    klein?: () => Response;
+    schnell?: () => Response;
+    or?: () => Response;
+  }) {
+    return vi.fn(async (url: RequestInfo | URL) => {
+      const u = String(url);
+      if (u.includes(OR_URL) && handlers.or) return handlers.or();
+      if (u.includes('flux-2-klein-9b') && handlers.klein) return handlers.klein();
+      if (u.includes('flux-1-schnell') && handlers.schnell) return handlers.schnell();
+      return new Response('fail', { status: 500 });
+    }) as typeof fetch;
+  }
+  const imageCalls = () =>
+    vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter((c) => {
+        const u = String(c[0]);
+        return u.includes(OR_URL) || u.includes('api.cloudflare.com');
+      })
+      .map((c) => String(c[0]));
+  const orCalls = () => imageCalls().filter((u) => u.includes(OR_URL));
+
+  /** Minimal supabase stub: the count query resolves `count`; inserts are captured. */
+  function fakeDb(count: number | null, inserts: unknown[] = []) {
+    const query = {
+      select: () => query,
+      eq: () => query,
+      gte: () =>
+        Promise.resolve(
+          count === null ? { count: null, error: { message: 'boom' } } : { count, error: null },
+        ),
+    };
+    return {
+      from: (table: string) => {
+        expect(table).toBe('generation_cost_events');
+        return {
+          ...query,
+          insert: (row: unknown) => {
+            inserts.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      },
+    } as unknown as PipelineDb;
+  }
+
+  beforeEach(() => {
+    resetCloudflareQuotaState();
+    resetOpenRouterImageState();
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    resetCloudflareQuotaState();
+    resetOpenRouterImageState();
+    vi.restoreAllMocks();
+  });
+
+  it('pins the provider and the price in the request body and appends the ban list to the prompt', () => {
+    const body = openRouterImageBody(DEFAULT_OPENROUTER_IMAGE_MODEL, 'A scene.') as {
+      prompt: string;
+    };
+    expect(body).toMatchObject({
+      model: 'black-forest-labs/flux-3-image-klein',
+      n: 1,
+      aspect_ratio: '16:9',
+      resolution: '1K',
+      provider: {
+        only: ['black-forest-labs'],
+        allow_fallbacks: false,
+        require_parameters: true,
+        max_price: { image: OPENROUTER_MAX_PRICE_USD },
+      },
+    });
+    expect(OPENROUTER_MAX_PRICE_USD).toBe(0.015);
+    expect(body.prompt).toBe(`A scene. ${OPENROUTER_NEGATIVE_SUFFIX}`);
+  });
+
+  it('sends that body to POST /api/v1/images with the bearer key when Cloudflare fails', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+
+    expect(result?.provider).toBe('openrouter');
+    expect(result?.model).toBe(DEFAULT_OPENROUTER_IMAGE_MODEL);
+    const call = vi.mocked(globalThis.fetch).mock.calls.find((c) => String(c[0]).includes(OR_URL));
+    expect(call?.[1]?.method).toBe('POST');
+    expect((call?.[1]?.headers as Record<string, string>).Authorization).toBe('Bearer sk-or-test');
+    const body = JSON.parse(String(call?.[1]?.body)) as Record<string, any>;
+    expect(body.provider).toEqual({
+      only: ['black-forest-labs'],
+      allow_fallbacks: false,
+      require_parameters: true,
+      max_price: { image: 0.015 },
+    });
+    expect(body.prompt).toContain('Scene:');
+    expect(body.prompt.endsWith(OPENROUTER_NEGATIVE_SUFFIX)).toBe(true);
+  });
+
+  it('honours OPENROUTER_IMAGE_MODEL via config', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(
+      input,
+      cfg({ openRouterImageModel: 'black-forest-labs/flux-3-image-pro' }),
+    );
+    expect(result?.model).toBe('black-forest-labs/flux-3-image-pro');
+    const call = vi.mocked(globalThis.fetch).mock.calls.find((c) => String(c[0]).includes(OR_URL));
+    expect(JSON.parse(String(call?.[1]?.body)).model).toBe('black-forest-labs/flux-3-image-pro');
+  });
+
+  it('ladder: Cloudflare klein first, then OpenRouter, and schnell never runs when OpenRouter succeeds', async () => {
+    globalThis.fetch = route({ or: () => orOk(), schnell: () => cfOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+
+    expect(result?.provider).toBe('openrouter');
+    const urls = imageCalls();
+    expect(urls[0]).toContain('flux-2-klein-9b');
+    expect(urls[1]).toContain(OR_URL);
+    expect(urls.some((u) => u.includes('flux-1-schnell'))).toBe(false);
+  });
+
+  it('does not touch OpenRouter when Cloudflare klein succeeds', async () => {
+    globalThis.fetch = route({ klein: () => cfOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result?.provider).toBe('cloudflare');
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it('falls to schnell as the last free tier only after OpenRouter fails', async () => {
+    globalThis.fetch = route({ or: () => new Response('boom', { status: 500 }), schnell: () => cfOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    const order = imageCalls().map((u) =>
+      u.includes(OR_URL) ? 'or' : u.includes('klein') ? 'klein' : 'schnell',
+    );
+    expect(order).toEqual(['klein', 'or', 'schnell']);
+  });
+
+  it('runs OpenRouter without Cloudflare credentials and returns null (not schnell) when it fails', async () => {
+    globalThis.fetch = route({ or: () => new Response('boom', { status: 500 }) });
+    const none = await generateEditorialIllustration(
+      input,
+      cfg({ cloudflareAccountId: undefined, cloudflareApiToken: undefined }),
+    );
+    expect(none).toBeNull();
+    expect(imageCalls().every((u) => u.includes(OR_URL))).toBe(true);
+  });
+
+  it('records the real usage.cost as a reported cost', async () => {
+    globalThis.fetch = route({ or: () => orOk(0.0091) });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result).toMatchObject({
+      estimatedCostUsd: 0.0091,
+      costSource: 'reported',
+      provider: 'openrouter',
+    });
+
+    const inserts: unknown[] = [];
+    await recordCardImageCostEvent(fakeDb(0, inserts), result as GeneratedImageResult, {
+      brief_id: 'b1',
+    });
+    expect(inserts).toEqual([
+      expect.objectContaining({
+        scope: 'daily',
+        kind: 'image',
+        provider: 'openrouter',
+        model: DEFAULT_OPENROUTER_IMAGE_MODEL,
+        cost_usd: 0.0091,
+        cost_source: 'reported',
+        metadata: expect.objectContaining({ brief_id: 'b1' }),
+      }),
+    ]);
+  });
+
+  it('falls back to a flagged estimate when the response has no usage.cost', async () => {
+    globalThis.fetch = route({ or: () => orOk(null) });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result).toMatchObject({ estimatedCostUsd: 0.009, costSource: 'estimated' });
+  });
+
+  it('rejects a response whose usage.cost is above the ceiling and latches the tier off', async () => {
+    globalThis.fetch = route({ or: () => orOk(OPENROUTER_MAX_ACCEPTED_COST_USD + 0.001) });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result).toBeNull();
+    expect(openRouterImageLatchReason()).toBe('cost_above_ceiling');
+
+    await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, cfg());
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('latches off for the rest of the process on HTTP 402 (no credits)', async () => {
+    globalThis.fetch = route({
+      or: () => new Response('{"error":{"message":"Insufficient credits"}}', { status: 402 }),
+    });
+    const first = await generateEditorialIllustration(input, cfg());
+    expect(first).toBeNull();
+    expect(openRouterImageLatchReason()).toBe('http_402');
+
+    await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, cfg());
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it.each([401, 403])('latches off on HTTP %i', async (status) => {
+    globalThis.fetch = route({ or: () => new Response('no', { status }) });
+    await generateEditorialIllustration(input, cfg());
+    expect(openRouterImageLatchReason()).toBe(`http_${status}`);
+  });
+
+  it('does not latch on a plain 500 and tries again on the next image', async () => {
+    globalThis.fetch = route({ or: () => new Response('boom', { status: 500 }) });
+    await generateEditorialIllustration(input, cfg());
+    await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, cfg());
+    expect(openRouterImageLatchReason()).toBeNull();
+    expect(orCalls()).toHaveLength(2);
+  });
+
+  it('retries a 429 exactly once, honouring Retry-After capped at 20 s', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = route({
+      or: () => new Response('slow', { status: 429, headers: { 'retry-after': '600' } }),
+    });
+    const result = await generateEditorialIllustration(input, cfg({ openRouterRetrySleep: sleep }));
+
+    expect(result).toBeNull();
+    expect(orCalls()).toHaveLength(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(sleep).toHaveBeenCalledWith(20_000);
+    expect(openRouterImageLatchReason()).toBeNull();
+  });
+
+  it('succeeds when the single 429 retry works', async () => {
+    let n = 0;
+    globalThis.fetch = route({
+      or: () =>
+        ++n === 1 ? new Response('slow', { status: 429, headers: { 'retry-after': '2' } }) : orOk(),
+    });
+    const sleep = vi.fn(async (_ms: number) => {});
+    const result = await generateEditorialIllustration(input, cfg({ openRouterRetrySleep: sleep }));
+    expect(result?.provider).toBe('openrouter');
+    expect(sleep).toHaveBeenCalledWith(2000);
+  });
+
+  it('skips the tier silently when there is no OpenRouter key', async () => {
+    globalThis.fetch = route({});
+    const result = await generateEditorialIllustration(input, cfg({ openRouterApiKey: undefined }));
+    expect(result).toBeNull();
+    expect(orCalls()).toHaveLength(0);
+    const blank = await generateEditorialIllustration(input, cfg({ openRouterApiKey: '  ' }));
+    expect(blank).toBeNull();
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it("skips the tier when today's ledger count has reached the daily cap", async () => {
+    globalThis.fetch = route({ or: () => orOk(), schnell: () => cfOk() });
+    const result = await generateEditorialIllustration(
+      input,
+      cfg({ db: fakeDb(20), openRouterImageDailyCap: 20 }),
+    );
+    // capped -> straight to the last free tier
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it('defaults the cap to 20 and still generates at 19 ledger rows', async () => {
+    expect(resolveOpenRouterImageDailyCap(undefined)).toBe(20);
+    expect(resolveOpenRouterImageDailyCap(Number.NaN)).toBe(20);
+    expect(resolveOpenRouterImageDailyCap(-3)).toBe(20);
+    expect(resolveOpenRouterImageDailyCap(0)).toBe(0);
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(input, cfg({ db: fakeDb(19) }));
+    expect(result?.provider).toBe('openrouter');
+    const capped = await generateEditorialIllustration(
+      { ...input, seedKey: 'or-2' },
+      cfg({ db: fakeDb(20) }),
+    );
+    expect(capped).toBeNull();
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('cap 0 disables the tier', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(input, cfg({ openRouterImageDailyCap: 0 }));
+    expect(result).toBeNull();
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it('without a db the cap is enforced per process', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const c = cfg({ openRouterImageDailyCap: 2 });
+    const a = await generateEditorialIllustration(input, c);
+    const b = await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, c);
+    const third = await generateEditorialIllustration({ ...input, seedKey: 'or-3' }, c);
+    expect([a?.provider, b?.provider, third]).toEqual(['openrouter', 'openrouter', null]);
+    expect(orCalls()).toHaveLength(2);
+  });
+
+  it('when the ledger count query fails it falls back to the process counter', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const c = cfg({ db: fakeDb(null), openRouterImageDailyCap: 1 });
+    expect((await generateEditorialIllustration(input, c))?.provider).toBe('openrouter');
+    expect(await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, c)).toBeNull();
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('counts in-flight parallel calls against the cap', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const c = cfg({ openRouterImageDailyCap: 1 });
+    const results = await Promise.all([
+      generateEditorialIllustration(input, c),
+      generateEditorialIllustration({ ...input, seedKey: 'or-2' }, c),
+    ]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('batch callers keep going while only Cloudflare is exhausted but OpenRouter is usable', async () => {
+    const quota = () =>
+      new Response(JSON.stringify({ errors: [{ code: 4006, message: 'daily free allocation' }] }), {
+        status: 429,
+        headers: { 'content-type': 'application/json' },
+      });
+    globalThis.fetch = route({ klein: quota, or: () => orOk() });
+    const c = cfg();
+    const first = await generateEditorialIllustration(input, c);
+    expect(first?.provider).toBe('openrouter');
+    expect(cloudflareQuotaExhausted()).toBe(true);
+    expect(cardImageProvidersExhausted(c)).toBe(false);
+    expect(cardImageProvidersExhausted({ ...c, openRouterApiKey: undefined })).toBe(true);
   });
 });

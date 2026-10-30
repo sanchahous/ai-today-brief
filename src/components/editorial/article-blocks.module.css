@@ -1,0 +1,763 @@
+/*
+ * Article body blocks (ATB A8+ "colour pass").
+ *
+ * One system for every long-form block: the accent comes from the ancestor's
+ * `--article-accent` (set to the story's category colour by StoryBody) and falls
+ * back to the brand accent. Category colours are already theme-aware tokens
+ * (pastels on Night, deep tones on Day), so tints are built with color-mix over
+ * the theme surfaces and the ink variant mixes toward --text for AA contrast.
+ */
+
+.block {
+  --a: var(--article-accent, var(--accent));
+  /* Readable text/glyph colour for the accent: stays close to the hue, but
+     leans on --text so it never sinks into the surface in either theme. */
+  --a-ink: color-mix(in srgb, var(--a) 80%, var(--text));
+  --a-tint: color-mix(in srgb, var(--a) 16%, var(--surface));
+  --a-edge: color-mix(in srgb, var(--a) 48%, var(--line));
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Shared small pieces ─────────────────────────────────────────── */
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-eyebrow);
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--a-ink);
+}
+
+.iconDot {
+  display: inline-grid;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--a) 30%, transparent);
+  color: var(--a-ink);
+}
+
+/* ── Callout ("Чому це важливо", editor take, definition, limits) ── */
+
+.callout {
+  position: relative;
+  margin: 2rem 0;
+  padding: 1.15rem 1.25rem 1.25rem 1.4rem;
+  border: 1px solid var(--a-edge);
+  border-left: 5px solid var(--a);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--a) 26%, var(--surface)), color-mix(in srgb, var(--a) 11%, var(--surface)) 82%),
+    var(--surface);
+  scroll-margin-top: calc(var(--header-h, 4rem) + 2.5rem);
+}
+
+.calloutEditor {
+  --a: var(--claret);
+}
+
+.calloutDefinition {
+  --a: var(--signal);
+}
+
+.calloutLimits {
+  --a: var(--warning);
+}
+
+.calloutHead {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.65rem;
+}
+
+.calloutBody {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.calloutBody > :last-child {
+  margin-bottom: 0;
+}
+
+.calloutNote {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── TL;DR / key takeaways ────────────────────────────────────────── */
+
+.takeaways {
+  margin: 2rem 0;
+  padding: 1.15rem 1.25rem 1.35rem;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--a);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--a) 16%, var(--raised)), color-mix(in srgb, var(--a) 5%, var(--surface)) 75%);
+}
+
+.takeawaysHead {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1.1rem;
+}
+
+.takeawaysList {
+  display: grid;
+  gap: 1.05rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.takeawaysItem {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: 0.9rem;
+  color: var(--text);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+/* Vector thread joining the badges — reads as one ordered sequence. */
+.takeawaysItem:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 2.45rem;
+  bottom: -0.85rem;
+  left: calc(1.125rem - 1px);
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--a) 45%, transparent), color-mix(in srgb, var(--a) 8%, transparent));
+}
+
+.takeawaysNum {
+  display: inline-grid;
+  /* Fixed box + nowrap: two-digit counters ("01") must never wrap or shrink. */
+  flex: none;
+  width: 2.25rem;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1.5px solid color-mix(in srgb, var(--a) 55%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--a) 28%, var(--surface));
+  color: var(--a-ink);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.takeawaysText {
+  min-width: 0;
+  padding-top: 0.28rem;
+}
+
+/* ── Key facts: stat tiles ────────────────────────────────────────── */
+
+.facts {
+  margin: 2rem 0;
+  overflow: hidden;
+  border: 1px solid var(--a-edge);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.factsHead {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid var(--a-edge);
+  background: color-mix(in srgb, var(--a) 26%, var(--surface));
+}
+
+.factsBody {
+  padding: 1rem;
+}
+
+.factsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.factsVisual {
+  margin: 0 0 0.9rem;
+}
+
+.fact {
+  position: relative;
+  min-width: 0;
+  padding: 0.95rem 1rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--a) 22%, var(--line-soft));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--a) 7%, var(--raised));
+}
+
+/* Accent tick — the stat tile's "anchor". */
+.fact::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 1rem;
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 0 0 4px 4px;
+  background: var(--a);
+}
+
+.factLabel {
+  margin: 0 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.factValue {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.1875rem;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* ── Section label (h2 eyebrow: "Спробуй", "Джерела" …) ───────────── */
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 2.75rem 0 1rem;
+  scroll-margin-top: calc(var(--header-h, 4rem) + 2.5rem);
+}
+
+.label::before {
+  content: '';
+  flex: none;
+  width: 1.25rem;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--a);
+}
+
+.label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--a-edge), transparent);
+}
+
+.labelText {
+  margin: 0;
+  color: var(--a-ink);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-eyebrow);
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+/* ── Section divider ornament ─────────────────────────────────────── */
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 2.75rem 0 0;
+  color: var(--a);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
+.divider::before {
+  background: linear-gradient(90deg, transparent, var(--a-edge));
+}
+
+.divider::after {
+  background: linear-gradient(270deg, transparent, var(--a-edge));
+}
+
+.divider svg {
+  flex: none;
+  width: 2.75rem;
+  height: 1.1rem;
+}
+
+/* ── Prose (markdown body) ────────────────────────────────────────── */
+
+.prose {
+  color: var(--text);
+}
+
+.prose p {
+  margin: 0 0 1.2rem;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose strong {
+  color: var(--text);
+  font-weight: 650;
+  /* Marker-pen underlay: gives bold phrases a colour anchor without shouting. */
+  background: linear-gradient(transparent 58%, color-mix(in srgb, var(--a) 26%, transparent) 58%);
+}
+
+.prose a {
+  color: var(--a-ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--a) 60%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+  transition: background-color var(--duration-fast) ease, text-decoration-color var(--duration-fast) ease;
+}
+
+.prose a:hover {
+  background: color-mix(in srgb, var(--a) 14%, transparent);
+  text-decoration-color: var(--a);
+}
+
+.prose :not(pre) > code {
+  padding: 0.08em 0.38em;
+  border: 1px solid color-mix(in srgb, var(--a) 28%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--a) 11%, var(--surface));
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.h2 {
+  margin: 0 0 1rem;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 1.25rem + 0.9vw, 1.85rem);
+  font-weight: 600;
+  letter-spacing: var(--tracking-heading);
+  line-height: 1.2;
+  scroll-margin-top: calc(var(--header-h, 4rem) + 2.5rem);
+}
+
+.h2:first-child {
+  margin-top: 0;
+}
+
+.h2Gap {
+  margin-top: 1.9rem;
+}
+
+.h2Index {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 0.55rem;
+  color: var(--a-ink);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-eyebrow);
+  white-space: nowrap;
+}
+
+.h2Index::after {
+  content: '';
+  width: 4rem;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--a), transparent);
+}
+
+.h3 {
+  margin: 2rem 0 0.7rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--a);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: var(--tracking-heading);
+  line-height: 1.3;
+  scroll-margin-top: calc(var(--header-h, 4rem) + 2.5rem);
+}
+
+.list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 1.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.list > li {
+  position: relative;
+  padding-left: 1.6rem;
+}
+
+/* Diamond bullet — echoes the angular strokes of the brand mark. */
+.list > li::before {
+  content: '';
+  position: absolute;
+  top: 0.62em;
+  left: 0.2rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 1px;
+  background: var(--a);
+  transform: rotate(45deg);
+}
+
+/* ── Code ─────────────────────────────────────────────────────────── */
+
+.code {
+  /* Code reads on the stage surface in both themes (Day keeps --stage dark), so
+     the palette below is fixed light-on-dark rather than theme-derived. */
+  margin: 1.6rem 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--a) 22%, var(--code-line));
+  border-radius: var(--radius-card);
+  background: var(--stage);
+  color: var(--code-ink);
+  box-shadow: var(--shadow-1);
+}
+
+.codeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.95rem;
+  border-bottom: 1px solid var(--code-bar-line);
+  background: var(--code-bar-bg);
+  color: var(--code-ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.codeLang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.codeLang::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--a) 55%, var(--code-dot-mix));
+}
+
+.codeScroll {
+  overflow-x: auto;
+}
+
+.codePre {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  background: none;
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+
+.codePre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+/* ── Table ────────────────────────────────────────────────────────── */
+
+.tableWrap {
+  margin: 1.75rem 0;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--a-edge);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+
+.tableWrap thead th {
+  border-bottom: 2px solid color-mix(in srgb, var(--a) 55%, transparent);
+  background: color-mix(in srgb, var(--a) 16%, var(--surface));
+  color: var(--a-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tableWrap tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--a) 4%, var(--raised));
+}
+
+.tableWrap tbody tr:last-child td,
+.tableWrap tbody tr:last-child th {
+  border-bottom: 0;
+}
+
+.tableWrap tbody th {
+  font-weight: 650;
+}
+
+/* ── When / when not ──────────────────────────────────────────────── */
+
+.when {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.whenCard {
+  --a: var(--success);
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--a) 38%, var(--line));
+  border-top: 3px solid var(--a);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--a) 9%, var(--surface));
+}
+
+.whenAvoid {
+  --a: var(--error);
+}
+
+.whenTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.8rem;
+}
+
+.whenTitle .eyebrow {
+  color: color-mix(in srgb, var(--a) 85%, var(--text));
+}
+
+.whenList {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+  font-size: 0.975rem;
+  line-height: 1.55;
+}
+
+.whenList > li {
+  position: relative;
+  padding-left: 1.35rem;
+}
+
+.whenList > li::before {
+  content: '';
+  position: absolute;
+  top: 0.62em;
+  left: 0.15rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--a);
+}
+
+/* ── Action items ─────────────────────────────────────────────────── */
+
+.actions {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.action {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.0125rem;
+  line-height: 1.55;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+.action:hover {
+  border-color: var(--a-edge);
+  background: var(--a-tint);
+}
+
+.actionIcon {
+  display: inline-grid;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: 0.05rem;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--a) 20%, transparent);
+  color: var(--a-ink);
+}
+
+/* ── Quotes (community reactions, pull-quotes) ────────────────────── */
+
+.quotes {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quote {
+  position: relative;
+  margin: 0;
+  padding: 0.2rem 0 0.2rem 3.1rem;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.quote::before {
+  content: '\201C';
+  position: absolute;
+  top: -0.45rem;
+  left: 0;
+  color: var(--a);
+  font-family: var(--font-display);
+  font-size: 4.25rem;
+  font-style: normal;
+  line-height: 1;
+}
+
+.quoteBy {
+  margin: 0.5rem 0 0;
+  padding-left: 3.1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.quoteBy a {
+  display: inline-flex;
+  min-height: var(--touch-target-min);
+  align-items: center;
+  color: var(--a-ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--a) 55%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+/* ── Sources ──────────────────────────────────────────────────────── */
+
+.sources {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: src;
+}
+
+.source {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  counter-increment: src;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.source::before {
+  content: counter(src, decimal-leading-zero);
+  flex: none;
+  min-width: 1.75rem;
+  color: var(--a-ink);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.source a {
+  display: inline-flex;
+  min-height: var(--touch-target-min);
+  align-items: center;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--a) 55%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.22em;
+}
+
+.source a:hover {
+  color: var(--a-ink);
+  text-decoration-color: var(--a);
+}
+
+@media (max-width: 40rem) {
+  .callout,
+  .takeaways {
+    padding-inline: 1rem;
+  }
+
+  .tableWrap th,
+  .tableWrap td {
+    padding: 0.65rem 0.8rem;
+  }
+}

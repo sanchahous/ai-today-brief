@@ -11,7 +11,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code
 library 2026-08-23, daily production cover 2026-08-24, image-only QA Likert 2026-08-25
-Last updated: 2026-10-27
+Last updated: 2026-10-30
 
 ---
 
@@ -33,6 +33,15 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    post-merge review of PR #191 (2026-08-07) it also emits a `warn` log with the role and the
    error — the silent fallback gave no signal that the art director had stopped running at all.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
+   **Scene output contract (2026-10-29):** the daily director is asked for a one-key JSON object
+   `{"scene": "..."}` and the Gemini adapter is pinned to a one-field `scene` schema
+   (`withGeminiCallConfig`). Before this fix the Gemini adapter defaulted to the full bilingual
+   brief schema and answered every scene request with a whole `{"title_en":…,"items":[…]}`
+   brief (~4.5k chars, ~30 s, ~3k output tokens) that was truncated to 320 chars and pasted into
+   the FLUX prompt as the "scene". `cleanSceneText` now returns an empty string for any JSON
+   object without a known scene key, so such a reply falls back to the keyword scene instead of
+   reaching the image model. (source: live probe of `generateWithRegistry('daily.card_image_scene')`
+   2026-10-29; `pipeline/card-image.ts`)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate semantic house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
    `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v6`**
@@ -65,8 +74,65 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 3. **Image** — Cloudflare Workers AI default
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).
-   Fallback ladder: Pollinations → procedural **duotone**
-   (`src/lib/card/duotone.ts`). (source: PR #169, #171, `pipeline/card-image.ts`)
+   Ladder (since 2026-10-30, ATB-91): Gemini (opt-in) → Cloudflare klein → **OpenRouter
+   `black-forest-labs/flux-3-image-klein`** (paid, daily-capped, see below) → Cloudflare schnell
+   (last free tier) → **null** → branded procedural **duotone** (`src/lib/card/duotone.ts`). The keyless Pollinations tier was
+   **removed entirely on 2026-10-29** (provider function, `allowPollinations` option and
+   `'pollinations'` provider value deleted; prod had 0 `brief_items.card_image_url` rows
+   pointing at pollinations, so no image-host allowlist was involved): the anonymous
+   endpoint served a small "sana" model regardless of `model=flux`, added a watermark,
+   ignored in-prompt "never a face" negations and was limited to 1 image / 45 s / IP, so
+   every CI fallback between 2026-08-30 and 2026-10-28 produced an off-topic AI portrait
+   (46 items). The replacement is the OpenRouter flux-3-image-klein tier (owner decision
+   2026-10-30). A failed generation now leaves `card_image_url` null and the next `fillCardImages` run
+   retries it. (source: PR #169, #171, `pipeline/card-image.ts`; live check
+   `generation_cost_events` + `storage.objects` + Pollinations response header
+   `x-model-used: sana`, 2026-10-29)
+
+   **Cloudflare failure modes (live check 2026-10-29):**
+   - **HTTP 429, code 4006** — "you have used up your daily free allocation of 10,000 neurons".
+     This is the Workers AI *free-plan daily quota* (reset 00:00 UTC), not a per-minute rate
+     limit, and klein and schnell share the one pool; klein costs roughly 1.4k neurons per
+     1280×720 image (estimate from $0.015/image), so the free tier covers only ~7 klein covers a
+     day, while schnell is ~10× cheaper (estimate, ~90/day). Once it is spent *every* Cloudflare
+     call fails until midnight UTC, which is why CI runs used to fall through to the
+     (now removed) Pollinations tier. Code now classifies 4006 as a quota: no retry, no pointless schnell spillover, a
+     process-local latch (`cloudflareQuotaExhausted`) skips later Cloudflare calls, and batch
+     loops (`fillCardImages`, `regenerate-card-image.ts`) stop before paying for scene-director
+     calls. The item keeps `card_image_url = null` and the next run retries it. A plain
+     per-minute 429 is retried at most twice (2 s, 5 s, or `Retry-After` capped at 20 s).
+     Real fix for volume: Workers Paid plan, or `CLOUDFLARE_IMAGE_MODEL` set to schnell.
+   - **HTTP 400 on schnell** — the old JSON body sent `seed`; flux-1-schnell's schema is strict
+     (`prompt` ≤ 2048 chars + `steps` 1–8 only) and answered "Additional or unevaluated
+     properties '/seed' at '/' not allowed" (code 5006), so the schnell spillover never worked.
+     `seed` is no longer sent and the prompt is clamped to 2048 chars.
+   (source: direct API calls 2026-10-29; `pipeline/card-image.ts` `generateCloudflare`,
+   `cloudflareJsonBody`)
+
+   **OpenRouter image tier (2026-10-30, owner-chosen):** `POST https://openrouter.ai/api/v1/images`
+   with `model = black-forest-labs/flux-3-image-klein`, `aspect_ratio 16:9`, `resolution 1K`,
+   `n 1`. Trial 2026-10-30: 10/10 HTTP 200, 1360×768 JPEG, ~7 s, $0.009/image (`usage.cost`),
+   no people/text. The API has no negative-prompt field, so the ban list
+   "No people, no faces, no portraits, no hands, no text, no letters, no logos." is appended to
+   the prompt text. This is the only **paid** tier, so it is fenced:
+   - request pins `provider: {only: ["black-forest-labs"], allow_fallbacks: false,
+     require_parameters: true, max_price: {image: 0.015}}` — a re-route can never bill more;
+   - **daily cap** `OPENROUTER_IMAGE_DAILY_CAP` (default **20** images per UTC day, `0` = off),
+     counted from `generation_cost_events` (`kind='image'`, `provider='openrouter'`, since
+     00:00 UTC, any scope) and max'd with an in-process reservation counter (parallel callers
+     reserve before the await; if the ledger count query fails the process counter alone applies);
+   - HTTP **402** (no credits) / **401** / **403** latch the tier off for the rest of the process
+     (`openRouterImageLatchReason`); **429** retries once (`Retry-After` capped at 20 s);
+     60 s timeout; any other error just fails the tier (next image tries again);
+   - a response with `usage.cost > $0.02` is discarded and latches the tier off;
+   - every success is ledgered with the real `usage.cost` (`cost_source='reported'`) via
+     `recordCardImageCostEvent`, used by the daily pipeline, both backfill scripts and
+     `regenerate-card-image.ts` — a caller that skips it hides spend from the cap;
+   - no `OPEN_ROUTER_API_KEY` ⇒ tier skipped silently. The model has no seed.
+   Caveat: the cap sees only what reaches the ledger; the OpenRouter dashboard stays the
+   source of truth for dollars. The account key itself has no per-key limit.
+   (source: OpenRouter docs `/guides/overview/multimodal/image-generation` 2026-10-30;
+   trial run 2026-10-30; `pipeline/card-image.ts` `generateOpenRouter`)
 4. **Store** — `encodeCardOrigin` cover-resize to 1280×720, flatten alpha onto
    `#071019`, JPEG q82 mozjpeg progressive → `${slug}.jpg` (`image/jpeg`) in the
    public `card-images` bucket → `brief_items.card_image_url`. JPEG, not WebP,
@@ -105,6 +171,10 @@ $5/month spend, semantic QA, manual source/editor choice і шість social dr
 (source: owner session 2026-08-24; `pipeline/card-image.ts`;
 `pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-openrouter.ts`)
 
+### Letterbox trim (2026-10-30)
+
+OpenRouter `flux-3-image-klein` sometimes returns a 16:9 canvas with uniform black or slate-grey bars top and bottom (3 of 27 in one regen batch, 2026-10-30; one sample had the scene bleeding faintly into the bar). `encodeCardOrigin` — the single place every provider's bytes pass through — now calls `detectLetterbox` first: a row/column is bar when ≥70% of its pixels are within ±12 luminance of the edge line's median, the run must be ≥2% of the axis and end at a hard edge (mean pixel step ≥10, which rejects smooth vignettes), bars summing to >35% of an axis are treated as content, and 2px extra is cut to drop the JPEG seam. The remainder is then cover-cropped to 1280×720; a warn is logged if that crop would discard >25% of the frame. Left/right pillarbox is handled the same way. Verified on the 27 raw samples: exactly the 3 barred images trimmed, 24 clean ones untouched. (source: ATB-91, `pipeline/card-image.ts` `detectLetterbox`)
+
 ## Current weekly acceptance rule (2026-08-23)
 
 For a new weekly prompt the desired primary image is not a compressed visual version of every
@@ -126,8 +196,14 @@ CLOUDFLARE_ACCOUNT_ID=…
 CLOUDFLARE_API_TOKEN=…   # Workers AI
 # optional override (default flux-2-klein-9b):
 # CLOUDFLARE_IMAGE_MODEL=@cf/black-forest-labs/flux-2-klein-9b
+# free-plan alternative (~10x cheaper in neurons, lower quality):
+# CLOUDFLARE_IMAGE_MODEL=@cf/black-forest-labs/flux-1-schnell
 # CLOUDFLARE_IMAGE_USD_FIRST_MP=0.015
 # CLOUDFLARE_IMAGE_USD_NEXT_MP=0.002
+# Paid OpenRouter image tier (uses the existing key; no key => skipped):
+OPEN_ROUTER_API_KEY=…
+# OPENROUTER_IMAGE_MODEL=black-forest-labs/flux-3-image-klein
+# OPENROUTER_IMAGE_DAILY_CAP=20   # images per UTC day; 0 disables the tier
 ```
 
 Unset account/token → generation step skipped; branded duotone fallback renders.

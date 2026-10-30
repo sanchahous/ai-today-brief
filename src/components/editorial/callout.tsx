@@ -1,17 +1,29 @@
 import type { ReactNode } from 'react';
 import type { Lang } from '@/lib/site';
+import { CheckIcon, SparkleIcon } from '@/components/icons';
+import styles from './article-blocks.module.css';
 
 export type CalloutVariant = 'why-it-matters' | 'definition' | 'editor-take' | 'limits';
+
+const VARIANT_CLASS: Record<CalloutVariant, string> = {
+  'why-it-matters': '',
+  definition: styles.calloutDefinition,
+  'editor-take': styles.calloutEditor,
+  limits: styles.calloutLimits,
+};
 
 export function Callout({
   lang,
   variant,
   title,
+  headingLevel = 3,
   children,
 }: {
   lang: Lang;
   variant: CalloutVariant;
   title?: string;
+  /** Document-outline level of the title; the item page's sections use 2. */
+  headingLevel?: 2 | 3;
   children: ReactNode;
 }) {
   const getTitle = () => {
@@ -29,26 +41,25 @@ export function Callout({
     }
   };
 
-  const isEditorTake = variant === 'editor-take';
-  const accentBar =
-    variant === 'limits'
-      ? 'border-l-warning'
-      : variant === 'editor-take'
-        ? 'border-l-accent'
-        : 'border-l-accent';
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
+  const heading = getTitle();
 
   return (
     <aside
-      className={`border-line bg-surface my-6 min-w-0 max-w-full scroll-mt-[calc(var(--header-h,4rem)+2.5rem)] rounded-r-[var(--radius-md)] border border-l-[3px] py-5 pr-5 pl-[calc(1.25rem-3px)] sm:py-6 sm:pr-6 ${accentBar}`}
+      aria-label={heading}
+      className={`${styles.block} ${styles.callout} ${VARIANT_CLASS[variant]}`}
     >
-      <div className="text-text font-serif text-lg font-semibold">{getTitle()}</div>
-      <div className="reading-copy text-text mt-2 max-w-none text-[length:var(--text-lg)]">
-        {children}
+      <div className={styles.calloutHead}>
+        <span className={styles.iconDot} aria-hidden>
+          {variant === 'definition' ? <CheckIcon size={15} /> : <SparkleIcon size={15} />}
+        </span>
+        <Heading className={styles.eyebrow}>{heading}</Heading>
       </div>
-      {isEditorTake && (
-        <div className="text-muted mt-3 font-mono text-2xs tracking-[0.08em] uppercase">
+      <div className={styles.calloutBody}>{children}</div>
+      {variant === 'editor-take' && (
+        <p className={styles.calloutNote}>
           {lang === 'uk' ? 'Редакційна думка' : 'Opinion disclaimer'}
-        </div>
+        </p>
       )}
     </aside>
   );

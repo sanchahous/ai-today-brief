@@ -1,24 +1,36 @@
 import type { Lang } from '@/lib/site';
+import { ListIcon } from '@/components/icons';
+import styles from './article-blocks.module.css';
 
-export function Takeaways({ lang, items }: { lang: Lang; items: string[] }) {
-  const title = lang === 'uk' ? 'Головне' : 'Key Takeaways';
+export function Takeaways({
+  lang,
+  items,
+  title,
+  headingLevel = 3,
+}: {
+  lang: Lang;
+  items: string[];
+  title?: string;
+  headingLevel?: 2 | 3;
+}) {
+  const heading = title ?? (lang === 'uk' ? 'Головне' : 'Key Takeaways');
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
 
   return (
-    <section className="border-line bg-surface my-8 min-w-0 max-w-full overflow-x-clip rounded-[var(--radius-md)] border px-5 py-6 sm:px-6">
-      <h3 className="text-text m-0 font-serif text-xl font-semibold">{title}</h3>
-      <ol className="m-0 mt-3 list-none space-y-0 p-0">
+    <section aria-label={heading} className={`${styles.block} ${styles.takeaways}`}>
+      <div className={styles.takeawaysHead}>
+        <span className={styles.iconDot} aria-hidden>
+          <ListIcon size={15} />
+        </span>
+        <Heading className={styles.eyebrow}>{heading}</Heading>
+      </div>
+      <ol className={styles.takeawaysList}>
         {items.map((item, i) => (
-          <li
-            key={i}
-            className="border-line grid grid-cols-[44px_minmax(0,1fr)] gap-3 border-t py-4"
-          >
-            <span
-              aria-hidden
-              className="text-accent font-serif text-xl leading-none tabular-nums"
-            >
-              {i + 1}
+          <li key={i} className={styles.takeawaysItem}>
+            <span aria-hidden className={styles.takeawaysNum}>
+              {String(i + 1).padStart(2, '0')}
             </span>
-            <span className="text-text m-0 text-base leading-[1.6]">{item}</span>
+            <span className={styles.takeawaysText}>{item}</span>
           </li>
         ))}
       </ol>

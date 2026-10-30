@@ -14,7 +14,11 @@
  * once you've confirmed nothing external still links to the .png path.
  */
 import { loadPipelineConfig } from '../config';
-import { fillCardImages, reencodeStoredCardOrigins } from '../card-image';
+import {
+  fillCardImages,
+  recordCardImageCostEvent,
+  reencodeStoredCardOrigins,
+} from '../card-image';
 import { createServiceClient, type PipelineDb } from '../db';
 import { logError, logEvent } from '../log';
 
@@ -84,6 +88,9 @@ async function main(): Promise<void> {
       geminiImageModel: config.geminiImageModel,
       cloudflareImageModel: config.cloudflareImageModel,
       openRouterApiKey: config.openRouterApiKey,
+      openRouterImageModel: config.openRouterImageModel,
+      openRouterImageDailyCap: config.openRouterImageDailyCap,
+      onImageGenerated: (image) => recordCardImageCostEvent(db, image, { brief_id: briefId, source: 'backfill' }),
     });
     generated += stats.generated;
     failed += stats.failed;
