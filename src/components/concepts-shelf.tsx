@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   SHELF_KIND_ORDER,
@@ -15,7 +15,8 @@ import type { Lang } from '@/lib/site';
 import { CheckIcon, SearchIcon } from '@/components/icons';
 import styles from './concepts.module.css';
 
-const LATIN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+/** Sticky header (visible part) + jump bar + breathing room; sections above this line count as "passed". */
+const ACTIVE_TOP_PX = 136;
 
 function letterOf(name: string): string {
   const ch = name.trim().charAt(0).toUpperCase();
@@ -60,6 +61,8 @@ export function ConceptsShelf({ lang, concepts }: { lang: Lang; concepts: Concep
   const query = filter.trim().toLowerCase();
   const kinds = useMemo(() => presentKinds(concepts), [concepts]);
   const groups = useMemo(() => groupByLetter(concepts), [concepts]);
+  const [active, setActive] = useState<string | null>(null);
+  const barRef = useRef<HTMLUListElement>(null);
 
   let visible = 0;
   const groupVisible = new Map<string, number>();
@@ -75,11 +78,36 @@ export function ConceptsShelf({ lang, concepts }: { lang: Lang; concepts: Concep
     visible += count;
   }
 
-  const letters = new Set(groups.map((group) => group.letter));
-  const extraLetters = [...letters]
-    .filter((letter) => !LATIN.includes(letter))
-    .sort((a, b) => a.localeCompare(b));
-  const alphabet = [...LATIN, ...extraLetters];
+  useEffect(() => {
+    const sections = groups
+      .map((group) => document.getElementById(`letter-${group.letter}`))
+      .filter((el): el is HTMLElement => el !== null);
+    if (sections.length === 0 || typeof IntersectionObserver === 'undefined') return;
+    const inView = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const letter = entry.target.id.replace('letter-', '');
+          if (entry.isIntersecting) inView.add(letter);
+          else inView.delete(letter);
+        }
+        // The band under the jump bar is narrow, so the last section touching it is the one being read.
+        const current = groups.findLast((group) => inView.has(group.letter));
+        if (current) setActive(current.letter);
+      },
+      { rootMargin: `-${ACTIVE_TOP_PX}px 0px -70% 0px` },
+    );
+    for (const section of sections) observer.observe(section);
+    return () => observer.disconnect();
+  }, [groups]);
+
+  useEffect(() => {
+    const bar = barRef.current;
+    const link = active ? bar?.querySelector<HTMLElement>(`[data-letter="${active}"]`) : null;
+    if (!bar || !link) return;
+    bar.scrollTo({ left: link.offsetLeft - (bar.clientWidth - link.offsetWidth) / 2 });
+  }, [active]);
+
   const forms = {
     one: t.conceptsEntryOne,
     few: t.conceptsEntryFew,
@@ -142,18 +170,32 @@ export function ConceptsShelf({ lang, concepts }: { lang: Lang; concepts: Concep
         </div>
       </div>
       <nav className={styles.az} aria-label={t.conceptsJumpLetter}>
-        <ul>
-          {alphabet.map((letter) =>
-            letters.has(letter) ? (
+        <ul ref={barRef}>
+          {groups.map(({ letter }) => {
+            const count = groupVisible.get(letter) ?? 0;
+            return (
               <li key={letter}>
-                <a href={`#letter-${letter}`}>{letter}</a>
+                {count > 0 ? (
+                  <a
+                    href={`#letter-${letter}`}
+                    className={styles.azItem}
+                    data-letter={letter}
+                    aria-current={active === letter ? 'location' : undefined}
+                    aria-label={`${letter}: ${countPhrase(count, lang, forms)}`}
+                  >
+                    {letter}
+                    <span className={styles.azCount} aria-hidden="true">
+                      {count}
+                    </span>
+                  </a>
+                ) : (
+                  <span className={styles.azItem} aria-hidden="true">
+                    {letter}
+                  </span>
+                )}
               </li>
-            ) : (
-              <li key={letter}>
-                <span aria-hidden="true">{letter}</span>
-              </li>
-            ),
-          )}
+            );
+          })}
         </ul>
       </nav>
       <p className={styles.countLine} id="shelf-count" role="status" aria-live="polite">

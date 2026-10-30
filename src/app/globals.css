@@ -127,6 +127,8 @@
   --tracking-eyebrow: 0.13em;
   --measure: 68ch;
   --header-h: 76px;
+  /* Visible header height once scrolled: on tablet+ the 132px header slides up by 76px (top:-4.75rem). */
+  --header-stuck-h: 76px;
   --bg: #171918;
   --bg-deep: #131514;
   --stage: #0e100f;
@@ -1131,6 +1133,7 @@ html[data-tension-motion='off']::view-transition-new(*) {
 @variant tablet {
   :root {
     --header-h: 132px;
+    --header-stuck-h: 56px;
   }
   .news-layout {
     grid-template-columns: 264px minmax(0, 1fr);

@@ -124,6 +124,8 @@
 }
 
 .shelf {
+  /* Jump bar height: one touch-target row + ul padding + 1px borders. */
+  --az-h: calc(var(--touch-target-min) + var(--space-2) + 2px);
   min-width: 0;
   padding-top: var(--space-8);
   border-top: 1px solid var(--line);
@@ -206,44 +208,79 @@
   outline-offset: var(--focus-offset);
 }
 
+/* One-row jump bar: only letters that exist, each with its (filtered) entry count.
+   Sticks right under the *visible* header (--header-stuck-h), not the full 132px chrome. */
 .az {
   position: sticky;
-  top: var(--header-h);
+  top: var(--header-stuck-h);
   z-index: var(--z-sticky);
   margin: var(--space-5) 0 var(--space-2);
-  padding: var(--space-2) 0;
   background: var(--bg);
   border-block: 1px solid var(--line);
 }
 
 .az ul {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-1);
   margin: 0;
-  padding: 0;
+  padding: var(--space-1) 0;
   list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
 
-.az a,
-.az span {
-  display: grid;
-  place-items: center;
+.az ul::-webkit-scrollbar {
+  display: none;
+}
+
+.az li {
+  flex: 0 0 auto;
+}
+
+.azItem {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
   min-width: var(--touch-target-min);
   min-height: var(--touch-target-min);
+  padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
+  line-height: var(--touch-target-min);
 }
 
-.az a {
+a.azItem {
   color: var(--text);
   font-weight: 600;
   text-decoration: none;
 }
 
-.az span {
+a.azItem:hover {
+  background: var(--surface);
+}
+
+a.azItem[aria-current='location'] {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+a.azItem[aria-current='location'] .azCount {
+  color: inherit;
+}
+
+span.azItem {
   color: var(--line-strong);
+}
+
+.azCount {
+  color: var(--faint);
+  font-size: var(--text-2xs);
+  font-weight: 400;
 }
 
 .countLine {
@@ -258,7 +295,7 @@
   min-width: 0;
   padding: var(--space-6) 0;
   border-bottom: 1px solid var(--line);
-  scroll-margin-top: calc(var(--header-h) + var(--space-16));
+  scroll-margin-top: calc(var(--header-stuck-h) + var(--az-h) + var(--space-4));
 }
 
 .letter {
@@ -554,7 +591,7 @@
 
   .letter {
     position: sticky;
-    top: calc(var(--header-h) + var(--space-16));
+    top: calc(var(--header-stuck-h) + var(--az-h) + var(--space-4));
   }
 }
 
