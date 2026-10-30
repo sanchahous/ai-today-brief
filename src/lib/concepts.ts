@@ -1,4 +1,4 @@
-import { conceptIcon } from '@/lib/concept-meta';
+import { conceptIcon, shelfKind } from '@/lib/concept-meta';
 import { searchNewsItems } from '@/lib/news';
 import { getCategories } from '@/lib/categories';
 import type { HomeItem } from '@/lib/home';
@@ -19,25 +19,28 @@ function wordCount(text: string): number {
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
-export interface ConceptSummary {
-  slug: string;
-  name: string;
-  description: string;
-  type: string;
-  category: string | null;
-}
-
-export interface ConceptFaqItem {
-  q: string;
-  a: string;
-}
-
 /**
  * Fact-control marker set by the concept backfill: 'verified' (all claims
  * confirmed against the official page), 'partial'/'unchecked' (background
  * statements could not be cross-checked → soft note), null (human-curated).
  */
 export type ConceptVerification = 'verified' | 'partial' | 'unchecked';
+
+export interface ConceptSummary {
+  slug: string;
+  name: string;
+  description: string;
+  type: string;
+  category: string | null;
+  verification: ConceptVerification | null;
+  /** ISO timestamp of the last fact-control pass (null when never checked). */
+  verifiedAt: string | null;
+}
+
+export interface ConceptFaqItem {
+  q: string;
+  a: string;
+}
 
 function parseVerification(value: unknown): ConceptVerification | null {
   return value === 'verified' || value === 'partial' || value === 'unchecked' ? value : null;
@@ -48,9 +51,6 @@ export interface ConceptDetail extends ConceptSummary {
   aliases: string[];
   body: string;
   faq: ConceptFaqItem[];
-  verification: ConceptVerification | null;
-  /** ISO timestamp of the last fact-control pass (null when never checked). */
-  verifiedAt: string | null;
 }
 
 function parseFaq(value: unknown): ConceptFaqItem[] {
@@ -72,7 +72,9 @@ export async function getConcepts(lang: Lang): Promise<ConceptSummary[]> {
   if (!supabase) return [];
   const { data } = await supabase
     .from('concepts')
-    .select('slug, name_en, name_uk, description_en, description_uk, type, category')
+    .select(
+      'slug, name_en, name_uk, description_en, description_uk, type, category, verification_status, verified_at',
+    )
     .order('name_en', { ascending: true });
   return (data ?? []).map((c) => ({
     slug: c.slug,
@@ -80,7 +82,35 @@ export async function getConcepts(lang: Lang): Promise<ConceptSummary[]> {
     description: pick(lang, c.description_en, c.description_uk),
     type: c.type,
     category: c.category,
+    verification: parseVerification(c.verification_status),
+    verifiedAt: c.verified_at,
   }));
+}
+
+/** Same shelf kind first, then the rest of the A–Z list. No invented graph. */
+export function pickRelatedConcepts(
+  all: readonly ConceptSummary[],
+  current: { slug: string; type: string; category: string | null },
+  limit = 5,
+): ConceptSummary[] {
+  const kind = shelfKind(current.type, current.category);
+  const same: ConceptSummary[] = [];
+  const other: ConceptSummary[] = [];
+  for (const item of all) {
+    if (item.slug === current.slug) continue;
+    if (shelfKind(item.type, item.category) === kind) same.push(item);
+    else other.push(item);
+  }
+  const picked: ConceptSummary[] = [];
+  for (const item of same) {
+    if (picked.length === limit) return picked;
+    picked.push(item);
+  }
+  for (const item of other) {
+    if (picked.length === limit) return picked;
+    picked.push(item);
+  }
+  return picked;
 }
 
 export async function getConcept(slug: string, lang: Lang): Promise<ConceptDetail | null> {
@@ -153,7 +183,7 @@ export async function getConceptHub(
   }
 
   const all = await getConcepts(lang);
-  const others = all.filter((c) => c.slug !== slug).slice(0, 12);
+  const others = pickRelatedConcepts(all, concept, 5);
 
   return {
     concept,

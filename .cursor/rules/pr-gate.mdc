@@ -12,37 +12,49 @@ Before **`git push`** for review or **`gh pr create`**, run the checks yourself 
 From repo root:
 
 ```bash
-npm run pr:check
+npm run check:affected
 ```
 
-Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`) + `typecheck` + `lint` + `e2e:check` + **`wiki:check`** (project↔wiki sync + lint --strict) + **`build:ci`**. `build:ci` prerenders 8 paths (`E2E_MINIMAL_PRERENDER=1`) **only when git shows a site-affecting change** vs `origin/main` (plus the working tree). Wiki / pipeline / `.gitignore` / `library/` / `scripts/` — skip, no PostgREST SSG. `FORCE_SSG_BUILD=1` forces the build. Full catalog prerender is **Vercel production only** (`npm run build:full` locally if you need it).
+It diffs the branch against the closest of `origin/main` / `origin/next` (task branches cut from `next` diff against `next`), plus staged, unstaged and untracked files, and runs **only the checks those paths need**, fail-fast. The path → checks map is `scripts/check-scope.mjs`; the human summary is `wiki/ops/affected-checks.md`. Examples: `wiki/**` only → `wiki:check`; one component → typecheck, eslint on that file, `vitest related`, `design:raw:check`, `e2e:check`, `e2e:affected` (affected specs, chromium); `supabase/migrations/**` → `migrations:check` + `wiki:check`; `pipeline/**` → typecheck, eslint, `ci:check`.
+
+It escalates to the **full suite on its own** — you do not decide that — when any changed path is:
+
+- broad: `package.json`, lockfile, `.npmrc`/`.nvmrc`, `tsconfig*.json`, `next|eslint|vitest|playwright|postcss|tailwind.config.*`, `src/app/layout.tsx`, `src/app/[lang]/layout.tsx`, `src/app/globals.css`, `src/lib/i18n.ts`, `src/proxy.ts`, `src/test/`, `src/types/`, or the selector itself;
+- **unknown**: matched by no rule. Never silence this by guessing — add a rule to `scripts/check-scope.mjs` (with a test in `scripts/check-scope.test.mjs`) in the same PR, or accept the full run.
+
+Useful flags: `-- --dry-run` (show the plan), `-- --files a,b --dry-run` (what would these paths run?), `-- --no-e2e` / `SKIP_E2E=1` (everything except Playwright — say so in the PR body).
+
+**Full suite on demand:** `npm run pr:check` = `check:affected --all --no-e2e` — design ratchet, `ci:check` (Vitest coverage ≥70% + `verify:logic-lcov`), typecheck, full lint, `e2e:check`, `wiki:check`, `migrations:check`, script tests, `build:ci`. Use it when a reviewer asks, or before a release PR `next` → `main` if you want the belt and braces.
+
+`build:ci` prerenders 8 paths (`E2E_MINIMAL_PRERENDER=1`) and skips itself when nothing site-affecting changed; `e2e:affected` builds before Playwright, so the standalone build runs only when e2e selected no specs or was skipped. `FORCE_SSG_BUILD=1` forces the build. Full catalog prerender is **Vercel production only** (`npm run build:full` locally if you need it).
+
+**Pre-push hook** (`.githooks/pre-push`) runs the same `check:affected`. If this exact tree already passed, it returns immediately (a stamp in the git dir keyed on the tree hash and diff base), so running the checks yourself and then pushing costs one run, not two.
 
 **Parallel worktrees:** set **`PORT`** (default `3000`) so `playwright.config.ts` and `e2e:affected` start/reuse the matching `next start` — not a neighbour's server on `:3000`. **`E2E_BASE_URL`** overrides when pointing at an external server (`wiki/ops/e2e-local.md`).
 
-- `pr:check` fails → fix, re-run until green, **then** push / open the PR.
+- `check:affected` fails → fix, re-run until green, **then** push / open the PR.
 - Can't fix within scope → report the failure and **do not** open the PR.
-- Code under a wiki sync watcher (`wiki/_meta/project-sync.json`) without updating the listed wiki pages → `wiki:sync` fails. Update those pages in the same PR. Where the watcher lists `now.md`, add `wiki/tasks/<id>.md` instead of editing `now.md`. Task PRs do not edit `wiki/now.md`, the `Sources:` line or handoff cell in `wiki/index.md`, the open-PR list in `wiki/product/after-hours-epic-handoff.md`, epic §5.3, or the top of `wiki/log.md`.
+- Code under a wiki sync watcher (`wiki/_meta/project-sync.json`) without updating the listed wiki pages → `wiki:sync` fails (and `check:affected` selects `wiki:check` for exactly those paths). Update those pages in the same PR. Where the watcher lists `now.md`, add `wiki/tasks/<id>.md` instead of editing `now.md`. Task PRs do not edit `wiki/now.md`, the `Sources:` line or handoff cell in `wiki/index.md`, the open-PR list in `wiki/product/after-hours-epic-handoff.md`, epic §5.3, or the top of `wiki/log.md`.
+
+## CI runs the same map
+
+On the PR, `.github/workflows/affected-checks.yml` runs `check:affected --ci` on the PR's files (typecheck, eslint, wiki:check, e2e map, script tests). Build + coverage + design ratchet stay in `sonarqube.yml`, Playwright in `e2e.yml`, prod drift in `migrations-drift.yml`, clean install in `deps-integrity.yml` — each gates itself **inside** the job so required checks still report success when there is nothing to do. Never add a workflow-level `paths:` / `paths-ignore:` filter to a required check. The in-job grep regexes are pinned to `WORKFLOW_GATES` in `scripts/check-scope.mjs` by its test.
 
 ## Branching
 
 - **Never push directly to `main`.** Work on a feature branch (`feat/…`, `chore/…`, `fix/…`) and open a PR.
 
-## When it applies
-
-Any change under `src/**`, `pipeline/**`, `supabase/**`, `package.json`, `next.config.*`, `.github/workflows/**`, `vitest.config.ts`, `scripts/**`, or **`wiki/**` / `wiki/_meta/project-sync.json`** that affect build, tests, or the wiki sync contract.
-
-Docs-only changes (`*.md`, `wiki/**`, `raw/**`, `artifacts/**`) skip `build:ci` automatically when that is the whole diff. Still run `lint`/`typecheck` via `pr:check` if any code/config changed.
-
 ## PR body
 
-Include a checked line in the Test plan:
+Include a checked line in the Test plan naming what ran, e.g.:
 
-- [x] `npm run pr:check` passed locally before push
+- [x] `npm run check:affected` passed locally before push (wiki, typecheck, lint, unit, e2e: 3 specs)
 
 ## Do not
 
 - Open a PR with "please run tests locally" instead of running them.
-- Push code/config changes without `pr:check` green.
-- Assume Sonar on GitHub replaces local `pr:check` — Sonar runs after push; local gate catches 70% / lcov issues first.
+- Push code/config changes without `check:affected` green.
+- Run the full `pr:check` by reflex on a small change — that is what `check:affected` replaces.
+- Assume Sonar on GitHub replaces the local gate — Sonar runs after push; a logic-scope change runs `ci:check` locally and catches 70% / lcov issues first.
 
 See `sonar-debug.mdc` for Vitest **70%** vs Sonar **80% on new code** (different gates).

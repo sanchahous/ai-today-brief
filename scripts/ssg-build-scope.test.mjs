@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import {
   isSiteAffectingPath,
   parseGitNameOnly,
+  pickClosestBase,
   shouldSkipLocalSiteBuild,
   shouldSkipVercelBuild,
   uniquePaths,
@@ -70,6 +71,30 @@ describe('shouldSkipLocalSiteBuild', () => {
 
   it('builds when src changed', () => {
     assert.equal(shouldSkipLocalSiteBuild(['src/lib/items.ts'], { gitOk: true }), false);
+  });
+});
+
+describe('pickClosestBase', () => {
+  it('diffs a branch cut from next against next, not against main', () => {
+    assert.equal(
+      pickClosestBase([
+        { ref: 'origin/main', distance: 7 },
+        { ref: 'origin/next', distance: 2 },
+      ]),
+      'origin/next',
+    );
+  });
+
+  it('keeps main on a tie and skips refs it could not measure', () => {
+    assert.equal(
+      pickClosestBase([
+        { ref: 'origin/main', distance: 2 },
+        { ref: 'origin/next', distance: 2 },
+      ]),
+      'origin/main',
+    );
+    assert.equal(pickClosestBase([{ ref: 'origin/main', distance: null }, { ref: 'main', distance: 4 }]), 'main');
+    assert.equal(pickClosestBase([]), null);
   });
 });
 

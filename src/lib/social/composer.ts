@@ -853,16 +853,15 @@ export async function composeWeeklySocial(
     }
     const revisionId = existingTest.active_revision_id;
     const studioMode = weeklyContentStudioMode();
-    if (studioMode !== 'off') {
-      await startWeeklyContentStudio(existingTest.id, revisionId);
-    }
+    const studio =
+      studioMode === 'off' ? null : await startWeeklyContentStudio(existingTest.id, revisionId);
     return {
       weeklyDigestId: existingTest.id,
       createdPackageIds: [],
       skipped: [
         studioMode === 'off'
           ? 'weekly_content_studio_v2_off'
-          : 'test_weekly_digest_research_queued',
+          : (studio?.skipped ?? 'test_weekly_digest_research_queued'),
       ],
     };
   }
@@ -938,14 +937,14 @@ export async function composeWeeklySocial(
     );
   }
   const studioMode = weeklyContentStudioMode();
-  if (studioMode !== 'off') {
-    await startWeeklyContentStudio(digest.id, revisionId);
-  }
+  const studio = studioMode === 'off' ? null : await startWeeklyContentStudio(digest.id, revisionId);
   return {
     weeklyDigestId: digest.id,
     createdPackageIds: [],
     skipped: [
-      studioMode === 'off' ? 'weekly_content_studio_v2_off' : 'weekly_digest_research_queued',
+      studioMode === 'off'
+        ? 'weekly_content_studio_v2_off'
+        : (studio?.skipped ?? 'weekly_digest_research_queued'),
     ],
   };
 }

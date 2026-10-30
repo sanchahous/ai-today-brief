@@ -117,8 +117,9 @@ cards лишаються на Cloudflare FLUX.2 klein. (source: owner decision 2
    (source: `.env.example`, `wiki/ops/reddit-compliance.md`)
 5. **`service_role` ключ живе тільки в pipeline** — ніколи `NEXT_PUBLIC_`, ніколи не імпортується
    під `src/`. (source: `.cursor/rules/00-core.mdc`)
-6. **Ніколи не пушити в `main`**; перед пушем — `npm run pr:check`.
-   (source: `.cursor/rules/pr-gate.mdc`, `package.json`)
+6. **Ніколи не пушити в `main`**; перед пушем — `npm run check:affected` (лише перевірки,
+   потрібні зміненим шляхам; широкі/невідомі шляхи — повний `pr:check`).
+   (source: `.cursor/rules/pr-gate.mdc`, `package.json`, [affected-checks](ops/affected-checks.md))
 7. **Next.js 16 — docs-first.** Читати `node_modules/next/dist/docs/` перед новим route.
    (source: `AGENTS.md`)
 8. **Телеметрія — write-only, PII-free**, consent-gated, з bot-фільтром (`session_hash`, не сирий

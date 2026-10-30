@@ -1,62 +1,93 @@
-import { CategoryGlyph } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
+import {
+  formatVerifiedDate,
+  officialHref,
+  shelfKind,
+  shelfKindLabel,
+} from '@/lib/concept-meta';
 import type { ConceptDetail } from '@/lib/concepts';
-import type { IconKey } from '@/components/icons';
 import { getStrings } from '@/lib/i18n';
+import { pluralLabel } from '@/lib/home-stats';
 import type { Lang } from '@/lib/site';
+import { ExternalLinkIcon } from '@/components/icons';
+import styles from './concepts.module.css';
+
+function distinctAliases(name: string, aliases: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const alias of aliases) {
+    const trimmed = alias.trim();
+    const key = trimmed.toLowerCase();
+    if (!trimmed || key === name.trim().toLowerCase() || seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}
 
 export function ConceptHeader({
   lang,
   concept,
-  icon,
   storyCount,
 }: {
   lang: Lang;
   concept: ConceptDetail;
-  icon: IconKey;
   storyCount: number;
 }) {
   const t = getStrings(lang);
-  const accent = 'var(--accent)';
+  const kind = shelfKind(concept.type, concept.category);
+  const href = officialHref(concept.officialUrl);
+  const showVerified = concept.verification === 'verified' || concept.verification === 'partial';
+  const checked = showVerified ? formatVerifiedDate(concept.verifiedAt, lang, 'long') : null;
+  const aliases = distinctAliases(concept.name, concept.aliases);
 
   return (
-    <header className="mb-8 max-w-[720px]">
-      <div className="mb-3 flex items-center gap-3">
-        <span
-          aria-hidden
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border"
-          style={{
-            color: accent,
-            background: 'rgba(240,192,64,0.12)',
-            borderColor: 'rgba(240,192,64,0.35)',
-          }}
-        >
-          <CategoryGlyph icon={icon} size={26} strokeWidth={1.6} />
+    <header className={styles.conceptHead}>
+      <div className={styles.labels}>
+        <span className={styles.termType} data-kind={kind}>
+          {shelfKindLabel(kind, t.conceptKinds)}
         </span>
-        <div>
-          <p className="text-accent m-0 mb-1 text-xs font-bold tracking-[0.14em] uppercase">
-            {t.landing.trendingEyebrow}
-          </p>
-          <h1 className="m-0 text-[clamp(1.7rem,4vw,2.4rem)] leading-[1.1]">{concept.name}</h1>
-        </div>
+        {showVerified ? (
+          <Badge kind={concept.verification === 'verified' ? 'verified' : 'partial'} lang={lang}>
+            {concept.verification === 'verified' ? t.conceptVerifiedBadge : t.conceptPartialBadge}
+          </Badge>
+        ) : null}
       </div>
-      {concept.description && (
-        <p className="text-muted m-0 text-base leading-relaxed">{concept.description}</p>
-      )}
-      {concept.officialUrl && (
-        <p className="mt-4 text-sm">
-          <a
-            className="text-accent font-medium hover:underline"
-            href={concept.officialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t.officialSite} ↗
-          </a>
+      <h1 className={styles.conceptTitle}>{concept.name}</h1>
+      {aliases.length > 0 ? (
+        <p className={styles.aliases}>
+          {t.conceptAlsoKnown}: <span>{aliases.join(', ')}</span>
         </p>
-      )}
-      <p className="text-faint mt-4 text-sm">
-        {t.conceptStories} · {storyCount}
-      </p>
+      ) : null}
+      {concept.description ? (
+        <p className={styles.dek}>
+          <strong>{concept.name}</strong>
+          {' — '}
+          {concept.description}
+        </p>
+      ) : null}
+      {href || storyCount > 0 || checked ? (
+        <ul className={styles.meta}>
+          {href ? (
+            <li>
+              <a href={href} target="_blank" rel="noopener noreferrer">
+                {t.officialSite}
+                <ExternalLinkIcon size={14} />
+              </a>
+            </li>
+          ) : null}
+          {storyCount > 0 ? (
+            <li>
+              {storyCount} {pluralLabel(storyCount, lang, 'stories')}
+            </li>
+          ) : null}
+          {checked ? (
+            <li>
+              {t.conceptLastVerified} <time dateTime={concept.verifiedAt ?? undefined}>{checked}</time>
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
     </header>
   );
 }

@@ -1,0 +1,71 @@
+name: Affected checks
+
+# The static checks no other PR workflow runs — typecheck, ESLint, wiki:check, the e2e
+# coverage map, script unit tests — selected per changed path by scripts/check-scope.mjs,
+# the SAME map `npm run check:affected` uses locally. A broad or unknown path runs the
+# whole static set. Heavier checks stay where they already were (`--ci` drops them here):
+#   build:ci + coverage + design ratchet → sonarqube.yml
+#   Playwright                           → e2e.yml
+#   prod migration drift                 → migrations-drift.yml
+#
+# No `paths:` filter on purpose (see the note in e2e.yml): the workflow always runs and
+# always reports, so it can be a required check. A PR that needs nothing finishes in
+# seconds; a wiki-only PR runs wiki:check without `npm ci`.
+
+on:
+  pull_request:
+    branches: [main, next]
+  # Post-merge backstop: the whole static set on the merged tree, so a gap in the path
+  # map — or two PRs that only break together — surfaces on the branch, not in a later PR.
+  push:
+    branches: [main, next]
+  workflow_dispatch:
+
+concurrency:
+  group: affected-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Affected checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      # Full history: wiki:sync compares the last commit time of watched code vs its wiki pages.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # PR → the PR's files from the API; push / dispatch → the whole static set (`--all`).
+      - name: Plan
+        id: plan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            gh api --paginate \
+              "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+              --jq '.[].filename' > "$RUNNER_TEMP/changed-files.txt"
+            echo "args=--ci --files-from $RUNNER_TEMP/changed-files.txt" >> "$GITHUB_OUTPUT"
+            node scripts/check-affected.mjs --ci --dry-run --files-from "$RUNNER_TEMP/changed-files.txt"
+          else
+            echo "args=--ci --all" >> "$GITHUB_OUTPUT"
+            node scripts/check-affected.mjs --ci --dry-run --all
+          fi
+
+      - name: Install dependencies
+        if: steps.plan.outputs.needs_deps == 'true'
+        run: npm ci
+
+      - name: Run selected checks
+        if: steps.plan.outputs.run == 'true'
+        run: node scripts/check-affected.mjs ${{ steps.plan.outputs.args }}
