@@ -160,6 +160,12 @@ async function main() {
       const absolute = resolve(dirname(join(WIKI_ROOT, page)), pathPart);
       const resolved = toPosix(relative(WIKI_ROOT, absolute));
       if (resolved.startsWith('..')) {
+        // node_modules є лише після npm ci, а wiki-only PR у CI йде без нього: таке посилання
+        // локально «живе», а в CI б'ється. Для таких джерел — code-span, не посилання.
+        if (toPosix(relative(REPO_ROOT, absolute)).split('/').includes('node_modules')) {
+          add('error', page, `посилання в node_modules → ${link}`, 'у CI (wiki-only PR) node_modules немає — написати шлях у `code`, не посиланням');
+          continue;
+        }
         // Посилання за межі wiki/ (наприклад ../docs/… до міграції) — перевіряємо на диску.
         if (!(await exists(absolute))) {
           add('error', page, `бите зовнішнє посилання → ${link}`, `нема файлу ${toPosix(relative(REPO_ROOT, absolute))}`);
