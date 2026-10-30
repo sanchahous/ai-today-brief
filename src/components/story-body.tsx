@@ -3,12 +3,16 @@ import { Tag } from '@/components/ui/tag';
 import { selectStorySections } from '@/lib/story-sections';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
-import { buildFactsVisual } from '@/lib/facts-visual';
 import type { BriefItemDetail } from '@/lib/items';
 import type { Lang } from '@/lib/site';
-import { FactsVisualBlock } from '@/components/facts-visual';
 import { MarkdownBody } from '@/components/markdown-body';
 import catStyles from '@/components/category-presentation.module.css';
+import { ComparisonChart } from '@/components/editorial/chart-bars';
+import { KeyNumbers } from '@/components/editorial/chart-key-numbers';
+import { MetricsMiniChart } from '@/components/editorial/chart-metrics';
+import { ProcessDiagram } from '@/components/editorial/diagram-process';
+import { buildStoryVisuals } from '@/components/editorial/story-visuals';
+import { visualCopy } from '@/components/editorial/visual-copy';
 
 export type ToolLink = { name: string; href: string | null };
 
@@ -49,7 +53,8 @@ export function StoryBody({
   const color = categoryColor(detail.categorySlug, detail.categoryColor);
   const catStyle = { '--cat-color': color } as CSSProperties;
   const sections = selectStorySections(detail, toolLinks.length);
-  const factsVisual = buildFactsVisual(detail.facts ?? []);
+  const visuals = buildStoryVisuals({ facts: detail.facts, actionItems: detail.actionItems });
+  const visualText = visualCopy(lang);
 
   return (
     <div>
@@ -102,7 +107,6 @@ export function StoryBody({
           >
             {t.factsTitle}
           </h2>
-          {factsVisual && <FactsVisualBlock visual={factsVisual} color={color} />}
           <dl className="m-0">
             {detail.facts?.map((fact, i) => (
               <div
@@ -119,6 +123,16 @@ export function StoryBody({
             ))}
           </dl>
         </section>
+      )}
+
+      {visuals.keyNumbers && (
+        <KeyNumbers lang={lang} items={visuals.keyNumbers} sourceName={t.factsTitle} />
+      )}
+      {visuals.comparison && (
+        <ComparisonChart lang={lang} items={visuals.comparison} sourceName={t.factsTitle} />
+      )}
+      {visuals.metrics && (
+        <MetricsMiniChart lang={lang} items={visuals.metrics} sourceName={t.factsTitle} />
       )}
 
       {sections.body &&
@@ -190,6 +204,13 @@ export function StoryBody({
       {sections.actionItems && (
         <>
           <SectionLabel>{t.actionItemsToday}</SectionLabel>
+          {visuals.steps && (
+            <ProcessDiagram
+              lang={lang}
+              nodes={visuals.steps}
+              caption={visualText.processFromActions}
+            />
+          )}
           <ul className="m-0 list-none p-0">
             {detail.actionItems?.map((step, i) => (
               <li key={i} className="mb-2 flex gap-2.5">

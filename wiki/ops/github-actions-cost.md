@@ -240,6 +240,11 @@ notes — тобто бамп потребує ручної перевірки, 
 `migrations-drift` і на PR у `next` порівнює `origin/main` із продом, не файли лише
 на `next`. (source: `scripts/check-prod-migrations.ts`)
 
+З 2026-10-29 `deps-integrity` і `migrations-drift` на PR роблять роботу лише коли PR
+зачіпає їхні шляхи (job усе одно звітує success), а новий `affected-checks.yml` ганяє
+typecheck / eslint / wiki:check за мапою змінених шляхів — див.
+[affected-checks](affected-checks.md).
+
 Vercel: `git.deploymentEnabled` лишає автоматичний деплой увімкненим для `main`
 і вимикає його для `next` і для `feat/*` (minimatch). Незадана гілка, як і раніше,
 деплоїться. `ignoreCommand` на `main` не змінювався.

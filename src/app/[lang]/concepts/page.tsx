@@ -1,10 +1,40 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
-import { getConcepts } from '@/lib/concepts';
+import { getConcepts, type ConceptSummary } from '@/lib/concepts';
+import { shelfStats } from '@/lib/concept-meta';
+import { getGuide } from '@/content/guides';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
-import { ConceptsGrid } from '@/components/concepts-grid';
+import { ConceptsShelf } from '@/components/concepts-shelf';
+import { NewsletterBand } from '@/components/home/newsletter-band';
+import { ArrowRight } from '@/components/icons';
+import styles from '@/components/concepts.module.css';
+
+function shelfQuestions(lang: Lang, concepts: readonly ConceptSummary[]) {
+  const t = getStrings(lang);
+  const slugs = new Set(concepts.map((concept) => concept.slug));
+  const cards: { href: string; title: string; tone: 'agents' | 'models' | 'tools' }[] = [];
+  if (slugs.has('agent')) {
+    cards.push({ href: `/${lang}/concepts/agent`, title: t.conceptsQAgents, tone: 'agents' });
+  }
+  if (slugs.has('context-engineering')) {
+    cards.push({
+      href: `/${lang}/concepts/context-engineering`,
+      title: t.conceptsQContext,
+      tone: 'models',
+    });
+  }
+  if (getGuide('claude-code-vs-cursor-vs-codex')) {
+    cards.push({
+      href: `/${lang}/guides/claude-code-vs-cursor-vs-codex`,
+      title: t.conceptsQWorkflow,
+      tone: 'tools',
+    });
+  }
+  return cards;
+}
 
 // 24 h: concepts are evergreen and change only via the backfill workflow.
 export const revalidate = 86400;
@@ -56,8 +86,11 @@ export default async function ConceptsIndex({ params }: { params: Promise<Params
     ],
   };
 
+  const stats = shelfStats(concepts);
+  const questions = shelfQuestions(lang, concepts);
+
   return (
-    <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
+    <div className="mx-auto w-full min-w-0 max-w-[1160px] flex-1 overflow-x-clip px-4 py-8 sm:px-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -65,19 +98,56 @@ export default async function ConceptsIndex({ params }: { params: Promise<Params
 
       <Breadcrumbs items={crumbs} />
 
-      <header className="max-w-[720px]">
-        <h1 data-gesture="curtain" className="text-[clamp(1.8rem,4.5vw,2.7rem)]">
-          {t.nav.concepts}
-        </h1>
-        <p data-gesture="reveal" data-gesture-delay="90" className="text-muted mt-4 text-base leading-relaxed">
-          {t.conceptsLede}
-        </p>
-      </header>
-
       {concepts.length === 0 ? (
         <p className="text-muted mt-10">{t.noResults}</p>
       ) : (
-        <ConceptsGrid lang={lang} concepts={concepts} />
+        <>
+          <header className={styles.hero}>
+            <p className={`eyebrow ${styles.eyebrow}`}>{t.conceptsEyebrow}</p>
+            <h1 className={styles.heroTitle}>
+              {t.conceptsTitleLead}
+              <br />
+              <em>{t.conceptsTitleEm}</em>
+            </h1>
+            <p className={styles.lede}>{t.conceptsLede}</p>
+            <dl className={styles.stats}>
+              <div className={styles.stat}>
+                <dt className={styles.statLabel}>{t.conceptsStatEntries}</dt>
+                <dd className={styles.statValue}>{stats.entries}</dd>
+              </div>
+              <div className={styles.stat}>
+                <dt className={styles.statLabel}>{t.conceptsStatTypes}</dt>
+                <dd className={styles.statValue}>{stats.types}</dd>
+              </div>
+              <div className={styles.stat}>
+                <dt className={styles.statLabel}>{t.conceptsStatVerified}</dt>
+                <dd className={styles.statValue}>{stats.verified}</dd>
+              </div>
+            </dl>
+          </header>
+          {questions.length > 0 ? (
+            <section className={styles.questions} aria-labelledby="questions-title">
+              <h2 id="questions-title" className={`eyebrow ${styles.questionsTitle}`}>
+                {t.conceptsQuestionsTitle}
+              </h2>
+              <ul className={styles.questionGrid}>
+                {questions.map((question) => (
+                  <li key={question.href}>
+                    <Link href={question.href} className={styles.questionCard} data-tone={question.tone}>
+                      <span className={styles.qMark} aria-hidden="true">
+                        ?
+                      </span>
+                      <strong>{question.title}</strong>
+                      <ArrowRight size={20} className="text-accent" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          <ConceptsShelf lang={lang} concepts={concepts} />
+          <NewsletterBand lang={lang} placement="concepts" />
+        </>
       )}
     </div>
   );

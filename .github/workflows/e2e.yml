@@ -55,7 +55,8 @@ jobs:
       # changes: skip wiki / markdown / SQL-migration / workflow-only AND pipeline-only
       # PRs (the pipeline never renders the site). Reads the file list from the API
       # rather than from a deep clone, so the skip path costs no checkout.
-      # Keep the grep in sync with scripts/ssg-build-scope.mjs SKIP_SSG_PATH_RE.
+      # The grep is pinned to scripts/ssg-build-scope.mjs SKIP_SSG_PATH_RE by
+      # scripts/check-scope.test.mjs (WORKFLOW_GATES) — change both or the test fails.
       - name: Decide whether the site changed
         id: scope
         env:

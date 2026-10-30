@@ -88,7 +88,9 @@ Keep these paths exactly — the index, the linter and downstream tooling depend
 ## Hard rules
 
 1. **Never modify anything in `raw/`.** Corrections live in a `wiki/` page that cites the raw file.
-2. **Never push to `main`.** Feature branch + PR. Before any push: `npm run pr:check`.
+2. **Never push to `main`.** Feature branch + PR. Before any push: `npm run check:affected`
+   (runs only the checks the changed paths need; broad or unknown paths escalate to the full
+   suite by itself). `npm run pr:check` = the full suite — see `.cursor/rules/pr-gate.mdc`.
 3. **No business facts in this file.** They belong in `wiki/overview.md` with a source link.
 4. **Task status is one fragment file, not a shared list.** A task PR writes
    `wiki/tasks/<id>.md` only (`ah-3.5.md`, `atb-67.md`) for its status, log line and
@@ -139,8 +141,8 @@ One source typically touches 5–15 pages. That is normal.
 
 ## Wiki lint
 
-`npm run wiki:check` (= `wiki:sync` + sync unit tests + `wiki:lint --strict`) is part of
-`pr:check`. `wiki:sync` fails when watched code is newer than its wiki pages or when extracted
+`npm run wiki:check` (= `wiki:sync` + sync unit tests + `wiki:lint --strict`) runs from
+`check:affected` whenever `wiki/` or a path the sync contract watches changes, and in `pr:check`. `wiki:sync` fails when watched code is newer than its wiki pages or when extracted
 project facts drift out of the docs (contract: `wiki/_meta/project-sync.json`).
 
 `npm run wiki:lint` alone stays report-friendly; use `--strict` or `wiki:check` in CI. On

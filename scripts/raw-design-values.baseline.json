@@ -22,20 +22,8 @@
     {
       "path": "src/app/globals.css",
       "kind": "color",
-      "value": "#b5d8cc",
-      "count": 2
-    },
-    {
-      "path": "src/app/globals.css",
-      "kind": "color",
-      "value": "#b9b7ac",
-      "count": 1
-    },
-    {
-      "path": "src/app/globals.css",
-      "kind": "color",
       "value": "#d4b483",
-      "count": 2
+      "count": 1
     },
     {
       "path": "src/app/globals.css",
@@ -59,12 +47,6 @@
       "path": "src/app/globals.css",
       "kind": "color",
       "value": "rgb(142 42 63 / 0.28)",
-      "count": 1
-    },
-    {
-      "path": "src/app/globals.css",
-      "kind": "color",
-      "value": "rgb(181 216 204 / 0.2)",
       "count": 1
     },
     {
@@ -137,30 +119,6 @@
       "path": "src/app/globals.css",
       "kind": "color",
       "value": "rgba(255, 255, 255, 0.06)",
-      "count": 1
-    },
-    {
-      "path": "src/components/concept-header.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.12)",
-      "count": 1
-    },
-    {
-      "path": "src/components/concept-header.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.35)",
-      "count": 1
-    },
-    {
-      "path": "src/components/concepts-grid.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.1)",
-      "count": 1
-    },
-    {
-      "path": "src/components/concepts-grid.tsx",
-      "kind": "color",
-      "value": "rgba(240,192,64,0.3)",
       "count": 1
     },
     {

@@ -8,6 +8,12 @@ export interface EmptyStateProps {
   icon?: ReactNode;
   action?: ReactNode;
   className?: string;
+  /**
+   * Level of the title. Match the headings the empty state stands in for, so the outline
+   * never jumps (e.g. h1 → h3 when a feed of h2 cards comes back empty). Size is set by
+   * class, not by the tag.
+   */
+  headingLevel?: 'h2' | 'h3';
 }
 
 export function EmptyState({
@@ -16,6 +22,7 @@ export function EmptyState({
   icon,
   action,
   className = '',
+  headingLevel: Heading = 'h3',
 }: EmptyStateProps) {
   return (
     <div
@@ -31,9 +38,9 @@ export function EmptyState({
           {icon}
         </div>
       )}
-      <h3 className="font-serif text-text m-0 mb-2 text-xl font-medium tracking-tight">
+      <Heading className="font-serif text-text m-0 mb-2 text-xl font-medium tracking-tight">
         {title}
-      </h3>
+      </Heading>
       <p className="text-muted m-0 mb-6 max-w-[420px] text-sm leading-relaxed">
         {description}
       </p>
