@@ -39,6 +39,16 @@ import {
   clampPromptLength,
   cloudflareJsonBody,
   cloudflareQuotaExhausted,
+  DEFAULT_OPENROUTER_IMAGE_MODEL,
+  OPENROUTER_MAX_ACCEPTED_COST_USD,
+  OPENROUTER_MAX_PRICE_USD,
+  OPENROUTER_NEGATIVE_SUFFIX,
+  openRouterImageBody,
+  openRouterImageLatchReason,
+  recordCardImageCostEvent,
+  resetOpenRouterImageState,
+  resolveOpenRouterImageDailyCap,
+  type GeneratedImageResult,
   describeCloudflareFailure,
   resetCloudflareQuotaState,
   encodeCardOrigin,
@@ -2462,5 +2472,365 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     );
     expect(concepts[0]?.setting).toBe('silent metal workshop before dawn');
     expect(concepts[1]?.subject).toBe('a loom rewinding one snapped thread to the last intact knot');
+  });
+});
+
+describe('OpenRouter flux-3-image-klein tier', () => {
+  const originalFetch = globalThis.fetch;
+  const imgBytes = Buffer.alloc(4096, 5);
+  const OR_URL = 'openrouter.ai/api/v1/images';
+  const input = { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'or-1' };
+
+  const orOk = (cost: number | null = 0.009) =>
+    new Response(
+      JSON.stringify({
+        data: [{ b64_json: imgBytes.toString('base64'), media_type: 'image/jpeg' }],
+        usage: cost === null ? {} : { cost },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  const cfOk = () =>
+    new Response(JSON.stringify({ result: { image: imgBytes.toString('base64') } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  const cfg = (extra: Record<string, unknown> = {}) => ({
+    geminiApiKey: '',
+    cloudflareAccountId: 'acc',
+    cloudflareApiToken: 'tok',
+    cloudflareRetrySleep: async () => {},
+    openRouterApiKey: 'sk-or-test',
+    openRouterRetrySleep: async () => {},
+    ...extra,
+  });
+  /** Routes by URL; anything unrouted (scene-director chat, catalog, ...) fails fast. */
+  function route(handlers: {
+    klein?: () => Response;
+    schnell?: () => Response;
+    or?: () => Response;
+  }) {
+    return vi.fn(async (url: RequestInfo | URL) => {
+      const u = String(url);
+      if (u.includes(OR_URL) && handlers.or) return handlers.or();
+      if (u.includes('flux-2-klein-9b') && handlers.klein) return handlers.klein();
+      if (u.includes('flux-1-schnell') && handlers.schnell) return handlers.schnell();
+      return new Response('fail', { status: 500 });
+    }) as typeof fetch;
+  }
+  const imageCalls = () =>
+    vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter((c) => {
+        const u = String(c[0]);
+        return u.includes(OR_URL) || u.includes('api.cloudflare.com');
+      })
+      .map((c) => String(c[0]));
+  const orCalls = () => imageCalls().filter((u) => u.includes(OR_URL));
+
+  /** Minimal supabase stub: the count query resolves `count`; inserts are captured. */
+  function fakeDb(count: number | null, inserts: unknown[] = []) {
+    const query = {
+      select: () => query,
+      eq: () => query,
+      gte: () =>
+        Promise.resolve(
+          count === null ? { count: null, error: { message: 'boom' } } : { count, error: null },
+        ),
+    };
+    return {
+      from: (table: string) => {
+        expect(table).toBe('generation_cost_events');
+        return {
+          ...query,
+          insert: (row: unknown) => {
+            inserts.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      },
+    } as unknown as PipelineDb;
+  }
+
+  beforeEach(() => {
+    resetCloudflareQuotaState();
+    resetOpenRouterImageState();
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    resetCloudflareQuotaState();
+    resetOpenRouterImageState();
+    vi.restoreAllMocks();
+  });
+
+  it('pins the provider and the price in the request body and appends the ban list to the prompt', () => {
+    const body = openRouterImageBody(DEFAULT_OPENROUTER_IMAGE_MODEL, 'A scene.') as {
+      prompt: string;
+    };
+    expect(body).toMatchObject({
+      model: 'black-forest-labs/flux-3-image-klein',
+      n: 1,
+      aspect_ratio: '16:9',
+      resolution: '1K',
+      provider: {
+        only: ['black-forest-labs'],
+        allow_fallbacks: false,
+        require_parameters: true,
+        max_price: { image: OPENROUTER_MAX_PRICE_USD },
+      },
+    });
+    expect(OPENROUTER_MAX_PRICE_USD).toBe(0.015);
+    expect(body.prompt).toBe(`A scene. ${OPENROUTER_NEGATIVE_SUFFIX}`);
+  });
+
+  it('sends that body to POST /api/v1/images with the bearer key when Cloudflare fails', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+
+    expect(result?.provider).toBe('openrouter');
+    expect(result?.model).toBe(DEFAULT_OPENROUTER_IMAGE_MODEL);
+    const call = vi.mocked(globalThis.fetch).mock.calls.find((c) => String(c[0]).includes(OR_URL));
+    expect(call?.[1]?.method).toBe('POST');
+    expect((call?.[1]?.headers as Record<string, string>).Authorization).toBe('Bearer sk-or-test');
+    const body = JSON.parse(String(call?.[1]?.body)) as Record<string, any>;
+    expect(body.provider).toEqual({
+      only: ['black-forest-labs'],
+      allow_fallbacks: false,
+      require_parameters: true,
+      max_price: { image: 0.015 },
+    });
+    expect(body.prompt).toContain('Scene:');
+    expect(body.prompt.endsWith(OPENROUTER_NEGATIVE_SUFFIX)).toBe(true);
+  });
+
+  it('honours OPENROUTER_IMAGE_MODEL via config', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(
+      input,
+      cfg({ openRouterImageModel: 'black-forest-labs/flux-3-image-pro' }),
+    );
+    expect(result?.model).toBe('black-forest-labs/flux-3-image-pro');
+    const call = vi.mocked(globalThis.fetch).mock.calls.find((c) => String(c[0]).includes(OR_URL));
+    expect(JSON.parse(String(call?.[1]?.body)).model).toBe('black-forest-labs/flux-3-image-pro');
+  });
+
+  it('ladder: Cloudflare klein first, then OpenRouter, and schnell never runs when OpenRouter succeeds', async () => {
+    globalThis.fetch = route({ or: () => orOk(), schnell: () => cfOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+
+    expect(result?.provider).toBe('openrouter');
+    const urls = imageCalls();
+    expect(urls[0]).toContain('flux-2-klein-9b');
+    expect(urls[1]).toContain(OR_URL);
+    expect(urls.some((u) => u.includes('flux-1-schnell'))).toBe(false);
+  });
+
+  it('does not touch OpenRouter when Cloudflare klein succeeds', async () => {
+    globalThis.fetch = route({ klein: () => cfOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result?.provider).toBe('cloudflare');
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it('falls to schnell as the last free tier only after OpenRouter fails', async () => {
+    globalThis.fetch = route({ or: () => new Response('boom', { status: 500 }), schnell: () => cfOk() });
+    const result = await generateEditorialIllustration(input, cfg());
+
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    const order = imageCalls().map((u) =>
+      u.includes(OR_URL) ? 'or' : u.includes('klein') ? 'klein' : 'schnell',
+    );
+    expect(order).toEqual(['klein', 'or', 'schnell']);
+  });
+
+  it('runs OpenRouter without Cloudflare credentials and returns null (not schnell) when it fails', async () => {
+    globalThis.fetch = route({ or: () => new Response('boom', { status: 500 }) });
+    const none = await generateEditorialIllustration(
+      input,
+      cfg({ cloudflareAccountId: undefined, cloudflareApiToken: undefined }),
+    );
+    expect(none).toBeNull();
+    expect(imageCalls().every((u) => u.includes(OR_URL))).toBe(true);
+  });
+
+  it('records the real usage.cost as a reported cost', async () => {
+    globalThis.fetch = route({ or: () => orOk(0.0091) });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result).toMatchObject({
+      estimatedCostUsd: 0.0091,
+      costSource: 'reported',
+      provider: 'openrouter',
+    });
+
+    const inserts: unknown[] = [];
+    await recordCardImageCostEvent(fakeDb(0, inserts), result as GeneratedImageResult, {
+      brief_id: 'b1',
+    });
+    expect(inserts).toEqual([
+      expect.objectContaining({
+        scope: 'daily',
+        kind: 'image',
+        provider: 'openrouter',
+        model: DEFAULT_OPENROUTER_IMAGE_MODEL,
+        cost_usd: 0.0091,
+        cost_source: 'reported',
+        metadata: expect.objectContaining({ brief_id: 'b1' }),
+      }),
+    ]);
+  });
+
+  it('falls back to a flagged estimate when the response has no usage.cost', async () => {
+    globalThis.fetch = route({ or: () => orOk(null) });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result).toMatchObject({ estimatedCostUsd: 0.009, costSource: 'estimated' });
+  });
+
+  it('rejects a response whose usage.cost is above the ceiling and latches the tier off', async () => {
+    globalThis.fetch = route({ or: () => orOk(OPENROUTER_MAX_ACCEPTED_COST_USD + 0.001) });
+    const result = await generateEditorialIllustration(input, cfg());
+    expect(result).toBeNull();
+    expect(openRouterImageLatchReason()).toBe('cost_above_ceiling');
+
+    await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, cfg());
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('latches off for the rest of the process on HTTP 402 (no credits)', async () => {
+    globalThis.fetch = route({
+      or: () => new Response('{"error":{"message":"Insufficient credits"}}', { status: 402 }),
+    });
+    const first = await generateEditorialIllustration(input, cfg());
+    expect(first).toBeNull();
+    expect(openRouterImageLatchReason()).toBe('http_402');
+
+    await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, cfg());
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it.each([401, 403])('latches off on HTTP %i', async (status) => {
+    globalThis.fetch = route({ or: () => new Response('no', { status }) });
+    await generateEditorialIllustration(input, cfg());
+    expect(openRouterImageLatchReason()).toBe(`http_${status}`);
+  });
+
+  it('does not latch on a plain 500 and tries again on the next image', async () => {
+    globalThis.fetch = route({ or: () => new Response('boom', { status: 500 }) });
+    await generateEditorialIllustration(input, cfg());
+    await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, cfg());
+    expect(openRouterImageLatchReason()).toBeNull();
+    expect(orCalls()).toHaveLength(2);
+  });
+
+  it('retries a 429 exactly once, honouring Retry-After capped at 20 s', async () => {
+    const sleep = vi.fn(async (_ms: number) => {});
+    globalThis.fetch = route({
+      or: () => new Response('slow', { status: 429, headers: { 'retry-after': '600' } }),
+    });
+    const result = await generateEditorialIllustration(input, cfg({ openRouterRetrySleep: sleep }));
+
+    expect(result).toBeNull();
+    expect(orCalls()).toHaveLength(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(sleep).toHaveBeenCalledWith(20_000);
+    expect(openRouterImageLatchReason()).toBeNull();
+  });
+
+  it('succeeds when the single 429 retry works', async () => {
+    let n = 0;
+    globalThis.fetch = route({
+      or: () =>
+        ++n === 1 ? new Response('slow', { status: 429, headers: { 'retry-after': '2' } }) : orOk(),
+    });
+    const sleep = vi.fn(async (_ms: number) => {});
+    const result = await generateEditorialIllustration(input, cfg({ openRouterRetrySleep: sleep }));
+    expect(result?.provider).toBe('openrouter');
+    expect(sleep).toHaveBeenCalledWith(2000);
+  });
+
+  it('skips the tier silently when there is no OpenRouter key', async () => {
+    globalThis.fetch = route({});
+    const result = await generateEditorialIllustration(input, cfg({ openRouterApiKey: undefined }));
+    expect(result).toBeNull();
+    expect(orCalls()).toHaveLength(0);
+    const blank = await generateEditorialIllustration(input, cfg({ openRouterApiKey: '  ' }));
+    expect(blank).toBeNull();
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it("skips the tier when today's ledger count has reached the daily cap", async () => {
+    globalThis.fetch = route({ or: () => orOk(), schnell: () => cfOk() });
+    const result = await generateEditorialIllustration(
+      input,
+      cfg({ db: fakeDb(20), openRouterImageDailyCap: 20 }),
+    );
+    // capped -> straight to the last free tier
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it('defaults the cap to 20 and still generates at 19 ledger rows', async () => {
+    expect(resolveOpenRouterImageDailyCap(undefined)).toBe(20);
+    expect(resolveOpenRouterImageDailyCap(Number.NaN)).toBe(20);
+    expect(resolveOpenRouterImageDailyCap(-3)).toBe(20);
+    expect(resolveOpenRouterImageDailyCap(0)).toBe(0);
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(input, cfg({ db: fakeDb(19) }));
+    expect(result?.provider).toBe('openrouter');
+    const capped = await generateEditorialIllustration(
+      { ...input, seedKey: 'or-2' },
+      cfg({ db: fakeDb(20) }),
+    );
+    expect(capped).toBeNull();
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('cap 0 disables the tier', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const result = await generateEditorialIllustration(input, cfg({ openRouterImageDailyCap: 0 }));
+    expect(result).toBeNull();
+    expect(orCalls()).toHaveLength(0);
+  });
+
+  it('without a db the cap is enforced per process', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const c = cfg({ openRouterImageDailyCap: 2 });
+    const a = await generateEditorialIllustration(input, c);
+    const b = await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, c);
+    const third = await generateEditorialIllustration({ ...input, seedKey: 'or-3' }, c);
+    expect([a?.provider, b?.provider, third]).toEqual(['openrouter', 'openrouter', null]);
+    expect(orCalls()).toHaveLength(2);
+  });
+
+  it('when the ledger count query fails it falls back to the process counter', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const c = cfg({ db: fakeDb(null), openRouterImageDailyCap: 1 });
+    expect((await generateEditorialIllustration(input, c))?.provider).toBe('openrouter');
+    expect(await generateEditorialIllustration({ ...input, seedKey: 'or-2' }, c)).toBeNull();
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('counts in-flight parallel calls against the cap', async () => {
+    globalThis.fetch = route({ or: () => orOk() });
+    const c = cfg({ openRouterImageDailyCap: 1 });
+    const results = await Promise.all([
+      generateEditorialIllustration(input, c),
+      generateEditorialIllustration({ ...input, seedKey: 'or-2' }, c),
+    ]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(orCalls()).toHaveLength(1);
+  });
+
+  it('batch callers keep going while only Cloudflare is exhausted but OpenRouter is usable', async () => {
+    const quota = () =>
+      new Response(JSON.stringify({ errors: [{ code: 4006, message: 'daily free allocation' }] }), {
+        status: 429,
+        headers: { 'content-type': 'application/json' },
+      });
+    globalThis.fetch = route({ klein: quota, or: () => orOk() });
+    const c = cfg();
+    const first = await generateEditorialIllustration(input, c);
+    expect(first?.provider).toBe('openrouter');
+    expect(cloudflareQuotaExhausted()).toBe(true);
+    expect(cardImageProvidersExhausted(c)).toBe(false);
+    expect(cardImageProvidersExhausted({ ...c, openRouterApiKey: undefined })).toBe(true);
   });
 });

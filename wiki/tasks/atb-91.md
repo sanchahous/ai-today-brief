@@ -44,6 +44,16 @@ DONE (PR відкрито; 27 обкладинок чекають на скид�
 - Scene: Gemini-адаптер без схеми використовував повну bilingual-brief schema й відповідав на запит сцени цілим brief-JSON (~4,5k символів, ~30 с); `cleanSceneText` не знаходив ключа, і обрізаний JSON потрапляв у FLUX-prompt. Тепер директор просить `{"scene": ...}`, Gemini прив'язано до schema з одним полем, а невідомий JSON дає порожній рядок → keyword-fallback. Це не просто логування, а реальний баг. Після фіксу сцена ~220 символів, відповідь за 4–12 с.
 - Що має зробити власник: Workers Paid план (або `CLOUDFLARE_IMAGE_MODEL=@cf/black-forest-labs/flux-1-schnell`), інакше free-пул (~7 klein-обкладинок/день) вичерпується продом і регенерацією.
 
+## OpenRouter flux-3-image-klein tier (2026-10-30)
+
+Власник: «залишимо black-forest-labs/flux-3-image-klein, рахунок OpenRouter поповнено». Pollinations прибрано (369c39ac); замість нього — платний tier.
+
+- `pipeline/card-image.ts`: новий `generateOpenRouter` (`POST /api/v1/images`). Ladder: Gemini (opt-in) → Cloudflare klein → OpenRouter flux-3-image-klein → Cloudflare schnell → null → duotone.
+- Захист від «витоку» (див. OpenRouter spend leak): провайдер запінено (`only black-forest-labs`, `allow_fallbacks:false`, `max_price.image 0.015`); денний ліміт `OPENROUTER_IMAGE_DAILY_CAP` (default 20/UTC-добу) рахується з `generation_cost_events` (kind=image, provider=openrouter) + процесний лічильник; 402/401/403 — latch до кінця процесу; 429 — один retry (Retry-After ≤ 20 с); `usage.cost > 0.02` — відхилення + latch.
+- Ledger: реальний `usage.cost` (`cost_source=reported`); новий `recordCardImageCostEvent` підключено до daily, обох backfill-скриптів і `regenerate-card-image.ts` (раніше backfill/regenerate вартість не писали).
+- Env: `OPEN_ROUTER_API_KEY` (наявний секрет), `OPENROUTER_IMAGE_MODEL`, `OPENROUTER_IMAGE_DAILY_CAP`. Workflow-и вже передають ключ — змін не потрібно.
+- Доки: `wiki/marketing/card-images.md`, `.env.example`.
+
 ## Next task
 
 None from ATB-91.

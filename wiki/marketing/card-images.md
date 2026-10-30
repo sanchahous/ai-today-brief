@@ -11,7 +11,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code
 library 2026-08-23, daily production cover 2026-08-24, image-only QA Likert 2026-08-25
-Last updated: 2026-10-29
+Last updated: 2026-10-30
 
 ---
 
@@ -74,16 +74,17 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 3. **Image** — Cloudflare Workers AI default
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).
-   Ladder: Gemini (opt-in) → Cloudflare klein → Cloudflare schnell → **null** → branded
-   procedural **duotone** (`src/lib/card/duotone.ts`). The keyless Pollinations tier was
+   Ladder (since 2026-10-30, ATB-91): Gemini (opt-in) → Cloudflare klein → **OpenRouter
+   `black-forest-labs/flux-3-image-klein`** (paid, daily-capped, see below) → Cloudflare schnell
+   (last free tier) → **null** → branded procedural **duotone** (`src/lib/card/duotone.ts`). The keyless Pollinations tier was
    **removed entirely on 2026-10-29** (provider function, `allowPollinations` option and
    `'pollinations'` provider value deleted; prod had 0 `brief_items.card_image_url` rows
    pointing at pollinations, so no image-host allowlist was involved): the anonymous
    endpoint served a small "sana" model regardless of `model=flux`, added a watermark,
    ignored in-prompt "never a face" negations and was limited to 1 image / 45 s / IP, so
    every CI fallback between 2026-08-30 and 2026-10-28 produced an off-topic AI portrait
-   (46 items). A replacement higher-quality last-resort tier is being researched
-   (not decided). A failed generation now leaves `card_image_url` null and the next `fillCardImages` run
+   (46 items). The replacement is the OpenRouter flux-3-image-klein tier (owner decision
+   2026-10-30). A failed generation now leaves `card_image_url` null and the next `fillCardImages` run
    retries it. (source: PR #169, #171, `pipeline/card-image.ts`; live check
    `generation_cost_events` + `storage.objects` + Pollinations response header
    `x-model-used: sana`, 2026-10-29)
@@ -107,6 +108,31 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
      `seed` is no longer sent and the prompt is clamped to 2048 chars.
    (source: direct API calls 2026-10-29; `pipeline/card-image.ts` `generateCloudflare`,
    `cloudflareJsonBody`)
+
+   **OpenRouter image tier (2026-10-30, owner-chosen):** `POST https://openrouter.ai/api/v1/images`
+   with `model = black-forest-labs/flux-3-image-klein`, `aspect_ratio 16:9`, `resolution 1K`,
+   `n 1`. Trial 2026-10-30: 10/10 HTTP 200, 1360×768 JPEG, ~7 s, $0.009/image (`usage.cost`),
+   no people/text. The API has no negative-prompt field, so the ban list
+   "No people, no faces, no portraits, no hands, no text, no letters, no logos." is appended to
+   the prompt text. This is the only **paid** tier, so it is fenced:
+   - request pins `provider: {only: ["black-forest-labs"], allow_fallbacks: false,
+     require_parameters: true, max_price: {image: 0.015}}` — a re-route can never bill more;
+   - **daily cap** `OPENROUTER_IMAGE_DAILY_CAP` (default **20** images per UTC day, `0` = off),
+     counted from `generation_cost_events` (`kind='image'`, `provider='openrouter'`, since
+     00:00 UTC, any scope) and max'd with an in-process reservation counter (parallel callers
+     reserve before the await; if the ledger count query fails the process counter alone applies);
+   - HTTP **402** (no credits) / **401** / **403** latch the tier off for the rest of the process
+     (`openRouterImageLatchReason`); **429** retries once (`Retry-After` capped at 20 s);
+     60 s timeout; any other error just fails the tier (next image tries again);
+   - a response with `usage.cost > $0.02` is discarded and latches the tier off;
+   - every success is ledgered with the real `usage.cost` (`cost_source='reported'`) via
+     `recordCardImageCostEvent`, used by the daily pipeline, both backfill scripts and
+     `regenerate-card-image.ts` — a caller that skips it hides spend from the cap;
+   - no `OPEN_ROUTER_API_KEY` ⇒ tier skipped silently. The model has no seed.
+   Caveat: the cap sees only what reaches the ledger; the OpenRouter dashboard stays the
+   source of truth for dollars. The account key itself has no per-key limit.
+   (source: OpenRouter docs `/guides/overview/multimodal/image-generation` 2026-10-30;
+   trial run 2026-10-30; `pipeline/card-image.ts` `generateOpenRouter`)
 4. **Store** — `encodeCardOrigin` cover-resize to 1280×720, flatten alpha onto
    `#071019`, JPEG q82 mozjpeg progressive → `${slug}.jpg` (`image/jpeg`) in the
    public `card-images` bucket → `brief_items.card_image_url`. JPEG, not WebP,
@@ -170,6 +196,10 @@ CLOUDFLARE_API_TOKEN=…   # Workers AI
 # CLOUDFLARE_IMAGE_MODEL=@cf/black-forest-labs/flux-1-schnell
 # CLOUDFLARE_IMAGE_USD_FIRST_MP=0.015
 # CLOUDFLARE_IMAGE_USD_NEXT_MP=0.002
+# Paid OpenRouter image tier (uses the existing key; no key => skipped):
+OPEN_ROUTER_API_KEY=…
+# OPENROUTER_IMAGE_MODEL=black-forest-labs/flux-3-image-klein
+# OPENROUTER_IMAGE_DAILY_CAP=20   # images per UTC day; 0 disables the tier
 ```
 
 Unset account/token → generation step skipped; branded duotone fallback renders.

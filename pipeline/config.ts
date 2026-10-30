@@ -49,6 +49,10 @@ export interface PipelineConfig {
   geminiImageModel?: string;
   /** Cloudflare Workers AI image model id (default '@cf/black-forest-labs/flux-2-klein-9b'). */
   cloudflareImageModel?: string;
+  /** OpenRouter image model (default 'black-forest-labs/flux-3-image-klein'); needs openRouterApiKey. */
+  openRouterImageModel?: string;
+  /** Max paid OpenRouter images per UTC day (default 20; 0 disables the tier). */
+  openRouterImageDailyCap?: number;
   /** Bot token for pushing review cards (optional — notify is skipped if unset). */
   telegramBotToken?: string;
   /** Private chat id that receives the per-item review cards (optional). */
@@ -91,6 +95,12 @@ function resolveServiceKey(env: Record<string, string | undefined>): string | un
 function intIn(raw: string | undefined, fallback: number, min: number, max: number): number {
   const n = Number(raw);
   return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
+}
+
+/** Non-negative integer or undefined (blank/garbage/negative ⇒ caller's default applies). */
+function nonNegativeInt(raw: string | undefined): number | undefined {
+  const n = Number.parseInt(raw ?? '', 10);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
 function floatIn(raw: string | undefined, fallback: number, min: number, max: number): number {
@@ -150,6 +160,8 @@ export function loadPipelineConfig(
     cloudflareApiToken: env.CLOUDFLARE_API_TOKEN?.trim() || undefined,
     geminiImageModel: env.GEMINI_IMAGE_MODEL?.trim() || undefined,
     cloudflareImageModel: env.CLOUDFLARE_IMAGE_MODEL?.trim() || undefined,
+    openRouterImageModel: env.OPENROUTER_IMAGE_MODEL?.trim() || undefined,
+    openRouterImageDailyCap: nonNegativeInt(env.OPENROUTER_IMAGE_DAILY_CAP),
     telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,
     telegramReviewChatId: env.TELEGRAM_REVIEW_CHAT_ID?.trim() || undefined,
     socialChannels: parseSocialChannels(env.SOCIAL_CHANNELS),

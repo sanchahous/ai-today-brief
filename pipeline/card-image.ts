@@ -15,7 +15,9 @@
  *      otherwise).
  *   2. Cloudflare Workers AI FLUX.2 [klein] 9B — default (multipart API); override
  *      via CLOUDFLARE_IMAGE_MODEL (e.g. flux-2-dev).
- *   3. Cloudflare FLUX-1-schnell — JSON spillover if the primary CF model fails.
+ *   3. OpenRouter black-forest-labs/flux-3-image-klein (~$0.009/image, paid) — only
+ *      with an OpenRouter key, hard-capped per UTC day (OPENROUTER_IMAGE_DAILY_CAP).
+ *   4. Cloudflare FLUX-1-schnell — last free tier when everything above failed.
  * When all fail the item keeps a null URL and the OG card renders its branded
  * duotone fallback. Runs post-publish, idempotent (skips items that already have
  * an image), so re-running the pipeline never regenerates or double-charges.
@@ -59,6 +61,8 @@ const SCENE_RESPONSE_SCHEMA: GeminiResponseSchema = {
 export const DEFAULT_CF_IMAGE_MODEL = '@cf/black-forest-labs/flux-2-klein-9b';
 /** Cheap JSON spillover when the primary (multipart) CF model fails. */
 export const SCHNELL_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+/** Paid OpenRouter image tier (~$0.009/image, 2026-10-30). Override with OPENROUTER_IMAGE_MODEL. */
+export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'black-forest-labs/flux-3-image-klein';
 const FALLBACK_ACCENT = '#5bc9f0';
 /** 16:9 render size; crops cleanly to the 1200×630 OG card and the 92px feed thumb. */
 export const IMG_W = 1280;
@@ -201,8 +205,21 @@ export interface CardImageConfig {
   geminiImageModel?: string;
   /** Cloudflare image model id (default {@link DEFAULT_CF_IMAGE_MODEL}). */
   cloudflareImageModel?: string;
-  /** OpenRouter key — scene-step fallback when the Gemini free tier is rate-limited. */
+  /**
+   * OpenRouter key — scene-step fallback when the Gemini free tier is rate-limited, and
+   * the (paid, capped) OpenRouter image tier. No key ⇒ the image tier is skipped silently.
+   */
   openRouterApiKey?: string;
+  /** OpenRouter image model id (default {@link DEFAULT_OPENROUTER_IMAGE_MODEL}). */
+  openRouterImageModel?: string;
+  /**
+   * Max OpenRouter images per UTC day (default {@link DEFAULT_OPENROUTER_IMAGE_DAILY_CAP}; 0
+   * disables the tier). Counted from `generation_cost_events` when `db` is set, otherwise
+   * per process. NaN/negative falls back to the default.
+   */
+  openRouterImageDailyCap?: number;
+  /** Sleep used before the single OpenRouter 429 retry (injectable for tests). */
+  openRouterRetrySleep?: (ms: number) => Promise<void>;
   /**
    * Supabase client -- enables DB-driven role-chain overrides for the scene-brief
    * step (owner-added providers via /admin/providers, see
@@ -244,7 +261,7 @@ export interface SceneBriefResult {
 
 export interface GeneratedImageResult {
   bytes: Buffer;
-  provider: 'gemini' | 'cloudflare' | 'local';
+  provider: 'gemini' | 'cloudflare' | 'openrouter' | 'local';
   model: string;
   estimatedCostUsd: number;
   costSource: ImageCostSource;
@@ -437,6 +454,32 @@ export async function fillCardImages(
     }
   }
   return { generated, skipped: all.length - pending.length, failed };
+}
+
+/**
+ * Writes one `generation_cost_events` row (scope 'daily', kind 'image') for a generated card
+ * image. Shared by every card-image caller: the paid OpenRouter tier counts today's rows from
+ * this table to enforce its daily cap, so a caller that skips this hides spend from the cap.
+ * Best-effort: a ledger failure is logged, never thrown.
+ */
+export async function recordCardImageCostEvent(
+  db: PipelineDb,
+  image: GeneratedImageResult,
+  metadata: Record<string, unknown> = {},
+): Promise<void> {
+  if (image.provider === 'local') return;
+  const { error } = await db.from('generation_cost_events').insert({
+    scope: 'daily',
+    kind: 'image',
+    provider: image.provider,
+    model: image.model,
+    cost_usd: image.estimatedCostUsd,
+    cost_source: image.costSource,
+    metadata: { width: image.width, height: image.height, ...metadata },
+  });
+  if (error) {
+    logEvent('warn', 'publish', 'Card image cost ledger write failed', { error: error.message });
+  }
 }
 
 export type RegenerateCardImageResult =
@@ -2978,14 +3021,16 @@ export function fallbackScene(text: string): string {
 }
 
 /**
- * Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell → null (the caller
+ * Quality ladder: Gemini image (opt-in) → Cloudflare FLUX.2 klein → OpenRouter
+ * flux-3-image-klein (paid, daily-capped) → Cloudflare flux-1-schnell → null (the caller
  * keeps a null URL and the OG card renders its branded duotone fallback).
  *
  * Both Cloudflare models draw from ONE shared pool of Workers AI "neurons". The free plan
  * allows 10,000 per day (reset 00:00 UTC) and klein burns roughly 1.4k per image, so a
  * handful of images exhaust it; once that happens schnell is rejected too (HTTP 429, code
  * 4006). In that case the schnell spillover is pointless, so it is skipped and every later
- * Cloudflare call in this process short-circuits until the pool resets.
+ * Cloudflare call in this process short-circuits until the pool resets. Schnell sits
+ * *after* OpenRouter so it is the last free tier when the paid one is capped or failing.
  */
 async function generateImage(
   positive: string,
@@ -2998,14 +3043,16 @@ async function generateImage(
     if (g) return g;
   }
   const hasCf = !!(cfg.cloudflareAccountId && cfg.cloudflareApiToken);
+  const cfModel = cfg.cloudflareImageModel?.trim() || DEFAULT_CF_IMAGE_MODEL;
   if (hasCf) {
-    const cfModel = cfg.cloudflareImageModel?.trim() || DEFAULT_CF_IMAGE_MODEL;
     const primary = await generateCloudflare(cfModel, positive, negative, cfg, seed);
     if (primary) return primary;
-    if (cfModel !== SCHNELL_MODEL && !cloudflareQuotaExhausted()) {
-      const spill = await generateCloudflare(SCHNELL_MODEL, positive, negative, cfg, seed);
-      if (spill) return spill;
-    }
+  }
+  const paid = await generateOpenRouter(positive, cfg);
+  if (paid) return paid;
+  if (hasCf && cfModel !== SCHNELL_MODEL && !cloudflareQuotaExhausted()) {
+    const spill = await generateCloudflare(SCHNELL_MODEL, positive, negative, cfg, seed);
+    if (spill) return spill;
   }
   logEvent('warn', 'publish', 'Card image: all providers failed; keeping the branded fallback');
   return null;
@@ -3088,11 +3135,12 @@ export function cloudflareQuotaExhausted(now = Date.now()): boolean {
 
 /**
  * True when no image provider in this config can still succeed this process: the Cloudflare
- * daily pool is spent and Gemini images are not enabled. Batch callers
+ * daily pool is spent, Gemini images are not enabled and the OpenRouter tier is off, latched
+ * or at its (process-local view of the) cap. Batch callers
  * use it to stop before paying for scene-director calls that cannot produce a cover.
  */
 export function cardImageProvidersExhausted(cfg: CardImageConfig): boolean {
-  return !cfg.geminiImageModel && cloudflareQuotaExhausted();
+  return !cfg.geminiImageModel && cloudflareQuotaExhausted() && !openRouterImageTierUsable(cfg);
 }
 
 /** Test hook / manual reset for the process-local daily-quota latch. */
@@ -3343,6 +3391,261 @@ async function readCloudflareImageResponse(
   }
   const buf = Buffer.from(await res.arrayBuffer());
   return buf.length > 1024 ? { ok: true, bytes: buf } : { ok: false, failure: null };
+}
+
+/**
+ * OpenRouter image tier -- `POST /api/v1/images`, black-forest-labs/flux-3-image-klein.
+ *
+ * This is the only PAID image tier, so every guardrail is deliberate (a past OpenRouter
+ * spend leak cost ~14x the ledger, see wiki/ops):
+ *   - the request pins the provider (`only` + `allow_fallbacks:false`) and sets
+ *     `max_price.image`, so a re-route can never bill more than {@link OPENROUTER_MAX_PRICE_USD};
+ *   - a per-UTC-day cap ({@link DEFAULT_OPENROUTER_IMAGE_DAILY_CAP}) is counted from
+ *     `generation_cost_events` (provider='openrouter', kind='image') when a db is available,
+ *     max'd with an in-process reservation counter so a failed ledger write cannot hide spend;
+ *   - 402 (no credits) / 401 / 403 latch the tier off for the rest of the process;
+ *   - 429 retries once (Retry-After honoured, capped at 20 s); other errors fail the tier;
+ *   - a response whose `usage.cost` exceeds {@link OPENROUTER_MAX_ACCEPTED_COST_USD} is
+ *     discarded and latches the tier off.
+ * The API has no negative-prompt field, so a short ban list is appended to the prompt text.
+ */
+export const DEFAULT_OPENROUTER_IMAGE_DAILY_CAP = 20;
+/** Per-image ceiling sent as `provider.max_price.image` (model list price is ~0.009). */
+export const OPENROUTER_MAX_PRICE_USD = 0.015;
+/** A reported `usage.cost` above this is treated as a pricing anomaly: reject + latch off. */
+export const OPENROUTER_MAX_ACCEPTED_COST_USD = 0.02;
+/** Ledger estimate used only when the response omits `usage.cost`. */
+const OPENROUTER_FALLBACK_COST_USD = 0.009;
+const OPENROUTER_PROVIDER_SLUG = 'black-forest-labs';
+const OPENROUTER_TIMEOUT_MS = 60_000;
+const OPENROUTER_RETRY_DEFAULT_WAIT_MS = 3_000;
+const OPENROUTER_RETRY_MAX_WAIT_MS = 20_000;
+export const OPENROUTER_NEGATIVE_SUFFIX =
+  'No people, no faces, no portraits, no hands, no text, no letters, no logos.';
+
+let openRouterLatchedReason: string | null = null;
+let openRouterReserved = { day: '', count: 0 };
+
+/** Test hook / manual reset for the process-local OpenRouter latch + call counter. */
+export function resetOpenRouterImageState(): void {
+  openRouterLatchedReason = null;
+  openRouterReserved = { day: '', count: 0 };
+}
+
+/** Non-null while a 402/401/403 or a pricing anomaly has switched the tier off in this process. */
+export function openRouterImageLatchReason(): string | null {
+  return openRouterLatchedReason;
+}
+
+function utcDay(now: number): string {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+function reservedToday(now = Date.now()): number {
+  return openRouterReserved.day === utcDay(now) ? openRouterReserved.count : 0;
+}
+
+function bumpReserved(delta: 1 | -1, now = Date.now()): void {
+  const day = utcDay(now);
+  if (openRouterReserved.day !== day) openRouterReserved = { day, count: 0 };
+  openRouterReserved.count = Math.max(0, openRouterReserved.count + delta);
+}
+
+/** Resolves the per-day cap; anything that is not a non-negative number means the default. */
+export function resolveOpenRouterImageDailyCap(cap: number | undefined): number {
+  return typeof cap === 'number' && Number.isFinite(cap) && cap >= 0
+    ? Math.floor(cap)
+    : DEFAULT_OPENROUTER_IMAGE_DAILY_CAP;
+}
+
+/** Cheap synchronous view (key present, not latched, process counter under cap). */
+function openRouterImageTierUsable(cfg: CardImageConfig): boolean {
+  return (
+    !!cfg.openRouterApiKey?.trim() &&
+    openRouterLatchedReason === null &&
+    reservedToday() < resolveOpenRouterImageDailyCap(cfg.openRouterImageDailyCap)
+  );
+}
+
+/** Request body for `POST /api/v1/images` (exported so tests can pin the cost guardrails). */
+export function openRouterImageBody(model: string, positive: string): Record<string, unknown> {
+  return {
+    model,
+    prompt: `${positive} ${OPENROUTER_NEGATIVE_SUFFIX}`,
+    n: 1,
+    aspect_ratio: '16:9',
+    resolution: '1K',
+    provider: {
+      only: [OPENROUTER_PROVIDER_SLUG],
+      allow_fallbacks: false,
+      require_parameters: true,
+      max_price: { image: OPENROUTER_MAX_PRICE_USD },
+    },
+  };
+}
+
+/**
+ * Images OpenRouter already billed today (UTC). `null` when there is no db or the query
+ * failed -- the caller then relies on the process counter alone.
+ */
+async function countOpenRouterImagesToday(db: PipelineDb | undefined): Promise<number | null> {
+  if (!db) return null;
+  const now = new Date();
+  const since = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  ).toISOString();
+  try {
+    const { count, error } = await db
+      .from('generation_cost_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('kind', 'image')
+      .eq('provider', 'openrouter')
+      .gte('created_at', since);
+    if (error) {
+      logEvent('warn', 'publish', 'OpenRouter image daily-cap count failed; using process counter', {
+        error: error.message,
+      });
+      return null;
+    }
+    return count ?? 0;
+  } catch (error) {
+    logEvent('warn', 'publish', 'OpenRouter image daily-cap count threw; using process counter', {
+      ...serializeErrorDetails(error),
+    });
+    return null;
+  }
+}
+
+type OpenRouterAttempt =
+  | { ok: true; bytes: Buffer; costUsd: number | null }
+  | { ok: false; status: number | null; retryAfterMs: number | null; anomaly?: boolean };
+
+function parseRetryAfterMs(res: Response): number | null {
+  const header = res.headers.get('retry-after');
+  const seconds = header === null ? Number.NaN : Number(header);
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
+}
+
+async function runOpenRouterImage(
+  model: string,
+  positive: string,
+  apiKey: string,
+): Promise<OpenRouterAttempt> {
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/images', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify(openRouterImageBody(model, positive)),
+      signal: AbortSignal.timeout(OPENROUTER_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      let detail = '';
+      try {
+        detail = (await res.text()).slice(0, 300);
+      } catch {
+        // the status alone classifies it
+      }
+      logEvent('warn', 'publish', 'OpenRouter image gen failed', {
+        status: res.status,
+        model,
+        error: detail,
+      });
+      return { ok: false, status: res.status, retryAfterMs: parseRetryAfterMs(res) };
+    }
+    const data = (await res.json()) as {
+      data?: { b64_json?: string; url?: string }[];
+      usage?: { cost?: unknown };
+    };
+    const rawCost = data.usage?.cost;
+    const costUsd =
+      typeof rawCost === 'number' && Number.isFinite(rawCost) && rawCost >= 0 ? rawCost : null;
+    if (costUsd !== null && costUsd > OPENROUTER_MAX_ACCEPTED_COST_USD) {
+      logEvent('error', 'publish', 'OpenRouter image cost above ceiling; discarding and latching tier off', {
+        model,
+        cost_usd: costUsd,
+        ceiling_usd: OPENROUTER_MAX_ACCEPTED_COST_USD,
+      });
+      return { ok: false, status: res.status, retryAfterMs: null, anomaly: true };
+    }
+    const first = data.data?.[0];
+    let bytes: Buffer | null = null;
+    if (first?.b64_json) {
+      bytes = Buffer.from(first.b64_json, 'base64');
+    } else if (first?.url?.startsWith('https://')) {
+      const img = await fetch(first.url, { signal: AbortSignal.timeout(30_000) });
+      if (img.ok) bytes = Buffer.from(await img.arrayBuffer());
+    }
+    if (!bytes || bytes.length <= 1024) {
+      logEvent('warn', 'publish', 'OpenRouter image gen returned no usable image', { model });
+      return { ok: false, status: res.status, retryAfterMs: null };
+    }
+    return { ok: true, bytes, costUsd };
+  } catch (error) {
+    logEvent('warn', 'publish', 'OpenRouter image gen threw', { model, ...serializeErrorDetails(error) });
+    return { ok: false, status: null, retryAfterMs: null };
+  }
+}
+
+async function generateOpenRouter(
+  positive: string,
+  cfg: CardImageConfig,
+): Promise<GeneratedImageResult | null> {
+  const apiKey = cfg.openRouterApiKey?.trim();
+  if (!apiKey) return null; // tier not configured: skip silently
+  if (openRouterLatchedReason !== null) return null;
+  const model = cfg.openRouterImageModel?.trim() || DEFAULT_OPENROUTER_IMAGE_MODEL;
+  const cap = resolveOpenRouterImageDailyCap(cfg.openRouterImageDailyCap);
+  const used = Math.max((await countOpenRouterImagesToday(cfg.db)) ?? 0, reservedToday());
+  if (used >= cap) {
+    logEvent('warn', 'publish', 'OpenRouter image gen skipped: daily cap reached', { model, used, cap });
+    return null;
+  }
+
+  bumpReserved(1); // reserve before the await so parallel callers cannot overshoot the cap
+  const sleep =
+    cfg.openRouterRetrySleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  let attempt = await runOpenRouterImage(model, positive, apiKey);
+  if (!attempt.ok && attempt.status === 429) {
+    const wait = Math.min(
+      attempt.retryAfterMs ?? OPENROUTER_RETRY_DEFAULT_WAIT_MS,
+      OPENROUTER_RETRY_MAX_WAIT_MS,
+    );
+    logEvent('warn', 'publish', 'OpenRouter image gen rate-limited (429); retrying once', {
+      model,
+      wait_ms: wait,
+    });
+    await sleep(wait);
+    attempt = await runOpenRouterImage(model, positive, apiKey);
+  }
+  if (!attempt.ok) {
+    if (attempt.anomaly) {
+      // Billed but discarded: it stays counted against today's cap, and the tier stops.
+      openRouterLatchedReason = 'cost_above_ceiling';
+      return null;
+    }
+    bumpReserved(-1); // failed calls are not billed
+    if (attempt.status === 402 || attempt.status === 401 || attempt.status === 403) {
+      openRouterLatchedReason = `http_${attempt.status}`;
+      logEvent(
+        'error',
+        'publish',
+        attempt.status === 402
+          ? 'OpenRouter has no credits (HTTP 402); skipping the OpenRouter image tier for this process. Top up credits to resume.'
+          : `OpenRouter rejected the key (HTTP ${attempt.status}); skipping the OpenRouter image tier for this process.`,
+        { model },
+      );
+    }
+    return null;
+  }
+  return {
+    bytes: attempt.bytes,
+    provider: 'openrouter',
+    model,
+    estimatedCostUsd: attempt.costUsd ?? OPENROUTER_FALLBACK_COST_USD,
+    costSource: attempt.costUsd === null ? 'estimated' : 'reported',
+    width: IMG_W,
+    height: IMG_H,
+  };
 }
 
 async function uploadCardImage(

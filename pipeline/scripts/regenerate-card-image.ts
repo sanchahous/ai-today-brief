@@ -16,7 +16,12 @@
  * ignored, so `slug|approved` annotations are fine. A failed generation keeps the previous cover.
  */
 import { loadPipelineConfig } from '../config';
-import { cardImageProvidersExhausted, regenerateCardImageForSlug } from '../card-image';
+import {
+  cardImageProvidersExhausted,
+  type GeneratedImageResult,
+  recordCardImageCostEvent,
+  regenerateCardImageForSlug,
+} from '../card-image';
 import { createServiceClient } from '../db';
 import { logError, logEvent } from '../log';
 import { parseSlugs } from './regenerate-card-image-args';
@@ -57,7 +62,11 @@ async function main(): Promise<void> {
     geminiImageModel: config.geminiImageModel,
     cloudflareImageModel: config.cloudflareImageModel,
     openRouterApiKey: config.openRouterApiKey,
+    openRouterImageModel: config.openRouterImageModel,
+    openRouterImageDailyCap: config.openRouterImageDailyCap,
     db,
+    onImageGenerated: (image: GeneratedImageResult) =>
+      recordCardImageCostEvent(db, image, { source: 'regenerate' }),
   };
   let failed = 0;
   for (const [index, slug] of slugs.entries()) {
