@@ -84,7 +84,7 @@ A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated 
 
 - **Runner:** `vitest.config.ts` — coverage ≥**70%** on logic-only `src/lib/*` modules (see `include` / `exclude`). Target **~80%** on new logic so Sonar **new code** (80% on free plan) stays green.
 - Co-locate `*.test.ts` next to modules. Mock Supabase at the module boundary; pipeline: fixtures + SDK mocked.
-- Before push: `npm run pr:check` (= `ci:check` + typecheck + lint + build). `ci:check` = `test:coverage` + `verify:logic-lcov`.
+- Before push: `npm run check:affected` (only what the changed paths need — see `pr-gate.mdc`). `ci:check` = `test:coverage` + `verify:logic-lcov`; it runs when a file in the logic scope changes, otherwise `vitest related` on the changed files.
 
 ## Structure & conventions
 
@@ -107,7 +107,7 @@ A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated 
 
 ## What "Done" looks like
 
-1. `npm run pr:check` green (`ci:check` + `typecheck` + `lint` + `build`).
+1. `npm run check:affected` green (escalates to the full `pr:check` suite on broad/unknown paths).
 2. New user-facing strings exist in **both** EN and UK.
 3. Indexed routes render real HTML (ISR / prerender), not an empty shell.
 4. No client write to Supabase; no `service_role` in the client bundle.

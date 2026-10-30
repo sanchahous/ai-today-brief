@@ -102,6 +102,53 @@ describe.each(['en', 'uk'] as const)('article payload sections (%s)', (lang) => 
     expect(render({}, lang, [{ name: 'Unmapped tool', href: null }])).not.toContain('<a');
   });
 
+  it('draws charts and a process diagram only from values present in the story', () => {
+    const html = render(
+      {
+        facts: [
+          { label: 'Input price', value: '$3 / 1M tokens' },
+          { label: 'Output price', value: '$15 / 1M tokens' },
+          { label: 'Context', value: '200K tokens' },
+        ],
+        actionItems: ['Read the changelog', 'Try one task'],
+      },
+      lang,
+    );
+    const source = lang === 'uk' ? 'Джерело: Ключові факти' : 'Source: Key facts';
+    expect(html).toContain('data-chart="comparison"');
+    expect(html).toContain('data-chart="key-numbers"');
+    expect(html).toContain(source);
+    expect(html).toContain('$3 / 1M tokens');
+    expect(html).toContain('$15 / 1M tokens');
+    expect(html).toContain('200K tokens');
+    expect(html).not.toContain('200000');
+    expect(html.replace(/\sstyle="[^"]*"/g, '')).not.toContain('20%');
+    expect(html).toContain('data-diagram="process"');
+    expect(html).toContain('flex-col');
+    expect(html).toContain('md:flex-row');
+    expect(html).toContain('Read the changelog');
+    expect(html).toContain(
+      lang === 'uk'
+        ? 'Назви кроків узяті з блоку «Що зробити сьогодні».'
+        : 'Step names are taken from What to do today.',
+    );
+
+    const prose = render(
+      {
+        facts: [
+          { label: 'License', value: 'Apache-2.0' },
+          { label: 'Status', value: 'generally available' },
+        ],
+        actionItems: ['Only one step'],
+      },
+      lang,
+    );
+    expect(prose).not.toContain('data-chart');
+    expect(prose).not.toContain('data-diagram');
+    expect(prose).toContain('Apache-2.0');
+    expect(prose).toContain('Only one step');
+  });
+
   it('renders safe tables and keyboard-scrollable code regions', () => {
     const html = render(
       {

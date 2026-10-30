@@ -11,11 +11,15 @@ import articleStyles from '@/components/editorial/article-blocks.module.css';
 import { selectStorySections } from '@/lib/story-sections';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
-import { buildFactsVisual } from '@/lib/facts-visual';
 import type { BriefItemDetail } from '@/lib/items';
 import type { Lang } from '@/lib/site';
-import { FactsVisualBlock } from '@/components/facts-visual';
 import { MarkdownBody } from '@/components/markdown-body';
+import { ComparisonChart } from '@/components/editorial/chart-bars';
+import { KeyNumbers } from '@/components/editorial/chart-key-numbers';
+import { MetricsMiniChart } from '@/components/editorial/chart-metrics';
+import { ProcessDiagram } from '@/components/editorial/diagram-process';
+import { buildStoryVisuals } from '@/components/editorial/story-visuals';
+import { visualCopy } from '@/components/editorial/visual-copy';
 
 export type ToolLink = { name: string; href: string | null };
 
@@ -47,7 +51,8 @@ export function StoryBody({
   // falls back to the brand accent when a category has none.
   const accentStyle = { '--article-accent': color } as CSSProperties;
   const sections = selectStorySections(detail, toolLinks.length);
-  const factsVisual = buildFactsVisual(detail.facts ?? []);
+  const visuals = buildStoryVisuals({ facts: detail.facts, actionItems: detail.actionItems });
+  const visualText = visualCopy(lang);
 
   return (
     <div className={articleStyles.block} style={accentStyle}>
@@ -67,13 +72,17 @@ export function StoryBody({
           title={t.factsTitle}
           headingLevel={2}
           facts={(detail.facts ?? []).map((fact) => ({ term: fact.label, definition: fact.value }))}
-          // Stat tiles already show the values big; only comparison bars add information.
-          visual={
-            factsVisual?.kind === 'comparison' ? (
-              <FactsVisualBlock visual={factsVisual} color="var(--article-accent)" />
-            ) : undefined
-          }
         />
+      )}
+
+      {visuals.keyNumbers && (
+        <KeyNumbers lang={lang} items={visuals.keyNumbers} sourceName={t.factsTitle} />
+      )}
+      {visuals.comparison && (
+        <ComparisonChart lang={lang} items={visuals.comparison} sourceName={t.factsTitle} />
+      )}
+      {visuals.metrics && (
+        <MetricsMiniChart lang={lang} items={visuals.metrics} sourceName={t.factsTitle} />
       )}
 
       {sections.body &&
@@ -111,12 +120,21 @@ export function StoryBody({
       )}
 
       {sections.actionItems && (
-        <ActionList
-          lang={lang}
-          title={t.actionItemsToday}
-          headingLevel={2}
-          items={(detail.actionItems ?? []).map((step, i) => ({ id: String(i), title: step }))}
-        />
+        <>
+          <ActionList
+            lang={lang}
+            title={t.actionItemsToday}
+            headingLevel={2}
+            items={(detail.actionItems ?? []).map((step, i) => ({ id: String(i), title: step }))}
+          />
+          {visuals.steps && (
+            <ProcessDiagram
+              lang={lang}
+              nodes={visuals.steps}
+              caption={visualText.processFromActions}
+            />
+          )}
+        </>
       )}
 
       {sections.editorTake && (

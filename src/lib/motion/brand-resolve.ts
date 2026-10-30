@@ -39,7 +39,10 @@ function offset(ms: number): number {
   return Math.max(0, Math.min(1, ms / BRAND_DURATION_MS));
 }
 
-/** Build the 31 WAAPI tracks for one brand stage (prototype: tension.js brandTracks). */
+/**
+ * Build the 27 WAAPI tracks for one brand stage (prototype: tension.js brandTracks).
+ * The prototype's phase labels and progress line are gone: the mark carries the story alone.
+ */
 export function brandTracks(stage: Element): BrandTrack[] {
   const o = offset;
   const tracks: BrandTrack[] = [];
@@ -176,25 +179,6 @@ export function brandTracks(stage: Element): BrandTrack[] {
     { transform: 'scale(1)', opacity: 1 },
     2800,
     3300,
-  );
-
-  stage.querySelectorAll('[data-phase]').forEach((label, i) => {
-    const ranges: [number, number][] = [[0, 900], [900, 2050], [2050, BRAND_DURATION_MS]];
-    const [start, end] = ranges[i] ?? [0, BRAND_DURATION_MS];
-    add(label, [
-      { opacity: 0.4, offset: 0 },
-      { opacity: 0.4, offset: o(Math.max(0, start - 1)) },
-      { opacity: 1, offset: o(start + 120) },
-      { opacity: 1, offset: o(end - 120) },
-      { opacity: i === 2 ? 1 : 0.55, offset: o(end) },
-      { opacity: i === 2 ? 1 : 0.55, offset: 1 },
-    ]);
-  });
-
-  add(
-    stage.querySelector('.brand-progress i'),
-    [{ transform: 'scaleX(0)', offset: 0 }, { transform: 'scaleX(1)', offset: 1 }],
-    { easing: 'linear' },
   );
 
   stage.querySelectorAll('.brand-line > span').forEach((line, i) => {

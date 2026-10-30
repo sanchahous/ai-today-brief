@@ -2,7 +2,7 @@
 
 Summary: обрана власником мова руху для всіх публічних маршрутів After Hours, перенесена в production (Фаза 6, PR #432–#434): дванадцять скінченних жестів інтерфейсу, View Transitions між маршрутами і брендова сцена головної The Resolve (3,4 с).
 Sources: запит власника 2026-09-25 і 2026-09-28; `artifacts/after-hours/tension.js`, `tension.css`, `app.js`, `home.js`, `tokens.json`; `artifacts/after-hours-motion/fold-review.html`; `src/lib/motion/`; `src/components/home/brand-stage.tsx`; `src/components/site-header-chrome.tsx`; PR #432, #433, #434; [after-hours-acceptance](../audits/2026-10-05-after-hours-acceptance.md).
-Last updated: 2026-10-06
+Last updated: 2026-10-29
 
 ---
 
@@ -35,7 +35,8 @@ Last updated: 2026-10-06
 
 (source: `tension.js` — `brandTracks`, `scatter`; `tokens.json` — `motion.brand`)
 
-- **Одна часова шкала.** Усі 31 трек стартують з одного `startTime`; фазові мітки й лінія прогресу в сцені — частина тієї ж шкали. Покадровий перегляд зупиняє **ті самі** WAAPI-треки (`previewBrand`). (source: `tension.js` — `playBrand`; `artifacts/after-hours-motion/fold-review.js`)
+- **Одна часова шкала.** Усі треки стартують з одного `startTime`. Покадровий перегляд зупиняє **ті самі** WAAPI-треки (`previewBrand`). (source: `tension.js` — `playBrand`; `artifacts/after-hours-motion/fold-review.js`)
+- **Без службових підписів (2026-10-29).** У production-сцені більше немає kicker `THE RESOLVE`, фазових міток `01 / Signals · 02 / Edit · 03 / Resolve`, анімованої лінії прогресу і рядка `AI TODAY BRIEF / AFTER HOURS` під підписом: власник оцінив, що лінія тягне увагу від знака, а мітки нічого не кажуть читачеві; рядок під підписом дублював назву бренду поруч із самим знаком, а «After Hours» — внутрішня назва редизайну. Сцена закінчується фразою «Багато сигналів. Один погляд.». Назви актів у таблиці вище — внутрішня робоча розмітка, на екран не виводяться. Звільнений верх віддано знаку (SVG `inset` 76 / 96 → 8 / 72 px, на мобільному 72 / 104 → 4 / 80 px); у сцені тепер 27 треків замість 31. `aria-label` описує знак, а не кодову назву сцени. (source: запит власника 2026-10-29; `src/components/brand/brand-stage.tsx`; `src/lib/motion/brand-resolve.ts`; `src/app/globals.css` — `.brand-stage > svg`; [brand-stage-quiet](../tasks/brand-stage-quiet.md))
 - **SSR-safe.** Головна рендерить статичну сцену в розмітці (`home.js` викликає `brandMarkup`); рух лише накладається. До першого програвання CSS ховає ребра, щоб не було спалаху готового знака з наступним скиданням. (source: `home.js`; `tension.js` — `mount`; `tension.css`)
 - **Керування.** Старт при першому вході у viewport; повтор кнопкою ↻ (під час програвання `aria-disabled`); reduced motion або перемикач «Рух вимкнено» показують фінальний кадр і ховають ↻. (source: `tension.js` — `observeEntrances`, `syncQuiet`; `tension.css`)
 - **Бюджет.** 16 ребер × 4 штрихи, одна маска, без SVG-фільтрів і canvas. Сцена має власний атомарний бюджет; жести UI обмежені 32 активними анімаціями. (source: `tension.js` — `brandMarkup`, `animate`)

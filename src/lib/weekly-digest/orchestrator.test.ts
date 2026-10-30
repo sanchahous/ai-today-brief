@@ -85,6 +85,35 @@ describe('Content Studio queueing', () => {
       contentStudioMasterKey({ digestId, revisionId }),
     ]);
     expect(queuedKeys().every((key) => !key.includes(':retry:'))).toBe(true);
+    expect(result.skipped).toBeNull();
+  });
+
+  it('startWeeklyContentStudio re-queues idempotently while the master is on this revision', async () => {
+    tables.weekly_digest_generation_jobs = {
+      data: [{ revision_id: revisionId }],
+      error: null,
+    };
+    const result = await startWeeklyContentStudio(digestId, revisionId);
+    expect(result.skipped).toBeNull();
+    expect(queuedKeys()).toContain(contentStudioMasterKey({ digestId, revisionId }));
+  });
+
+  it('startWeeklyContentStudio does not restart on a revision a master already produced', async () => {
+    // Regression for the Sunday loop: the master activated a new revision, so
+    // the next composer tick saw a new key and queued another full master.
+    tables.weekly_digest_generation_jobs = {
+      data: [{ revision_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' }],
+      error: null,
+    };
+    const result = await startWeeklyContentStudio(digestId, revisionId);
+    expect(result).toMatchObject({ queued: [], skipped: 'master_already_ran_for_digest' });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('startWeeklyContentStudio surfaces a failed master lookup', async () => {
+    tables.weekly_digest_generation_jobs = { data: null, error: { message: 'lookup down' } };
+    await expect(startWeeklyContentStudio(digestId, revisionId)).rejects.toThrow('lookup down');
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('retry after succeeded research mints unique research keys and leaves waiting master', async () => {

@@ -8,7 +8,10 @@ test.describe('The Resolve — brand stage', () => {
     expect(html).toContain('class="brand-stage');
     expect(html).toContain('class="rs-dot"');
     expect(html.match(/class="rs-rib"/g)?.length).toBe(16);
-    expect(html).toContain('The Resolve: many brass signals');
+    expect(html).toContain('AI Today Brief mark: many brass signals');
+    expect(html).not.toContain('brand-phases');
+    expect(html).not.toContain('THE RESOLVE');
+    expect(html).not.toContain('AFTER HOURS');
     expect(html).not.toContain('data-brand-replay');
     expect(html).toContain('no-js');
     expect(html).toContain('class="hero-stage');

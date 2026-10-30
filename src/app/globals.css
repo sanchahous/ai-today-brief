@@ -809,9 +809,9 @@ html[data-tension] {
 }
 .brand-stage > svg {
   position: absolute;
-  inset: 76px 0 96px;
+  inset: 8px 0 72px;
   width: 100%;
-  height: calc(100% - 172px);
+  height: calc(100% - 80px);
   overflow: visible;
 }
 [data-tension-motion="off"] .brand-replay {
@@ -843,50 +843,6 @@ html[data-tension] {
   transform-box: view-box;
   transform-origin: 0 0;
 }
-.brand-kicker {
-  position: absolute;
-  top: 20px;
-  left: 22px;
-  color: #d4b483;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.18em;
-}
-.brand-phases {
-  position: absolute;
-  top: 46px;
-  left: 22px;
-  right: 22px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 6px 14px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  color: #b5d8cc;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.brand-phases [data-phase] {
-  opacity: 0.55;
-}
-.brand-phases [data-phase="2"] {
-  opacity: 1;
-}
-.brand-progress {
-  flex-basis: 100%;
-  height: 1px;
-  background: rgb(181 216 204 / 0.2);
-}
-.brand-progress i {
-  display: block;
-  height: 100%;
-  background: #b5d8cc;
-  transform-origin: left;
-}
 .brand-caption {
   position: absolute;
   left: 22px;
@@ -908,14 +864,6 @@ html[lang="uk"] .brand-line {
 }
 .brand-line > span {
   display: block;
-}
-.brand-caption small {
-  display: block;
-  margin-top: 10px;
-  color: #b9b7ac;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.14em;
 }
 .brand-replay {
   position: absolute;
@@ -1025,11 +973,8 @@ html.js[data-tension-motion="on"] .brand-stage:not([data-brand-played]) .brand-l
     min-height: 400px;
   }
   .brand-stage > svg {
-    inset: 72px 0 104px;
-    height: calc(100% - 176px);
-  }
-  .brand-phases {
-    gap: 6px 10px;
+    inset: 4px 0 80px;
+    height: calc(100% - 84px);
   }
 }
 
