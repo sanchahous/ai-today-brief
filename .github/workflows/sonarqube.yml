@@ -28,6 +28,7 @@ jobs:
       # skip wiki / markdown / SQL-migration / workflow-only / library-tools PRs.
       # Unlike e2e this does NOT skip `pipeline/` — that is scanned code.
       # Integrity build is `build:ci` (8 prerender paths), never a full catalog SSG.
+      # The grep is pinned to scripts/check-scope.mjs WORKFLOW_GATES by its unit test.
       - name: Decide whether there is code to scan
         id: scope
         env:
