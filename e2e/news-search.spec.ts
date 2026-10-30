@@ -26,6 +26,18 @@ test.describe('News search page (/[lang]/news/search)', () => {
     await expect(page.getByTestId('news-feed')).toBeVisible({ timeout: 30_000 });
   });
 
+  test('no-match query keeps headings sequential on a narrow screen', async ({ page }) => {
+    // The sidebar h2s are hidden below the desktop breakpoint, so the empty state sits
+    // straight under the h1 — an h3 there was a heading skip (a11y matrix, 2026-10-29).
+    await page.setViewportSize({ width: 390, height: 844 });
+    const t = getStrings('en').news.searchPage;
+    await page.goto('/en/news/search?q=zzqqxx-no-such-story', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('news-feed')).toHaveAttribute('data-hydrated', 'true', {
+      timeout: 30_000,
+    });
+    await expect(page.getByRole('heading', { level: 2, name: t.emptyTitle })).toBeVisible();
+  });
+
   test('breadcrumb includes Search and robots stay noindex', async ({ page }) => {
     await page.goto('/en/news/search?q=mcp', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('navigation', { name: /breadcrumb/i })).toContainText(/search/i);

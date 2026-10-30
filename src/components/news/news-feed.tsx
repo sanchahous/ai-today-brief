@@ -511,6 +511,9 @@ export function NewsFeed({
           />
         ) : filtered.length === 0 ? (
           <EmptyState
+            // Stands in for the h2 story cards; on narrow screens the sidebar's h2s are
+            // hidden, so an h3 here would sit straight under the page h1.
+            headingLevel="h2"
             title={feedContext === 'search' ? t.searchPage.emptyTitle : t.emptyTitle}
             description={feedContext === 'search' ? t.searchPage.emptyBody : t.emptyBody}
             action={
