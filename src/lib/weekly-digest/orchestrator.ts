@@ -132,15 +132,42 @@ function groupStudioJobStatuses(jobs: StudioJobRow[] | null) {
 }
 
 /**
+ * True once an editorial_master exists for this digest on any other revision.
+ *
+ * Every master run activates a fresh revision, and the composer reads the
+ * active revision on each 30-minute Sunday tick. A per-revision key alone
+ * therefore let the composer queue research + master again on the master's
+ * own output, all Sunday long: 7–17 masters per edition from 2026-09-27 to
+ * 2026-10-25, each with three paid critic rounds.
+ */
+async function masterRanOnAnotherRevision(
+  db: ContentStudioContext['db'],
+  weeklyDigestId: string,
+  revisionId: string,
+): Promise<boolean> {
+  const { data, error } = await db
+    .from('weekly_digest_generation_jobs')
+    .select('revision_id')
+    .eq('weekly_digest_id', weeklyDigestId)
+    .eq('job_type', 'editorial_master');
+  if (error) throw new Error(error.message);
+  return (data ?? []).some((job) => job.revision_id !== revisionId);
+}
+
+/**
  * Starts only research and the dependency-blocked master job. Derivatives are
  * queued by the master worker on the new immutable revision.
  *
  * Uses a stable idempotency key per digest+revision+item so the scheduled
- * composer can call this twice without duplicating work. Owner retry after a
- * succeeded pack must go through `retryWeeklyContentStudio`.
+ * composer can call this twice without duplicating work. The composer starts
+ * the studio once per digest; any later run is the owner's call through
+ * `retryWeeklyContentStudio` or Regenerate master.
  */
 export async function startWeeklyContentStudio(weeklyDigestId: string, revisionId: string) {
   const { db, mode, featureItems } = await loadContentStudioContext(weeklyDigestId, revisionId);
+  if (await masterRanOnAnotherRevision(db, weeklyDigestId, revisionId)) {
+    return { queued: [] as string[], mode, skipped: 'master_already_ran_for_digest' as const };
+  }
   const rpc = db as unknown as RpcClient;
   const queued: string[] = [];
   for (const item of featureItems) {
@@ -167,7 +194,7 @@ export async function startWeeklyContentStudio(weeklyDigestId: string, revisionI
     input: masterInput(mode),
   });
   queued.push(masterKey);
-  return { queued, mode };
+  return { queued, mode, skipped: null };
 }
 
 /**

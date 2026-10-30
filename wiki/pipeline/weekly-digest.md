@@ -7,7 +7,7 @@ editorial-voice, PDF/Social/Video, Prompt-as-Code v6, daily visual, topic slug, 
 OpenRouter catalog, YouTube 120s, ElevenLabs TTS, LinkedIn PDF skip 2026-09-03,
 social URLs follow the published slug 2026-09-03, two-phase release (Ship / Publish video)
 2026-09-03
-Last updated: 2026-10-06
+Last updated: 2026-10-30
 
 ---
 
@@ -975,6 +975,23 @@ Composer (`startWeeklyContentStudio`) ставить `research_pack` ×3 і `edi
 (source: прод `weekly_digest_generation_jobs` live check 2026-08-16 12:46 UTC,
 `src/lib/weekly-digest/orchestrator.ts`, `src/lib/weekly-digest/content-studio-queue.ts`,
 `src/app/admin/(cms)/weekly/actions.ts`)
+
+### Composer стартує студію один раз на дайджест (2026-10-30)
+
+Кожен `editorial_master` активує нову ревізію. Composer (cron `social_compose_review`,
+кожні 30 хв, неділя з 09:00 Київ) читав активну ревізію і ставив research ×3 + master з
+новим ключем — тобто на вихід попереднього master. Quality gate не проходив (66–86), і
+петля крутилась до кінця неділі: 7 master 27.09, 10 — 11.10, 11 — 18.10, 17 — 25.10
+(25.10 ще 51 `research_pack` і 35 `story_image`). Critic без повторних моделей у межах
+дайджесту (`priorMasterCritics`) скочувався на `xiaomi/mimo-v2.6-pro`: 11.10 $0.88 за
+25 викликів, 18.10 $0.72 за 21, 13–32k output-токенів на виклик. OpenRouter показував це
+під app «AI Today Brief Daily Visual», бо всі виклики мають один `HTTP-Referer`.
+
+Тепер `startWeeklyContentStudio` нічого не ставить, якщо master уже був на іншій ревізії
+цього дайджесту (`skipped: master_already_ran_for_digest`). Повторний прогін — лише
+власником: **Start / retry** або **Regenerate master**.
+(source: прод `generation_cost_events` / `weekly_digest_generation_jobs` live check
+2026-10-30, `src/lib/weekly-digest/orchestrator.ts`, `src/lib/social/composer.ts`)
 
 ### Content-quality hardening (`weekly-master-v7`, 2026-08-09)
 
