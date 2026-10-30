@@ -2,7 +2,7 @@
 
 Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v3.1.0 (minor A1/ATB-77: зарезервовані поверхні newsletter/weekly/coverage/scrim/chart/hero з макетів screens-v3; major AH-7.3: прибрано legacy-аліаси `--bg-soft`, `--surface-2`, `--border`, `--border-soft`): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
 Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/screens-v3/home-desktop-night.webp`; `artifacts/after-hours/screens-v3/home-desktop-day.webp`; `artifacts/after-hours/screens-v3/article-desktop-night.webp`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29; PR #369, #381, #382, #384, #385, #386, #438, #458.
-Last updated: 2026-10-29
+Last updated: 2026-10-30
 
 **Статус:** прийнято й реалізовано в production (v3.1.0). Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md; PR #438; A1 PR #458).
 
@@ -310,6 +310,7 @@ AH-1.5 підключає локальні OFL subset-и через `next/font/l
 | `--max-wide` | 1440px | широка сторінка; `max-w-page-wide` |
 | `--reading` | 42.5rem | міра читання (680px за замовчуванням); `max-w-reading` |
 | `--header-h` | 76px (mobile) / 132px (desktop) | висота header і sticky-зсуви |
+| `--header-stuck-h` | 76px (mobile) / 56px (desktop) | видима висота header після скролу (на desktop він сховує верхні 76px через `top: -4.75rem`); `top` для sticky-елементів під header, напр. A–Z-панель `/concepts` |
 
 `--header-h` змінено на 76px для мобільних та 132px для десктопу в рамках AH-3.3. Значення прототипу (72px) записано як `PRIMITIVES.sizes.headerHPrototype`.
 
