@@ -82,10 +82,163 @@ export function cardOriginStoragePath(slug: string): string {
   return `${slug}.jpg`;
 }
 
-/** Resize/cover to 16:9, flatten transparency, encode as a compact JPEG origin. */
-export async function encodeCardOrigin(bytes: Buffer): Promise<Buffer> {
-  return sharp(bytes)
+/**
+ * Letterbox detection. Some providers (OpenRouter flux-3-image-klein, 2026-10-30:
+ * 3 of 27) return a 16:9 canvas with uniform black or slate-grey bars top and
+ * bottom (one sample even had the scene bleeding faintly into the bar). A line
+ * (row or column) counts as bar when most of its pixels sit within a tolerance
+ * of the edge line's median luminance, so grey bars are caught as well as black
+ * ones and JPEG noise or a small bleed does not break the run. Smooth vignettes
+ * and gradients are told apart from real bars by requiring a HARD edge where the
+ * bar ends (large pixel-wise step between adjacent lines).
+ */
+/** A pixel is "bar colour" when within this many luminance levels of the edge median. */
+export const LETTERBOX_PIXEL_TOLERANCE = 12;
+/** Share of a line's pixels that must be bar colour for the line to be bar. */
+export const LETTERBOX_MIN_LINE_FRACTION = 0.7;
+/** Mean abs pixel-wise step between adjacent lines that marks the bar's hard edge. */
+export const LETTERBOX_MIN_EDGE_STEP = 10;
+/** Each detected bar must be at least this share of the axis, else it is noise. */
+export const LETTERBOX_MIN_BAR_FRACTION = 0.02;
+/** Bars summing to more than this share of an axis are treated as content (dark sky). */
+export const LETTERBOX_MAX_TRIM_FRACTION = 0.35;
+/** Extra pixels removed past the bar to drop the JPEG seam. */
+export const LETTERBOX_SEAM_MARGIN_PX = 2;
+/** Warn when the cover-crop after trimming would discard more than this share. */
+export const LETTERBOX_MAX_COVER_CROP_FRACTION = 0.25;
+
+export interface LetterboxTrim {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  /** Source dimensions the trim was measured on (after EXIF rotation). */
+  width: number;
+  height: number;
+}
+
+/** Strided view of one row or column of a greyscale raster. */
+interface Line {
+  start: number;
+  step: number;
+  count: number;
+}
+
+function lineMedian(data: Uint8Array, l: Line): number {
+  const hist = new Uint32Array(256);
+  for (let i = 0, p = l.start; i < l.count; i++, p += l.step) hist[data[p]]++;
+  let acc = 0;
+  for (let v = 0; v < 256; v++) {
+    acc += hist[v];
+    if (acc * 2 >= l.count) return v;
+  }
+  return 0;
+}
+
+function lineBarFraction(data: Uint8Array, l: Line, colour: number): number {
+  let hits = 0;
+  for (let i = 0, p = l.start; i < l.count; i++, p += l.step) {
+    if (Math.abs(data[p] - colour) <= LETTERBOX_PIXEL_TOLERANCE) hits++;
+  }
+  return hits / l.count;
+}
+
+function lineStep(data: Uint8Array, a: Line, b: Line): number {
+  let sum = 0;
+  for (let i = 0, p = a.start, q = b.start; i < a.count; i++, p += a.step, q += b.step) {
+    sum += Math.abs(data[p] - data[q]);
+  }
+  return sum / a.count;
+}
+
+/**
+ * Bar thickness in px (0 = no bar) measured from one side of one axis.
+ * `lineAt(i)` is the i-th line counted inward from that side.
+ */
+function measureBar(data: Uint8Array, length: number, lineAt: (i: number) => Line): number {
+  const colour = lineMedian(data, lineAt(0));
+  let bar = 0;
+  while (
+    bar < length &&
+    lineBarFraction(data, lineAt(bar), colour) >= LETTERBOX_MIN_LINE_FRACTION
+  ) {
+    bar++;
+  }
+  if (bar === 0 || bar >= length) return 0;
+  if (bar < Math.ceil(length * LETTERBOX_MIN_BAR_FRACTION)) return 0;
+  // Hard edge: some adjacent pair around the boundary must differ sharply.
+  let edge = 0;
+  for (let i = Math.max(0, bar - 2); i <= Math.min(bar + 1, length - 2); i++) {
+    edge = Math.max(edge, lineStep(data, lineAt(i), lineAt(i + 1)));
+  }
+  return edge >= LETTERBOX_MIN_EDGE_STEP ? bar : 0;
+}
+
+/** Measure uniform letterbox/pillarbox bars. All zeros when the image has none. */
+export async function detectLetterbox(bytes: Buffer): Promise<LetterboxTrim> {
+  const { data, info } = await sharp(bytes)
     .rotate()
+    .flatten({ background: CARD_ORIGIN_FLAT_BG })
+    .greyscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+  const grey =
+    channels === 1
+      ? data
+      : Uint8Array.from({ length: width * height }, (_, i) => data[i * channels]);
+
+  const axis = (length: number, lineAt: (index: number) => Line): [number, number] => {
+    const a = measureBar(grey, length, (i) => lineAt(i));
+    const b = measureBar(grey, length, (i) => lineAt(length - 1 - i));
+    const ta = a > 0 ? a + LETTERBOX_SEAM_MARGIN_PX : 0;
+    const tb = b > 0 ? b + LETTERBOX_SEAM_MARGIN_PX : 0;
+    if (ta + tb > length * LETTERBOX_MAX_TRIM_FRACTION) return [0, 0];
+    return [ta, tb];
+  };
+  const [top, bottom] = axis(height, (y) => ({ start: y * width, step: 1, count: width }));
+  const [left, right] = axis(width, (x) => ({ start: x, step: width, count: height }));
+  return { top, bottom, left, right, width, height };
+}
+
+/** Share of the frame a 16:9 cover-crop would discard (0..1). */
+export function coverCropLossFraction(width: number, height: number): number {
+  const target = IMG_W / IMG_H;
+  const aspect = width / height;
+  return aspect > target ? 1 - target / aspect : 1 - aspect / target;
+}
+
+/**
+ * Resize/cover to 16:9, flatten transparency, encode as a compact JPEG origin.
+ * Uniform letterbox bars from the provider are trimmed first so they never reach
+ * the stored cover. `slug` is only used for log context.
+ */
+export async function encodeCardOrigin(
+  bytes: Buffer,
+  opts: { slug?: string } = {},
+): Promise<Buffer> {
+  const trim = await detectLetterbox(bytes);
+  let pipeline = sharp(bytes).rotate();
+  if (trim.top + trim.bottom + trim.left + trim.right > 0) {
+    const region = {
+      left: trim.left,
+      top: trim.top,
+      width: trim.width - trim.left - trim.right,
+      height: trim.height - trim.top - trim.bottom,
+    };
+    pipeline = pipeline.extract(region);
+    logEvent('info', 'publish', 'Card image letterbox trimmed', { slug: opts.slug, ...trim });
+    const loss = coverCropLossFraction(region.width, region.height);
+    if (loss > LETTERBOX_MAX_COVER_CROP_FRACTION) {
+      logEvent('warn', 'publish', 'Card image far from 16:9 after letterbox trim', {
+        slug: opts.slug,
+        remainingWidth: region.width,
+        remainingHeight: region.height,
+        coverCropLoss: Number(loss.toFixed(3)),
+      });
+    }
+  }
+  return pipeline
     .resize(IMG_W, IMG_H, { fit: 'cover', position: 'centre' })
     .flatten({ background: CARD_ORIGIN_FLAT_BG })
     .jpeg({
@@ -3655,7 +3808,7 @@ async function uploadCardImage(
 ): Promise<string | null> {
   let origin: Buffer;
   try {
-    origin = await encodeCardOrigin(bytes);
+    origin = await encodeCardOrigin(bytes, { slug });
   } catch (error) {
     logEvent('warn', 'publish', 'Card image encode failed', {
       slug,

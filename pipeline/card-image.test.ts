@@ -52,6 +52,8 @@ import {
   describeCloudflareFailure,
   resetCloudflareQuotaState,
   encodeCardOrigin,
+  detectLetterbox,
+  coverCropLossFraction,
   pngCardOriginPath,
   reencodeStoredCardOrigins,
   selectCardOriginReencodeTargets,
@@ -783,6 +785,140 @@ describe('encodeCardOrigin', () => {
 
   it('rejects bytes that are not an image', async () => {
     await expect(encodeCardOrigin(Buffer.from('not-an-image'))).rejects.toThrow();
+  });
+});
+
+describe('letterbox trim', () => {
+  const W = 1360;
+  const H = 768;
+
+  type BarSpec = { top?: number; bottom?: number; left?: number; right?: number };
+
+  /** Deterministic 0..1 noise so tests never flake. */
+  function rng(seed: number): () => number {
+    let s = seed;
+    return () => {
+      s = (s * 1664525 + 1013904223) % 4294967296;
+      return s / 4294967296;
+    };
+  }
+
+  /**
+   * Textured "photograph" canvas with solid bars of `barLevel` (+/- `barNoise`) painted on
+   * the edges, then JPEG-encoded like a provider response.
+   */
+  async function canvas(
+    bars: BarSpec,
+    opts: {
+      barLevel?: number;
+      barNoise?: number;
+      topOverride?: (x: number, y: number, r: () => number) => number;
+    } = {},
+  ): Promise<Buffer> {
+    const { barLevel = 0, barNoise = 0, topOverride } = opts;
+    const { top = 0, bottom = 0, left = 0, right = 0 } = bars;
+    const r = rng(7);
+    const raw = Buffer.alloc(W * H * 3);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const inBar = y < top || y >= H - bottom || x < left || x >= W - right;
+        let v: number;
+        if (inBar) {
+          v = barLevel + (r() - 0.5) * 2 * barNoise;
+        } else if (topOverride) {
+          v = topOverride(x, y, r);
+        } else {
+          v = 120 + Math.sin(x / 9) * 60 + Math.cos(y / 7) * 45 + (r() - 0.5) * 50;
+        }
+        const g = Math.max(0, Math.min(255, Math.round(v)));
+        const i = (y * W + x) * 3;
+        raw[i] = g;
+        raw[i + 1] = g;
+        raw[i + 2] = g;
+      }
+    }
+    return sharp(raw, { raw: { width: W, height: H, channels: 3 } })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+  }
+
+  const sum = (t: { top: number; bottom: number; left: number; right: number }) =>
+    t.top + t.bottom + t.left + t.right;
+
+  it('detects black letterbox bars with a small seam margin', async () => {
+    const t = await detectLetterbox(await canvas({ top: 100, bottom: 100 }));
+    expect(t.top).toBeGreaterThanOrEqual(100);
+    expect(t.top).toBeLessThanOrEqual(100 + 6);
+    expect(t.bottom).toBeGreaterThanOrEqual(100);
+    expect(t.bottom).toBeLessThanOrEqual(100 + 6);
+    expect(t.left + t.right).toBe(0);
+  });
+
+  it('detects noisy slate-grey bars (std above the old <4 black-only cut)', async () => {
+    const t = await detectLetterbox(
+      await canvas({ top: 110, bottom: 110 }, { barLevel: 58, barNoise: 8 }),
+    );
+    expect(t.top).toBeGreaterThanOrEqual(110);
+    expect(t.top).toBeLessThanOrEqual(110 + 6);
+    expect(t.bottom).toBeGreaterThanOrEqual(110);
+    expect(t.bottom).toBeLessThanOrEqual(110 + 6);
+  });
+
+  it('detects left/right pillarbox symmetrically', async () => {
+    const t = await detectLetterbox(await canvas({ left: 120, right: 120 }));
+    expect(t.left).toBeGreaterThanOrEqual(120);
+    expect(t.right).toBeGreaterThanOrEqual(120);
+    expect(t.top + t.bottom).toBe(0);
+  });
+
+  it('leaves an image without bars untouched', async () => {
+    expect(sum(await detectLetterbox(await canvas({})))).toBe(0);
+  });
+
+  it('does not trim a dark but textured top area', async () => {
+    const dark = await canvas(
+      {},
+      {
+        topOverride: (x, y, r) =>
+          y < 240 ? 14 + r() * 50 + Math.sin(x / 11) * 14 : 120 + Math.sin(x / 9) * 60 + r() * 40,
+      },
+    );
+    expect(sum(await detectLetterbox(dark))).toBe(0);
+  });
+
+  it('does not trim a smooth dark vignette without a hard edge', async () => {
+    const vignette = await canvas(
+      {},
+      { topOverride: (x, y) => Math.min(150, 4 + y * 0.35) + Math.sin(x / 40) * 2 },
+    );
+    expect(sum(await detectLetterbox(vignette))).toBe(0);
+  });
+
+  it('does not trim a tiny 1% bar', async () => {
+    expect(sum(await detectLetterbox(await canvas({ top: 7, bottom: 7 })))).toBe(0);
+  });
+
+  it('treats bars summing past 35% of the height as content', async () => {
+    expect(sum(await detectLetterbox(await canvas({ top: 150, bottom: 150 })))).toBe(0);
+  });
+
+  it('encodeCardOrigin removes the bars and still yields a 1280x720 JPEG', async () => {
+    const jpeg = await encodeCardOrigin(
+      await canvas({ top: 110, bottom: 110 }, { barLevel: 58, barNoise: 6 }),
+      { slug: 'letterbox-test' },
+    );
+    await expect(sharp(jpeg).metadata()).resolves.toMatchObject({
+      format: 'jpeg',
+      width: IMG_W,
+      height: IMG_H,
+    });
+    expect(sum(await detectLetterbox(jpeg))).toBe(0);
+  });
+
+  it('coverCropLossFraction is 0 at 16:9 and grows as the frame departs from it', () => {
+    expect(coverCropLossFraction(1280, 720)).toBeCloseTo(0, 5);
+    expect(coverCropLossFraction(1360, 548)).toBeGreaterThan(0.25);
+    expect(coverCropLossFraction(1000, 720)).toBeLessThan(0.25);
   });
 });
 

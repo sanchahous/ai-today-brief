@@ -171,6 +171,10 @@ $5/month spend, semantic QA, manual source/editor choice і шість social dr
 (source: owner session 2026-08-24; `pipeline/card-image.ts`;
 `pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-openrouter.ts`)
 
+### Letterbox trim (2026-10-30)
+
+OpenRouter `flux-3-image-klein` sometimes returns a 16:9 canvas with uniform black or slate-grey bars top and bottom (3 of 27 in one regen batch, 2026-10-30; one sample had the scene bleeding faintly into the bar). `encodeCardOrigin` — the single place every provider's bytes pass through — now calls `detectLetterbox` first: a row/column is bar when ≥70% of its pixels are within ±12 luminance of the edge line's median, the run must be ≥2% of the axis and end at a hard edge (mean pixel step ≥10, which rejects smooth vignettes), bars summing to >35% of an axis are treated as content, and 2px extra is cut to drop the JPEG seam. The remainder is then cover-cropped to 1280×720; a warn is logged if that crop would discard >25% of the frame. Left/right pillarbox is handled the same way. Verified on the 27 raw samples: exactly the 3 barred images trimmed, 24 clean ones untouched. (source: ATB-91, `pipeline/card-image.ts` `detectLetterbox`)
+
 ## Current weekly acceptance rule (2026-08-23)
 
 For a new weekly prompt the desired primary image is not a compressed visual version of every

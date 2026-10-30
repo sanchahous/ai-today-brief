@@ -2,7 +2,7 @@
 
 Summary: Пакет виправлень редизайну: заголовок банера статті, картка «Ранковий бриф» у вузькому sidebar, блок поширення, літеральні `<br>` у markdown-тілі, відмова від портретних обкладинок і оновлення блоків тіла статті.
 Sources: live check у Playwright 2026-10-29; `src/app/globals.css`; `src/lib/markdown.ts`; `pipeline/card-image.ts`; `pipeline/scripts/regenerate-card-image.ts`
-Last updated: 2026-10-29
+Last updated: 2026-10-30
 
 ---
 
@@ -53,6 +53,10 @@ DONE (PR відкрито; 27 обкладинок чекають на скид�
 - Ledger: реальний `usage.cost` (`cost_source=reported`); новий `recordCardImageCostEvent` підключено до daily, обох backfill-скриптів і `regenerate-card-image.ts` (раніше backfill/regenerate вартість не писали).
 - Env: `OPEN_ROUTER_API_KEY` (наявний секрет), `OPENROUTER_IMAGE_MODEL`, `OPENROUTER_IMAGE_DAILY_CAP`. Workflow-и вже передають ключ — змін не потрібно.
 - Доки: `wiki/marketing/card-images.md`, `.env.example`.
+
+## Letterbox trim (2026-10-30)
+
+flux-3-image-klein інколи віддає 16:9 з рівними чорними/сірими смугами зверху й знизу (3 з 27). `encodeCardOrigin` тепер спершу обрізає смуги (`detectLetterbox` у `pipeline/card-image.ts`: ≥70% пікселів ±12 від медіани крайового рядка, смуга ≥2% і ≤35% осі, жорсткий край ≥10, +2px на JPEG-шов), далі cover-crop до 1280×720. На 27 реальних файлах обрізано рівно 3. Тести: `pipeline/card-image.test.ts` (`letterbox trim`). Доки: `wiki/marketing/card-images.md`.
 
 ## Next task
 
