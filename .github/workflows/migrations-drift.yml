@@ -45,9 +45,10 @@ jobs:
             echo "Not a pull request — checking."
             exit 0
           fi
-          FILES=$(gh api --paginate             "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files"             --jq '.[].filename')
-          if printf '%s
-' "$FILES" | grep -qE '^(supabase/migrations/|scripts/check-prod-migrations\.ts$|src/lib/supabase-migration-drift\.ts$|\.github/workflows/migrations-drift\.yml$)'; then
+          FILES=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')
+          if printf '%s\n' "$FILES" | grep -qE '^(supabase/migrations/|scripts/check-prod-migrations\.ts$|src/lib/supabase-migration-drift\.ts$|\.github/workflows/migrations-drift\.yml$)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "-> migrations touched, comparing with prod."
           else

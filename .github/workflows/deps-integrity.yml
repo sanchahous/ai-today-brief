@@ -39,9 +39,10 @@ jobs:
             echo "Not a pull request — installing."
             exit 0
           fi
-          FILES=$(gh api --paginate             "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files"             --jq '.[].filename')
-          if printf '%s
-' "$FILES" | grep -qE '^(package\.json|package-lock\.json|\.npmrc|\.nvmrc|\.github/workflows/deps-integrity\.yml)$'; then
+          FILES=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')
+          if printf '%s\n' "$FILES" | grep -qE '^(package\.json|package-lock\.json|\.npmrc|\.nvmrc|\.github/workflows/deps-integrity\.yml)$'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "-> dependency manifest changed, running a clean install."
           else
