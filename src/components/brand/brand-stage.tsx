@@ -148,17 +148,9 @@ export function BrandStage({ lang }: { lang: Lang }) {
         </g>
         <path className="rs-floor" d="M70 417 H470" stroke="#d4b483" strokeOpacity="0.2" strokeWidth="0.6" />
       </svg>
-      <span className="brand-kicker" aria-hidden="true">{t.kicker}</span>
-      <ol className="brand-phases" aria-hidden="true">
-        <li data-phase="0">{t.phaseSignals}</li>
-        <li data-phase="1">{t.phaseEdit}</li>
-        <li data-phase="2">{t.phaseResolve}</li>
-        <li className="brand-progress"><i /></li>
-      </ol>
       <p className="brand-caption">
         <span className="brand-line"><span>{t.captionLine1}</span></span>
         <span className="brand-line"><span>{t.captionLine2}</span></span>
-        <small>{t.captionMeta}</small>
       </p>
     </div>
   );
