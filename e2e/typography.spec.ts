@@ -24,10 +24,18 @@ test.describe('AH-1.5 typography', () => {
         await page.evaluate(() => document.fonts.ready);
         expect(fonts.length).toBeGreaterThan(0);
         expect(fonts.every((font) => new URL(font).origin === new URL(page.url()).origin)).toBe(true);
-        const families = await page.locator('main h1, main h2, main h3, main .font-serif').evaluateAll((nodes) =>
-          nodes.map((node) => getComputedStyle(node).fontFamily));
+        // Section eyebrows (TL;DR, Key facts, Sources …) are semantic h2/h3 that the design system
+        // sets in the mono `--font-mono` eyebrow token; every other heading stays on the display family.
+        const families = await page.locator('main h1, main h2, main h3, main .font-serif').evaluateAll((nodes) => {
+          const norm = (value: string) => value.replaceAll(/["']/g, '').replaceAll(/\s+/g, ' ').trim();
+          const mono = norm(getComputedStyle(document.documentElement).getPropertyValue('--font-mono'));
+          return nodes.map((node) => {
+            const family = getComputedStyle(node).fontFamily;
+            return { family, eyebrow: norm(family) === mono };
+          });
+        });
         expect(families.length).toBeGreaterThan(0);
-        expect(families.every((family) => lang === 'uk' ? family.startsWith('Georgia') : /displayFont/i.test(family))).toBe(true);
+        expect(families.every(({ family, eyebrow }) => eyebrow || (lang === 'uk' ? family.startsWith('Georgia') : /displayFont/i.test(family)))).toBe(true);
         await expect(page.locator('link[rel="preload"][as="font"]')).toHaveCount(3);
       });
     }

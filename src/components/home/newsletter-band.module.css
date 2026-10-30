@@ -7,10 +7,59 @@
   color: var(--on-newsletter);
 }
 
-@media (min-width: 64rem) {
+/* The band measures its own width (container query), not the viewport, so the same
+   component works as a full-width home band and inside a ~250px sidebar rail. */
+.root {
+  container-type: inline-size;
+  container-name: nlband;
+}
+
+/* Wide container (>= 960px, the old lg viewport behaviour on the home page):
+   headline left, form right. */
+@container nlband (min-width: 60rem) {
   .cardBg {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     gap: var(--space-12);
+  }
+}
+
+/* Narrow container (sidebar rail, ~220-448px): stacked card, modest type,
+   full-width field and button. */
+@container nlband (max-width: 28rem) {
+  .cardBg {
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .copy h2 {
+    margin-top: var(--space-1);
+    font-size: 1.375rem;
+    line-height: 1.2;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: manual;
+  }
+
+  .copy > p:last-of-type {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .copy .proof {
+    display: none;
+  }
+
+  .formCol :global(form) {
+    max-width: none;
+  }
+
+  .formCol :global(input[type='email']),
+  .formCol :global(button[type='submit']) {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
   }
 }
 

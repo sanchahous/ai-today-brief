@@ -81,4 +81,17 @@ describe('loadPipelineConfig', () => {
     const withNeither = loadPipelineConfig(base, []);
     expect(withNeither.openRouterApiKey).toBeUndefined();
   });
+  it('parses OPENROUTER_IMAGE_MODEL and OPENROUTER_IMAGE_DAILY_CAP (blank/garbage/negative ⇒ undefined)', () => {
+    const set = loadPipelineConfig(
+      { ...base, OPENROUTER_IMAGE_MODEL: ' black-forest-labs/flux-3-image-klein ', OPENROUTER_IMAGE_DAILY_CAP: '5' },
+      [],
+    );
+    expect(set.openRouterImageModel).toBe('black-forest-labs/flux-3-image-klein');
+    expect(set.openRouterImageDailyCap).toBe(5);
+    expect(loadPipelineConfig({ ...base, OPENROUTER_IMAGE_DAILY_CAP: '0' }, []).openRouterImageDailyCap).toBe(0);
+    for (const raw of ['', 'abc', '-4']) {
+      expect(loadPipelineConfig({ ...base, OPENROUTER_IMAGE_DAILY_CAP: raw }, []).openRouterImageDailyCap).toBeUndefined();
+    }
+    expect(loadPipelineConfig(base, []).openRouterImageModel).toBeUndefined();
+  });
 });

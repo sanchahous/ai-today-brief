@@ -3,8 +3,15 @@
 import { trackItemEvent } from '@/lib/analytics-client';
 import { getStrings } from '@/lib/i18n';
 import { SITE_URL, type Lang } from '@/lib/site';
-import { ShareIcon } from '@/components/icons';
+import { LinkIcon, LinkedInIcon, ShareIcon, XIcon } from '@/components/icons';
 import { useToast } from '@/components/ui/toast';
+
+/** Shared look for the three share controls (two links + copy button). */
+const SHARE_CONTROL_CLASS =
+  'rounded-pill border-line text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center justify-start gap-2 border px-3 py-1.5 text-sm font-medium no-underline transition lg:w-full';
+
+const SHARE_ICON_CLASS = 'shrink-0';
+const SHARE_ICON_SIZE = 16;
 
 export function ItemShareBar({
   lang,
@@ -58,8 +65,9 @@ export function ItemShareBar({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => trackShare('x')}
-        className="rounded-pill border-line text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
+        className={SHARE_CONTROL_CLASS}
       >
+        <XIcon size={SHARE_ICON_SIZE} className={SHARE_ICON_CLASS} />
         {t.shareOnX}
       </a>
       <a
@@ -67,15 +75,13 @@ export function ItemShareBar({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => trackShare('linkedin')}
-        className="rounded-pill border-line text-text hover:border-accent inline-flex min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium no-underline transition"
+        className={SHARE_CONTROL_CLASS}
       >
+        <LinkedInIcon size={SHARE_ICON_SIZE} className={SHARE_ICON_CLASS} />
         {t.shareOnLinkedin}
       </a>
-      <button
-        type="button"
-        onClick={copyLink}
-        className="rounded-pill border-line text-text hover:border-accent min-h-[var(--touch-target-min)] items-center border px-3 py-1.5 text-sm font-medium transition"
-      >
+      <button type="button" onClick={copyLink} className={SHARE_CONTROL_CLASS}>
+        <LinkIcon size={SHARE_ICON_SIZE} className={SHARE_ICON_CLASS} />
         {t.copyLink}
       </button>
     </div>

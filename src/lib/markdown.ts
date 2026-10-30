@@ -69,9 +69,60 @@ function readTable(lines: string[], start: number) {
   return { headers: headers.map(parseInlines), rows, end };
 }
 
+const BR_RUN = /(?:[ \t]*<br\s*\/?>[ \t]*){2,}/gi;
+const BR_ONE = /[ \t]*<br\s*\/?>[ \t]*/gi;
+// A heading marker glued mid-line after other text (`... done. ### Next`).
+const MID_LINE_HEADING = /(\S)[ \t]+(#{3,6}[ \t]+\S)/g;
+const INLINE_CODE_SPAN = /`[^`\n]*`/g;
+
+function normalizeBreaksInLine(line: string): string {
+  const trimmed = line.trimStart();
+  if (trimmed.startsWith('|')) {
+    // Table row: a <br> is an in-cell soft break; a real newline would split the row.
+    return line.replace(BR_ONE, ' ');
+  }
+  // Mask inline code so a literal `<br>` / `###` inside backticks survives.
+  const spans: string[] = [];
+  const masked = line.replace(INLINE_CODE_SPAN, (m) => {
+    spans.push(m);
+    return `\u0000${spans.length - 1}\u0000`;
+  });
+  const out = masked
+    .replace(BR_RUN, '\n\n')
+    .replace(BR_ONE, '\n')
+    .replace(MID_LINE_HEADING, '$1\n\n$2')
+    // A heading right after a single newline still gets its own paragraph.
+    .replace(/([^\n])\n(#{3,6}[ \t])/g, '$1\n\n$2');
+  return out.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => spans[Number(i)] ?? '');
+}
+
+/**
+ * Repairs stored article markdown where real newlines were replaced by literal
+ * `<br>` tags (LLM output quirk), which otherwise swallows every following
+ * paragraph and `###` heading into the first heading. `<br><br>` → blank line,
+ * a single `<br>` → newline, and a heading marker glued mid-line is moved to
+ * its own paragraph. Fenced code blocks, inline code and table rows are left
+ * alone. Idempotent; clean markdown passes through unchanged.
+ */
+export function normalizeMarkdownBreaks(md: string): string {
+  if (!/<br/i.test(md) && !MID_LINE_HEADING.test(md)) return md;
+  MID_LINE_HEADING.lastIndex = 0; // global regex: .test() advances lastIndex
+  const out: string[] = [];
+  let inFence = false;
+  for (const line of md.replace(/\r\n/g, '\n').split('\n')) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      out.push(line);
+    } else {
+      out.push(inFence ? line : normalizeBreaksInLine(line));
+    }
+  }
+  return out.join('\n');
+}
+
 export function parseMarkdown(md: string, { tables = false } = {}): MdBlock[] {
   const blocks: MdBlock[] = [];
-  const lines = md.replace(/\r\n/g, '\n').split('\n');
+  const lines = normalizeMarkdownBreaks(md).replace(/\r\n/g, '\n').split('\n');
 
   let paragraph: string[] = [];
   let list: MdInline[][] | null = null;

@@ -8,6 +8,7 @@ import {
   isRetryableGeminiError,
   llmUsageFromProviderUsage,
   normalizeEscapedNewlines,
+  normalizeMultilineText,
   parseBrief,
   parseImpactLevel,
 } from './summarize';
@@ -541,5 +542,40 @@ describe('llmUsageFromProviderUsage', () => {
     expect(result.estimated).toBe(true);
     expect(result.promptTokens).toBe(100); // 400 chars / 4
     expect(result.outputTokens).toBe(50); // 200 chars / 4
+  });
+});
+
+describe('normalizeMultilineText', () => {
+  it('turns stray <br> into real newlines so headings stay on their own line', () => {
+    expect(normalizeMultilineText('### A<br>Body one.<br><br>### B<br>Body two.')).toBe(
+      '### A\nBody one.\n\n### B\nBody two.',
+    );
+  });
+  it('keeps <br> inside code fences and passes clean text through', () => {
+    const md = '### A\n\n```html\n<br>\n```';
+    expect(normalizeMultilineText(md)).toBe(md);
+  });
+  it('is applied to body_md via parseBrief', () => {
+    const json = JSON.stringify({
+      title_en: 'Brief',
+      title_uk: 'Бриф',
+      intro_en: '',
+      intro_uk: '',
+      items: [
+        {
+          ref: 1,
+          category_slug: 'tools-and-releases',
+          title_en: 'T',
+          title_uk: 'Т',
+          summary_en: 'S',
+          summary_uk: 'С',
+          body_md_en: '### A<br>One.<br><br>### B<br>Two.',
+          body_md_uk: '### А<br>Один.',
+        },
+      ],
+    });
+    const item = parseBrief(json, pool).items[0]!;
+    expect(item.body_md_en).toBe('### A\nOne.\n\n### B\nTwo.');
+    expect(item.body_md_uk).toBe('### А\nОдин.');
   });
 });

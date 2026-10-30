@@ -19,7 +19,7 @@ import { dropKnownUrls, isColdSingleton, selectPoolWithReasons } from './select'
 import { summarize, type DraftBrief } from './summarize';
 import { reviseFlaggedItems, verifyClaims } from './verify';
 import { publish } from './publish';
-import { fillCardImages } from './card-image';
+import { fillCardImages, recordCardImageCostEvent } from './card-image';
 import { notifyReview } from './notify';
 import { createEmbedder, type EmbedFn } from './embeddings';
 import {
@@ -669,27 +669,10 @@ async function main(): Promise<void> {
         geminiImageModel: config.geminiImageModel,
         cloudflareImageModel: config.cloudflareImageModel,
         openRouterApiKey: config.openRouterApiKey,
-        onImageGenerated: async (image) => {
-          if (image.provider === 'local') return;
-          const { error: costError } = await db.from('generation_cost_events').insert({
-            scope: 'daily',
-            kind: 'image',
-            provider: image.provider,
-            model: image.model,
-            cost_usd: image.estimatedCostUsd,
-            cost_source: image.costSource,
-            metadata: {
-              brief_id: result.briefId,
-              width: image.width,
-              height: image.height,
-            },
-          });
-          if (costError) {
-            logEvent('warn', 'publish', 'Card image cost ledger write failed', {
-              error: costError.message,
-            });
-          }
-        },
+        openRouterImageModel: config.openRouterImageModel,
+        openRouterImageDailyCap: config.openRouterImageDailyCap,
+        onImageGenerated: (image) =>
+          recordCardImageCostEvent(db, image, { brief_id: result.briefId }),
       });
       logEvent('info', 'publish', 'Card images filled', {
         brief_id: result.briefId,

@@ -1,6 +1,6 @@
 /**
  * Backfill brand card images for already-published brief items that lack one.
- * Reuses the pipeline step (Cloudflare FLUX → Pollinations → duotone fallback),
+ * Reuses the pipeline step (Cloudflare FLUX → duotone fallback),
  * so it is free and idempotent — items that already have `card_image_url` are
  * skipped. New items get their image automatically at publish; this fills the
  * historical archive once.
@@ -15,7 +15,12 @@
  */
 import { readFileSync } from 'node:fs';
 import { createServiceClient } from '../pipeline/db';
-import { fillCardImages, reencodeStoredCardOrigins } from '../pipeline/card-image';
+import {
+  fillCardImages,
+  type GeneratedImageResult,
+  recordCardImageCostEvent,
+  reencodeStoredCardOrigins,
+} from '../pipeline/card-image';
 
 for (const line of readFileSync('.env.local', 'utf8').split(/\r?\n/)) {
   const m = /^([A-Z0-9_]+)=(.*)$/.exec(line);
@@ -34,6 +39,10 @@ async function main() {
     geminiImageModel: process.env.GEMINI_IMAGE_MODEL?.trim() || undefined,
     cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim() || undefined,
     openRouterApiKey: process.env.OPEN_ROUTER_API_KEY || process.env.OPENROUTER_API_KEY || undefined,
+    openRouterImageModel: process.env.OPENROUTER_IMAGE_MODEL?.trim() || undefined,
+    openRouterImageDailyCap: Number.parseInt(process.env.OPENROUTER_IMAGE_DAILY_CAP ?? '', 10),
+    onImageGenerated: (image: GeneratedImageResult) =>
+      recordCardImageCostEvent(db, image, { source: 'backfill-script' }),
   };
   const force = process.argv.includes('--force');
   const reencodePng = process.argv.includes('--reencode-png');

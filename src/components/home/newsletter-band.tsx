@@ -25,7 +25,10 @@ export function NewsletterBand({
   placement?: string;
 }) {
   const t = getStrings(lang).landing;
-  const outer = embedded ? 'w-full' : 'mx-auto w-full max-w-[1160px] px-6 py-6';
+  const outerBase = embedded ? 'w-full' : 'mx-auto w-full max-w-[1160px] px-6 py-6';
+  const outer = `${styles.root} ${outerBase}`;
+  // Narrow containers (< 28rem) are also compacted by newsletter-band.module.css, so the band
+  // stays readable in any rail even without `compact`.
   const innerPadding = compact ? 'p-4' : 'p-6 sm:p-10';
 
   return (
@@ -37,7 +40,10 @@ export function NewsletterBand({
         {showHeader ? (
           <div className={styles.copy}>
             <p className={`eyebrow ${styles.muted}`}>{t.subEyebrow}</p>
-            <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">
+            <h2
+              id="newsletter-title"
+              className={`mt-2 ${compact ? 'text-xl' : 'text-2xl sm:text-3xl'}`}
+            >
               {t.subTitleLead}{' '}
               <em className="font-[family-name:var(--font-display)] italic">{t.subTitleEmphasis}</em>
             </h2>
