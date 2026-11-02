@@ -75,7 +75,7 @@
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@google/generative-ai": "^0.24.1",
-    "@napi-rs/canvas": "1.0.11",
+    "@napi-rs/canvas": "1.0.13",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "dejavu-fonts-ttf": "^2.37.3",
@@ -105,7 +105,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.2",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"
   },
   "overrides": {
